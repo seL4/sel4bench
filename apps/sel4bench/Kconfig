@@ -11,7 +11,7 @@
 config APP_SEL4BENCH
     bool "seL4 Benchmark"
     default y
-    depends on LIB_SEL4 && HAVE_LIBC && LIB_UTILS && LIB_SEL4_UTILS && LIB_SEL4_PLAT_SUPPORT && LIB_SEL4_BENCH
+    depends on LIB_SEL4 && HAVE_LIBC && LIB_UTILS && LIB_SEL4_UTILS && LIB_SEL4_PLAT_SUPPORT && LIB_SEL4_BENCH && LIB_PLATSUPPORT
     select DANGEROUS_CODE_INJECTION
     help
         seL4 Benchmark application. Note that selecting this option enables the code
