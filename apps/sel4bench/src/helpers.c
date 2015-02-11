@@ -147,8 +147,8 @@ get_free_slot(vka_t *vka)
  * stack_size_bits defines the size of the target stack and should be at least
  * 4k (12).
  */
-int run_on_stack(vka_t *vka, seL4_Word stack_size_bits,
-                 int (*func)(void))
+void *run_on_stack(vka_t *vka, seL4_Word stack_size_bits,
+                 void *(*func)(void*), void *arg)
 {
     assert(stack_size_bits >= 12);
     assert(stack_size_bits < 32);
@@ -162,7 +162,7 @@ int run_on_stack(vka_t *vka, seL4_Word stack_size_bits,
         sel4utils_map_page_leaky(vka, seL4_CapInitThreadPD, frame, (void*)stack_start + (i * 4096), seL4_AllRights, true);
     }
 
-    return utils_run_on_stack((void *) stack_start + stack_size, func);
+    return utils_run_on_stack((void *) stack_start + stack_size, func, arg);
 }
 
 

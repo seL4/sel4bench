@@ -174,9 +174,9 @@ wait_for_thread(helper_thread_t *data);
 void
 cleanup_helper_thread(helper_thread_t *data);
 
-int
+void *
 run_on_stack(vka_t *vka, seL4_Word stack_size_bits,
-             int (*func)(void));
+             void * (*func)(void*), void*arg);
 
 void
 map_frame(vka_t *vka, seL4_CPtr frame, seL4_Word vaddr,

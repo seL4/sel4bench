@@ -82,7 +82,7 @@ check_cpu_features(void)
     
 }
 
-int main_continued(void);
+void *main_continued(void *arg);
 int main(void)
 {
     SET_MUSLC_SYSCALL_TABLE;
@@ -106,10 +106,10 @@ int main(void)
 
     /* Switch to a bigger stack with some guard pages! */
     printf("Switching to a safer, bigger stack... ");
-    return run_on_stack(&global_vka, 16, main_continued);
+    return (int)run_on_stack(&global_vka, 16, main_continued, NULL);
 }
 
-int main_continued(void)
+void *main_continued(void *arg)
 {
     printf("done\n");
 
