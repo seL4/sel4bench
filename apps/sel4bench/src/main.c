@@ -34,10 +34,6 @@
 #include "test.h"
 #include "util/ansi.h"
 
-#include <syscall_stubs_sel4.h>
-
-MUSLC_SYSCALL_TABLE;
-
 static vka_t global_vka;
 static simple_t global_simple;
 static struct allocator *global_allocator;
@@ -85,8 +81,6 @@ check_cpu_features(void)
 void *main_continued(void *arg);
 int main(void)
 {
-    SET_MUSLC_SYSCALL_TABLE;
-
     global_allocator = create_first_stage_allocator();
     twinkle_init_vka(&global_vka, global_allocator);
     

@@ -11,6 +11,10 @@
 #Targets
 TARGETS := sel4bench.bin
 
+# Set custom entry point as we are a rootserver and will not be
+# started in a standard way
+ENTRY_POINT := _sel4_start
+
 # Source files required to build the target
 CFILES   := $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 CFILES   += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/plat/${PLAT}/*.c))
@@ -26,7 +30,7 @@ CFLAGS += -std=gnu99
 CFLAGS += -Os
 
 # Libraries required to build the target
-LIBS := muslc sel4 sel4muslcsys sel4twinkle sel4utils sel4platsupport sel4bench sel4simple utils platsupport
+LIBS := c sel4 sel4muslcsys sel4twinkle sel4utils sel4platsupport sel4bench sel4simple utils platsupport
 ifdef CONFIG_KERNEL_STABLE
 LIBS += sel4simple-stable
 else
