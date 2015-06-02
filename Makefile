@@ -39,6 +39,6 @@ simulate-beagle:
 		-kernel images/sel4bench-image-arm-omap3
 
 simulate-ia32:
-	/opt/ertos/simulators-x86_64/qemu -L /opt/ertos/simulators-x86_64/pc-bios \
+	qemu-system-i386 \
 		-m 512 -nographic -kernel images/kernel-ia32-pc99 \
 		-initrd images/sel4bench-image-ia32-pc99

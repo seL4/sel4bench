@@ -26,7 +26,7 @@
 #include "timing.h"
 #include "test.h"
 
-#ifdef CONFIG_ARCH_I386
+#ifdef CONFIG_ARCH_IA32
 #define CCNT64BIT
 #define CCNT_FORMAT "%llu"
 typedef uint64_t ccnt_t;
@@ -468,7 +468,7 @@ typedef uint32_t ccnt_t;
 #elif defined(CONFIG_ARCH_ARM_V7A)
 #define READ_COUNTER_BEFORE READ_COUNTER_ARMV7
 #define READ_COUNTER_AFTER  READ_COUNTER_ARMV7
-#elif defined(CONFIG_ARCH_I386)
+#elif defined(CONFIG_ARCH_IA32)
 #ifdef CONFIG_X86_64
 #define READ_COUNTER_BEFORE READ_COUNTER_X64_BEFORE
 #define READ_COUNTER_AFTER  READ_COUNTER_X64_AFTER
