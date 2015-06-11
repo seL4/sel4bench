@@ -487,43 +487,90 @@ typedef uint32_t ccnt_t;
    overhead calculations aren't unduly influenced */
 #define FENCE() asm volatile("" ::: "memory")
 
+
+#define OVERHEAD_BENCH_PARAMS(n) { .name = n }
+#define BENCH_PARAMS(n, c, fa, fb, v, pa, pb, o) { .name = n, .caption = c,    \
+                                                   .funca = (helper_func_t)fa, \
+                                                   .funcb = (helper_func_t)fb, \
+                                                   .prioa = pa, .priob = pb,   \
+                                                   .same_vspace = v,           \
+                                                   .overhead_id = o            }
+
+enum overhead_benchmarks {
+    CALL_OVERHEAD,
+    REPLY_WAIT_OVERHEAD,
+    SEND_OVERHEAD,
+    WAIT_OVERHEAD,
+    CALL_10_OVERHEAD,
+    REPLY_WAIT_10_OVERHEAD,
+    /******/
+    NOVERHEADBENCHMARKS
+};
+
+enum overheads {
+    CALL_REPLY_WAIT_OVERHEAD,
+    CALL_REPLY_WAIT_10_OVERHEAD,
+    SEND_WAIT_OVERHEAD,
+    /******/
+    NOVERHEADS
+};
+
+struct benchmark_params {
+    const char* name;
+    const char* caption;
+    helper_func_t funca, funcb;
+    int prioa, priob;
+    int same_vspace;
+    enum overheads overhead_id;
+};
+
+struct overhead_benchmark_params {
+    const char* name;
+};
+
+uint32_t ipc_call_func(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_call_func2(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_call_10_func(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_call_10_func2(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_replywait_func2(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_replywait_func(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_replywait_10_func2(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_replywait_10_func(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_send_func(seL4_CPtr ep, seL4_CPtr result_ep);
+uint32_t ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep);
+
+
+static const struct benchmark_params benchmark_params[] = {
+    BENCH_PARAMS("Intra-AS Call"                   , "Call+ReplyWait Intra-AS test 1"      , ipc_call_func2,    ipc_replywait_func2,    TRUE,  100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Intra-AS ReplyWait"              , "Call+ReplyWait Intra-AS test 2"      , ipc_call_func,     ipc_replywait_func,     TRUE,  100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Inter-AS Call"                   , "Call+ReplyWait Inter-AS test 1"      , ipc_call_func2,    ipc_replywait_func2,    FALSE, 100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Inter-AS ReplyWait"              , "Call+ReplyWait Inter-AS test 2"      , ipc_call_func,     ipc_replywait_func,     FALSE, 100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Inter-AS Call (Low to High)"     , "Call+ReplyWait Different prio test 1", ipc_call_func2,    ipc_replywait_func2,    FALSE,  50, 100, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Inter-AS ReplyWait (High to Low)", "Call+ReplyWait Different prio test 4", ipc_call_func,     ipc_replywait_func,     FALSE,  50, 100, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Inter-AS Call (High to Low)"     , "Call+ReplyWait Different prio test 3", ipc_call_func2,    ipc_replywait_func2,    FALSE, 100,  50, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Inter-AS ReplyWait (Low to High)", "Call+ReplyWait Different prio test 2", ipc_call_func,     ipc_replywait_func,     FALSE, 100,  50, CALL_REPLY_WAIT_OVERHEAD   ),
+    BENCH_PARAMS("Inter-AS Send"                   , "Send test"                           , ipc_send_func,     ipc_wait_func,          FALSE, 100, 100, SEND_WAIT_OVERHEAD         ),
+    BENCH_PARAMS("Inter-AS Call(10)"               , "Call+ReplyWait long message test 1"  , ipc_call_10_func2, ipc_replywait_10_func2, FALSE, 100, 100, CALL_REPLY_WAIT_10_OVERHEAD),
+    BENCH_PARAMS("Inter-AS ReplyWait(10)"          , "Call+ReplyWait long message test 2"  , ipc_call_10_func,  ipc_replywait_10_func,  FALSE, 100, 100, CALL_REPLY_WAIT_10_OVERHEAD)
+};
+
+static const struct overhead_benchmark_params overhead_benchmark_params[] = {
+    [CALL_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("call"      ),
+    [REPLY_WAIT_OVERHEAD]    = OVERHEAD_BENCH_PARAMS("reply wait"),
+    [SEND_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("send"      ),
+    [WAIT_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("wait"      ),
+    [CALL_10_OVERHEAD]       = OVERHEAD_BENCH_PARAMS("call"      ),
+    [REPLY_WAIT_10_OVERHEAD] = OVERHEAD_BENCH_PARAMS("reply wait"),
+};
+
 struct bench_results {
     /* Raw results from benchmarking. These get checked for sanity */
-    ccnt_t call_overhead[RUNS];
-    ccnt_t reply_wait_overhead[RUNS];
-    ccnt_t call_10_overhead[RUNS];
-    ccnt_t reply_wait_10_overhead[RUNS];
-    ccnt_t send_overhead[RUNS];
-    ccnt_t wait_overhead[RUNS];
-    ccnt_t call_time_inter[RUNS];
-    ccnt_t reply_wait_time_inter[RUNS];
-    ccnt_t call_time_intra[RUNS];
-    ccnt_t reply_wait_time_intra[RUNS];
-    ccnt_t call_time_inter_low[RUNS];
-    ccnt_t reply_wait_time_inter_high[RUNS];
-    ccnt_t call_time_inter_high[RUNS];
-    ccnt_t reply_wait_time_inter_low[RUNS];
-    ccnt_t send_time_inter[RUNS];
-    ccnt_t wait_time_inter[RUNS];
-    ccnt_t call_10_time_inter[RUNS];
-    ccnt_t reply_wait_10_time_inter[RUNS];
+    ccnt_t overhead_benchmarks[NOVERHEADBENCHMARKS][RUNS];
+    ccnt_t benchmarks[ARRAY_SIZE(benchmark_params)][RUNS];
     /* A worst case overhead */
-    ccnt_t call_reply_wait_overhead;
-    ccnt_t call_reply_wait_10_overhead;
-    ccnt_t send_wait_overhead;
+    ccnt_t overheads[NOVERHEADS];
     /* Calculated results to print out */
-    ccnt_t call_cycles_inter;
-    ccnt_t reply_wait_cycles_inter;
-    ccnt_t call_cycles_intra;
-    ccnt_t reply_wait_cycles_intra;
-    ccnt_t call_cycles_inter_low;
-    ccnt_t reply_wait_cycles_inter_high;
-    ccnt_t call_cycles_inter_high;
-    ccnt_t reply_wait_cycles_inter_low;
-    ccnt_t send_cycles_inter;
-    ccnt_t wait_cycles_inter;
-    ccnt_t call_10_cycles_inter;
-    ccnt_t reply_wait_10_cycles_inter;
+    ccnt_t results[ARRAY_SIZE(benchmark_params)];
 };
 
 #if defined(CCNT32BIT)
@@ -674,22 +721,22 @@ static int results_stable(ccnt_t *array) {
 
 static void measure_overhead(struct bench_results *results) {
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
-                     results->call_overhead,
+                     results->overhead_benchmarks[CALL_OVERHEAD],
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
     MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT(0, tag),
-                     results->reply_wait_overhead,
+                     results->overhead_benchmarks[REPLY_WAIT_OVERHEAD],
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
     MEASURE_OVERHEAD(DO_NOP_SEND(0, tag),
-                     results->send_overhead,
+                     results->overhead_benchmarks[SEND_OVERHEAD],
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
     MEASURE_OVERHEAD(DO_NOP_WAIT(0),
-                     results->wait_overhead,
+                     results->overhead_benchmarks[WAIT_OVERHEAD],
                      {});
     MEASURE_OVERHEAD(DO_NOP_CALL_10(0, tag10),
-                     results->call_10_overhead,
+                     results->overhead_benchmarks[CALL_10_OVERHEAD],
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
     MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT_10(0, tag10),
-                     results->reply_wait_10_overhead,
+                     results->overhead_benchmarks[REPLY_WAIT_10_OVERHEAD],
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
 }
 
@@ -780,122 +827,46 @@ static ccnt_t results_min(ccnt_t *array) {
 }
 
 static int check_overhead(struct bench_results *results) {
-    ccnt_t call_overhead, reply_wait_overhead;
-    ccnt_t call_10_overhead, reply_wait_10_overhead;
-    ccnt_t send_overhead, wait_overhead;
-    if (!results_stable(results->call_overhead)) {
-        printf("Benchmarking overhead of a call is not stable! Cannot continue\n");
-        print_all(results->call_overhead);
+    ccnt_t overhead[NOVERHEADBENCHMARKS];
+    int i;
+    for(i = 0; i < NOVERHEADBENCHMARKS; i++){
+        if (!results_stable(results->overhead_benchmarks[i])) {
+            printf("Benchmarking overhead of a %s is not stable! Cannot continue\n", overhead_benchmark_params[i].name);
+            print_all(results->overhead_benchmarks[i]);
 #ifndef ALLOW_UNSTABLE_OVERHEAD
-        return 0;
+            return 0;
 #endif
+        }
+        overhead[i] = results_min(results->overhead_benchmarks[i]);
     }
-    if (!results_stable(results->reply_wait_overhead)) {
-        printf("Benchmarking overhead of a reply wait is not stable! Cannot continue\n");
-        print_all(results->reply_wait_overhead);
-#ifndef ALLOW_UNSTABLE_OVERHEAD
-        return 0;
-#endif
-    }
-    if (!results_stable(results->send_overhead)) {
-        printf("Benchmarking overhead of a send is not stable! Cannot continue\n");
-        print_all(results->send_overhead);
-#ifndef ALLOW_UNSTABLE_OVERHEAD
-        return 0;
-#endif
-    }
-    if (!results_stable(results->wait_overhead)) {
-        printf("Benchmarking overhead of a wait is not stable! Cannot continue\n");
-        print_all(results->wait_overhead);
-#ifndef ALLOW_UNSTABLE_OVERHEAD
-        return 0;
-#endif
-    }
-    if (!results_stable(results->call_10_overhead)) {
-        printf("Benchmarking overhead of a call is not stable! Cannot continue\n");
-        print_all(results->call_10_overhead);
-#ifndef ALLOW_UNSTABLE_OVERHEAD
-        return 0;
-#endif
-    }
-    if (!results_stable(results->reply_wait_10_overhead)) {
-        printf("Benchmarking overhead of a reply wait is not stable! Cannot continue\n");
-        print_all(results->reply_wait_10_overhead);
-#ifndef ALLOW_UNSTABLE_OVERHEAD
-        return 0;
-#endif
-    }
-    call_overhead = results_min(results->call_overhead);
-    reply_wait_overhead = results_min(results->reply_wait_overhead);
-    call_10_overhead = results_min(results->call_10_overhead);
-    reply_wait_10_overhead = results_min(results->reply_wait_10_overhead);
-    send_overhead = results_min(results->send_overhead);
-    wait_overhead = results_min(results->wait_overhead);
     /* Take the smallest overhead to be our benchmarking overhead */
-    if (call_overhead < reply_wait_overhead) {
-        results->call_reply_wait_overhead = call_overhead;
-    } else {
-        results->call_reply_wait_overhead = reply_wait_overhead;
-    }
-    if (send_overhead < wait_overhead) {
-        results->send_wait_overhead = send_overhead;
-    } else {
-        results->send_wait_overhead = wait_overhead;
-    }
-    if (call_10_overhead < reply_wait_10_overhead) {
-        results->call_reply_wait_10_overhead = call_10_overhead;
-    } else {
-        results->call_reply_wait_10_overhead = reply_wait_10_overhead;
-    }
+    results->overheads[CALL_REPLY_WAIT_OVERHEAD] = MIN(overhead[CALL_OVERHEAD], overhead[REPLY_WAIT_OVERHEAD]);
+    results->overheads[SEND_WAIT_OVERHEAD] = MIN(overhead[SEND_OVERHEAD], overhead[WAIT_OVERHEAD]);
+    results->overheads[CALL_REPLY_WAIT_10_OVERHEAD] = MIN(overhead[CALL_10_OVERHEAD], overhead[REPLY_WAIT_10_OVERHEAD]);
     return 1;
 }
 
 static int process_result(ccnt_t *array, const char *error) {
     if (!results_stable(array)) {
-        printf("%s\n", error);
+        printf("%s cycles are not stable\n", error);
         print_all(array);
     }
     return results_min(array);
 }
 
 static int process_results(struct bench_results *results) {
-    results->call_cycles_intra = process_result(results->call_time_intra,
-                                             "Intra-AS Call cycles are not stable");
-    results->reply_wait_cycles_intra = process_result(results->reply_wait_time_intra,
-                                             "Intra-AS ReplyWait cycles are not stable");
-    results->call_cycles_inter = process_result(results->call_time_inter,
-                                             "Inter-AS Call cycles are not stable");
-    results->reply_wait_cycles_inter = process_result(results->reply_wait_time_inter,
-                                             "Inter-AS ReplyWait cycles are not stable");
-    results->call_cycles_inter_low = process_result(results->call_time_inter_low,
-                                             "Inter-AS Call (Low to High) cycles are not stable");
-    results->call_cycles_inter_high = process_result(results->call_time_inter_high,
-                                             "Inter-AS Call (High to Call) cycles are not stable");
-    results->reply_wait_cycles_inter_low = process_result(results->reply_wait_time_inter_low,
-                                             "Inter-AS ReplyWait (Low to High) cycles are not stable");
-    results->reply_wait_cycles_inter_high = process_result(results->reply_wait_time_inter_high,
-                                             "Inter-AS ReplyWait (High to Call) cycles are not stable");
-    results->send_cycles_inter = process_result(results->send_time_inter,
-                                             "Inter-AS Send cycles are not stable");
-    results->call_10_cycles_inter = process_result(results->call_10_time_inter,
-                                             "Inter-AS Call(10) cycles are not stable");
-    results->reply_wait_10_cycles_inter = process_result(results->reply_wait_10_time_inter,
-                                             "Inter-AS ReplyWait(10) cycles are not stable");
+    int i;
+    for(i = 0; i < ARRAY_SIZE(results->results); i++){
+        results->results[i] = process_result(results->benchmarks[i], benchmark_params[i].name);
+    }
     return 1;
 }
 
 static void print_results(struct bench_results *results) {
-    printf("\t<result name = \"Intra-AS Call\">"CCNT_FORMAT"</result>\n",results->call_cycles_intra);
-    printf("\t<result name = \"Intra-AS ReplyWait\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_intra);
-    printf("\t<result name = \"Inter-AS Call\">"CCNT_FORMAT"</result>\n",results->call_cycles_inter);
-    printf("\t<result name = \"Inter-AS ReplyWait\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter);
-    printf("\t<result name = \"Inter-AS Call (Low to High)\">"CCNT_FORMAT"</result>\n",results->call_cycles_inter_low);
-    printf("\t<result name = \"Inter-AS ReplyWait (High to Low)\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter_high);
-    printf("\t<result name = \"Inter-AS Call (High to Low)\">"CCNT_FORMAT"</result>\n",results->call_cycles_inter_high);
-    printf("\t<result name = \"Inter-AS ReplyWait (Low to High)\">"CCNT_FORMAT"</result>\n",results->reply_wait_cycles_inter_low);
-    printf("\t<result name = \"Inter-AS Send\">"CCNT_FORMAT"</result>\n",results->send_cycles_inter);
-    printf("\t<result name = \"Inter-AS Call(10)\">"CCNT_FORMAT"</result>\n",results->call_10_cycles_inter);
-    printf("\t<result name = \"Inter-AS ReplyWait(10)\">"CCNT_FORMAT"</result>\n",results->reply_wait_10_cycles_inter);
+    int i;
+    for(i = 0; i < ARRAY_SIZE(results->results); i++){
+        printf("\t<result name = \"%s\">"CCNT_FORMAT"</result>\n", benchmark_params[i].name, results->results[i]);
+    }
 }
 
 void
@@ -910,45 +881,19 @@ ipc_benchmarks_new(struct env* env, const timing_print_mode_t print_mode)
     }
 
     for (i = 0; i < RUNS; i++) {
+        int j;
         printf("\tDoing iteration %d\n",i);
-        printf("Running Call+ReplyWait Intra-AS test 1\n");
-        run_bench(env, (helper_func_t)ipc_call_func, (helper_func_t)ipc_replywait_func, 1, 100, 100, &end, &start);
-        results.reply_wait_time_intra[i] = end - start - results.call_reply_wait_overhead;
-        printf("Running Call+ReplyWait Intra-AS test 2\n");
-        run_bench(env, (helper_func_t)ipc_call_func2, (helper_func_t)ipc_replywait_func2, 1, 100, 100, &end, &start);
-        results.call_time_intra[i] = end - start - results.call_reply_wait_overhead;
-
-        printf("Running Call+ReplyWait Inter-AS test 1\n");
-        run_bench(env, (helper_func_t)ipc_call_func, (helper_func_t)ipc_replywait_func, 0, 100, 100, &end, &start);
-        results.reply_wait_time_inter[i] = end - start - results.call_reply_wait_overhead;
-        printf("Running Call+ReplyWait Inter-AS test 2\n");
-        run_bench(env, (helper_func_t)ipc_call_func2, (helper_func_t)ipc_replywait_func2, 0, 100, 100, &end, &start);
-        results.call_time_inter[i] = end - start - results.call_reply_wait_overhead;
-
-        printf("Running Call+ReplyWait Different prio test 1\n");
-        run_bench(env, (helper_func_t)ipc_call_func, (helper_func_t)ipc_replywait_func, 0, 50, 100, &end, &start);
-        results.reply_wait_time_inter_high[i] = end - start - results.call_reply_wait_overhead;
-        printf("Running Call+ReplyWait Different prio test 2\n");
-        run_bench(env, (helper_func_t)ipc_call_func2, (helper_func_t)ipc_replywait_func2, 0, 50, 100, &end, &start);
-        results.call_time_inter_low[i] = end - start - results.call_reply_wait_overhead;
-
-        printf("Running Call+ReplyWait Different prio test 3\n");
-        run_bench(env, (helper_func_t)ipc_call_func, (helper_func_t)ipc_replywait_func, 0, 100, 50, &end, &start);
-        results.reply_wait_time_inter_low[i] = end - start - results.call_reply_wait_overhead;
-        printf("Running Call+ReplyWait Different prio test 4\n");
-        run_bench(env, (helper_func_t)ipc_call_func2, (helper_func_t)ipc_replywait_func2, 0, 100, 50, &end, &start);
-        results.call_time_inter_high[i] = end - start - results.call_reply_wait_overhead;
-
-        printf("Running Send test\n");
-        run_bench(env, (helper_func_t)ipc_send_func, (helper_func_t)ipc_wait_func, 0, 100, 100, &start, &end);
-        results.send_time_inter[i] = end - start - results.send_wait_overhead;
-
-        printf("Running Call+ReplyWait long message test 1\n");
-        run_bench(env, (helper_func_t)ipc_call_10_func, (helper_func_t)ipc_replywait_10_func, 0, 100, 100, &end, &start);
-        results.reply_wait_10_time_inter[i] = end - start - results.call_reply_wait_10_overhead;
-        printf("Running Call+ReplyWait long message test 2\n");
-        run_bench(env, (helper_func_t)ipc_call_10_func2, (helper_func_t)ipc_replywait_10_func2, 0, 100, 100, &end, &start);
-        results.call_10_time_inter[i] = end - start - results.call_reply_wait_10_overhead;
+        for(j = 0; j < ARRAY_SIZE(benchmark_params); j++){
+            const struct benchmark_params* params = &benchmark_params[j];
+            printf("Running %s\n", params->caption);
+            run_bench(env, params->funca, params->funcb, params->same_vspace, params->prioa, params->priob, &end, &start);
+            if(end > start){
+                results.benchmarks[j][i] = end - start;
+            }else{
+                results.benchmarks[j][i] = start - end;
+            }
+            results.benchmarks[j][i] -= results.overheads[params->overhead_id];
+        }
     }
     if (!process_results(&results)) {
         return;
