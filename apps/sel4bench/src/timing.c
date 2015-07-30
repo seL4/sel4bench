@@ -27,6 +27,7 @@
 
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
