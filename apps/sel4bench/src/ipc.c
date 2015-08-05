@@ -13,18 +13,19 @@
    happening in this app with just what we need */
 
 #include <autoconf.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <simple/simple.h>
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
-#include <twinkle/object_allocator.h>
+#include <sel4utils/process.h>
+#include <string.h>
+#include <utils/ansi.h>
+#include <vka/vka.h>
 
-#include "allocator_helpers.h"
-#include "util/ansi.h"
-#include "mem.h"
-#include "helpers.h"
 #include "timing.h"
-#include "test.h"
+#include "benchmark.h"
 
 #ifdef CONFIG_ARCH_IA32
 #define CCNT64BIT
@@ -36,12 +37,9 @@ typedef uint32_t ccnt_t;
 #define CCNT_FORMAT "%d"
 #endif
 
-#ifndef UNUSED
-    #define UNUSED __attribute__((unused))
-#endif
-
 #define __SWINUM(x) ((x) & 0x00ffffff)
 
+#define NUM_ARGS 2
 #define WARMUPS 16
 #define RUNS 16
 #define OVERHEAD_RETRIES 4
@@ -528,16 +526,25 @@ struct overhead_benchmark_params {
     const char* name;
 };
 
-uint32_t ipc_call_func(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_call_func2(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_call_10_func(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_call_10_func2(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_replywait_func2(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_replywait_func(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_replywait_10_func2(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_replywait_10_func(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_send_func(seL4_CPtr ep, seL4_CPtr result_ep);
-uint32_t ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep);
+typedef struct helper_thread {
+    sel4utils_process_config_t config;
+    sel4utils_process_t process;
+    seL4_CPtr ep;
+    seL4_CPtr result_ep;
+    char *argv[NUM_ARGS];
+    char argv_strings[NUM_ARGS][WORD_STRING_SIZE];
+} helper_thread_t;
+
+uint32_t ipc_call_func(int argc, char *argv[]);
+uint32_t ipc_call_func2(int argc, char *argv[]);
+uint32_t ipc_call_10_func(int argc, char *argv[]);
+uint32_t ipc_call_10_func2(int argc, char *argv[]);
+uint32_t ipc_replywait_func2(int argc, char *argv[]);
+uint32_t ipc_replywait_func(int argc, char *argv[]);
+uint32_t ipc_replywait_10_func2(int argc, char *argv[]);
+uint32_t ipc_replywait_10_func(int argc, char *argv[]);
+uint32_t ipc_send_func(int argc, char *argv[]);
+uint32_t ipc_wait_func(int argc, char *argv[]);
 
 
 static const struct benchmark_params benchmark_params[] = {
@@ -574,13 +581,17 @@ struct bench_results {
 };
 
 #if defined(CCNT32BIT)
-static void send_result(seL4_CPtr ep, ccnt_t result) {
+static void 
+send_result(seL4_CPtr ep, ccnt_t result)
+{
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
     seL4_SetMR(0, result);
     seL4_Send(ep, tag);
 }
 #elif defined(CCNT64BIT)
-static void send_result(seL4_CPtr ep, ccnt_t result) {
+static void 
+send_result(seL4_CPtr ep, ccnt_t result)
+{
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 2);
     seL4_SetMR(0, (uint32_t)(result >> 32ull));
     seL4_SetMR(1, (uint32_t)(result & 0xFFFFFFFF));
@@ -590,29 +601,39 @@ static void send_result(seL4_CPtr ep, ccnt_t result) {
 #error Unknown ccnt size
 #endif
 
-static inline void dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag) {
+static inline void
+dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
+{
     (void)ep;
     (void)tag;
 }
 
-static inline void dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag) {
+static inline void 
+dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag)
+{
     (void)ep;
     (void)tag;
 }
 
-static inline void dummy_seL4_Wait(seL4_CPtr ep, void *badge) {
+static inline void
+dummy_seL4_Wait(seL4_CPtr ep, void *badge)
+{
     (void)ep;
     (void)badge;
 }
 
-static inline void dummy_seL4_Reply(seL4_MessageInfo_t tag) {
+static inline void 
+dummy_seL4_Reply(seL4_MessageInfo_t tag)
+{
     (void)tag;
 }
 
 #define IPC_CALL_FUNC(name, bench_func, send_func, call_func, send_start_end, length) \
-uint32_t name(seL4_CPtr ep, seL4_CPtr result_ep) { \
+uint32_t name(int argc, char *argv[]) { \
     uint32_t i; \
     ccnt_t start UNUSED, end UNUSED; \
+    seL4_CPtr ep = atoi(argv[0]);\
+    seL4_CPtr result_ep = atoi(argv[1]);\
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
     call_func(ep, tag); \
     FENCE(); \
@@ -633,10 +654,12 @@ IPC_CALL_FUNC(ipc_call_10_func, DO_REAL_CALL_10, seL4_Send, dummy_seL4_Call, end
 IPC_CALL_FUNC(ipc_call_10_func2, DO_REAL_CALL_10, dummy_seL4_Send, seL4_Call, start, 10)
 
 #define IPC_REPLY_WAIT_FUNC(name, bench_func, reply_func, wait_func, send_start_end, length) \
-uint32_t name(seL4_CPtr ep, seL4_CPtr result_ep) { \
+uint32_t name(int argc, char *argv[]) { \
     uint32_t i; \
     ccnt_t start UNUSED, end UNUSED; \
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
+    seL4_CPtr ep = atoi(argv[0]);\
+    seL4_CPtr result_ep = atoi(argv[1]);\
     wait_func(ep, NULL); \
     FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
@@ -655,9 +678,13 @@ IPC_REPLY_WAIT_FUNC(ipc_replywait_func, DO_REAL_REPLY_WAIT, dummy_seL4_Reply, se
 IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func2, DO_REAL_REPLY_WAIT_10, seL4_Reply, seL4_Wait, end, 10)
 IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func, DO_REAL_REPLY_WAIT_10, dummy_seL4_Reply, seL4_Wait, start, 10)
 
-uint32_t ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
+uint32_t 
+ipc_wait_func(int argc, char *argv[])
+{
     uint32_t i;
     ccnt_t start UNUSED, end UNUSED;
+    seL4_CPtr ep = atoi(argv[0]);
+    seL4_CPtr result_ep = atoi(argv[1]);
     FENCE();
     for (i = 0; i < WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
@@ -670,9 +697,13 @@ uint32_t ipc_wait_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     return 0;
 }
 
-uint32_t ipc_send_func(seL4_CPtr ep, seL4_CPtr result_ep) {
+uint32_t 
+ipc_send_func(int argc, char *argv[])
+{
     uint32_t i;
     ccnt_t start UNUSED, end UNUSED;
+    seL4_CPtr ep = atoi(argv[0]);
+    seL4_CPtr result_ep = atoi(argv[1]);
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     FENCE();
     for (i = 0; i < WARMUPS; i++) {
@@ -709,7 +740,9 @@ uint32_t ipc_send_func(seL4_CPtr ep, seL4_CPtr result_ep) {
     timing_destroy(); \
 } while(0)
 
-static int results_stable(ccnt_t *array) {
+static int 
+results_stable(ccnt_t *array)
+{
     uint32_t i;
     for (i = 1; i < RUNS; i++) {
         if (array[i] != array[i - 1]) {
@@ -719,7 +752,9 @@ static int results_stable(ccnt_t *array) {
     return 1;
 }
 
-static void measure_overhead(struct bench_results *results) {
+static void 
+measure_overhead(struct bench_results *results)
+{
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
                      results->overhead_benchmarks[CALL_OVERHEAD],
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
@@ -741,12 +776,14 @@ static void measure_overhead(struct bench_results *results) {
 }
 
 #if defined(CCNT32BIT)
-static ccnt_t get_result(seL4_CPtr ep) {
+static ccnt_t get_result(seL4_CPtr ep)
+{
     seL4_Wait(ep, NULL);
     return seL4_GetMR(0);
 }
 #elif defined(CCNT64BIT)
-static ccnt_t get_result(seL4_CPtr ep) {
+static ccnt_t get_result(seL4_CPtr ep)
+{
     seL4_Wait(ep, NULL);
     return ( ((ccnt_t)seL4_GetMR(0)) << 32ull) | ((ccnt_t)seL4_GetMR(1));
 }
@@ -754,82 +791,138 @@ static ccnt_t get_result(seL4_CPtr ep) {
 #error Unknown ccnt size
 #endif
 
-void run_bench(struct env *env, helper_func_t a, helper_func_t b, int same_vspace, int prioa, int priob, ccnt_t *ret1, ccnt_t *ret2) {
-    seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
-    seL4_CPtr result_ep = vka_alloc_endpoint_leaky(&env->vka);
-	helper_thread_desc_t da, db;
-    helper_thread_t thread_a, thread_b;
+void 
+init_a_config(env_t env, helper_thread_t *a, helper_func_t a_fn, int prioa)
+{
+    /* set up process a */
+    bzero(&a->config, sizeof(a->config));
+    a->config.is_elf = false;
+    a->config.create_cspace = true;
+    a->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
+    a->config.create_vspace = true;
+    a->config.reservations = &env->region;
+    a->config.num_reservations = 1;
+    a->config.create_fault_endpoint = false;
+    a->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
+    a->config.priority = prioa;
+    a->config.entry_point = a_fn;
+#ifndef CONFIG_KERNEL_STABLE
+    a->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
+#endif
+
+}
+
+void 
+init_b_config(env_t env, helper_thread_t *b, helper_func_t b_fn, int priob,
+                              helper_thread_t *a, int same_vspace)
+{
+   /* set up process b - b's config is nearly the same as a's */
+    b->config = a->config;
+    b->config.priority = priob;
+    b->config.entry_point = b_fn;
+
+    if (same_vspace) {
+        /* b shares a's cspace and vspace */
+        b->config.create_cspace = false;
+        b->config.cnode = a->process.cspace;
+        b->config.create_vspace = false;
+        b->config.vspace = &a->process.vspace;
+    }
+}
+
+void 
+run_bench(env_t env, helper_func_t a_fn, helper_func_t b_fn, int same_vspace, int prioa, int priob, ccnt_t *ret1, ccnt_t *ret2)
+{
+    UNUSED int error;
+    helper_thread_t a, b;
 
     timing_init();
 
-	reset_helper_thread_desc(&da);
-	da.func = (helper_func_t) a;
-	da.arg0 = ep;
-	da.arg1 = result_ep;
-	reset_helper_thread_desc(&db);
-	db.func = (helper_func_t) b;
-	db.arg0 = ep;
-	db.arg1 = result_ep;
+    /* configure processes */
+    init_a_config(env, &a, a_fn, prioa);
+
+    error = sel4utils_configure_process_custom(&a.process, &env->vka, &env->vspace, a.config);
+    assert(error == 0);
+
+    init_b_config(env, &b, b_fn, priob, &a, same_vspace);
+    
+    error = sel4utils_configure_process_custom(&b.process, &env->vka, &env->vspace, b.config);
+    assert(error == 0);
+
+    /* clone the text segment into the vspace - note that as we are only cloning the text
+     * segment, you will not be able to use anything that relies on initialisation in benchmark
+     * threads - like printf, (but seL4_Debug_PutChar is ok)
+     */
+    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &a.process.vspace, env->region.reservation);
+    assert(error == 0);
+
     if (!same_vspace) {
-        da.cspace = create_cspace(&env->vka, env->simple);
-        da.pd = create_vspace(&env->vka, env->simple, da.cspace);
-        db.cspace = create_cspace(&env->vka, env->simple);
-        db.pd = create_vspace(&env->vka, env->simple, db.cspace);
-        seL4_CNode_Copy(
-            da.cspace, ep, seL4_WordBits,
-            seL4_CapInitThreadCNode, ep, seL4_WordBits,
-            seL4_AllRights);
-        seL4_CNode_Copy(
-            db.cspace, ep, seL4_WordBits,
-            seL4_CapInitThreadCNode, ep, seL4_WordBits,
-            seL4_AllRights);
-        seL4_CNode_Copy(
-            da.cspace, result_ep, seL4_WordBits,
-            seL4_CapInitThreadCNode, result_ep, seL4_WordBits,
-            seL4_AllRights);
-        seL4_CNode_Copy(
-            db.cspace, result_ep, seL4_WordBits,
-            seL4_CapInitThreadCNode, result_ep, seL4_WordBits,
-            seL4_AllRights);
+        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &b.process.vspace, env->region.reservation);
+        assert(error == 0);
     }
-    create_helper_thread_in_cspace(&thread_a, &env->vka, da);
-    set_helper_thread_priority(&thread_a, prioa);
-    create_helper_thread_in_cspace(&thread_b, &env->vka, db);
-	set_helper_thread_priority(&thread_b, priob);
-	start_helper_thread(&thread_a);
-	start_helper_thread(&thread_b);
-	*ret1 = get_result(result_ep);
-	*ret2 = get_result(result_ep);
-	wait_for_thread(&thread_a);
-	wait_for_thread(&thread_b);
-	cleanup_helper_thread(&thread_a);
-	cleanup_helper_thread(&thread_b);
-	allocator_reset(env->allocator);
+
+    /* copy endpoint cptrs into a and b's respective cspaces*/
+    a.ep = sel4utils_copy_cap_to_process(&a.process, env->ep_path);
+    a.result_ep = sel4utils_copy_cap_to_process(&a.process, env->result_ep_path);
+
+    if (!same_vspace) {
+        b.ep = sel4utils_copy_cap_to_process(&b.process, env->ep_path);
+        b.result_ep = sel4utils_copy_cap_to_process(&b.process, env->result_ep_path);
+    } else {
+        b.ep = a.ep;
+        b.result_ep = a.result_ep;
+    }
+
+    /* set up args */
+    sel4utils_create_word_args(a.argv_strings, a.argv, NUM_ARGS, a.ep, a.result_ep);
+    sel4utils_create_word_args(b.argv_strings, b.argv, NUM_ARGS, b.ep, b.result_ep);
+
+    /* start processes */
+    error = sel4utils_spawn_process(&a.process, &env->vka, &env->vspace, NUM_ARGS, a.argv, 1);
+    assert(error == 0);
+
+    error = sel4utils_spawn_process(&b.process, &env->vka, &env->vspace, NUM_ARGS, b.argv, 1);
+    assert(error == 0);
+
+    /* wait for results */
+    *ret1 = get_result(env->result_ep.cptr);
+    *ret2 = get_result(env->result_ep.cptr);
+
+    /* clean up - clean b first in case it is sharing a's cspace and vspace */
+    sel4utils_destroy_process(&b.process, &env->vka);
+    sel4utils_destroy_process(&a.process, &env->vka);
 
     timing_destroy();
 }
 
-static void print_all(ccnt_t *array) {
+static void
+print_all(ccnt_t *array)
+{
     uint32_t i;
     for (i = 0; i < RUNS; i++) {
         printf("\t"CCNT_FORMAT"\n", array[i]);
     }
 }
 
-static ccnt_t results_min(ccnt_t *array) {
+static ccnt_t 
+results_min(ccnt_t *array)
+{
     uint32_t i;
     ccnt_t min = array[0];
     for (i = 1; i < RUNS; i++) {
-        if (array[i] < min)
+        if (array[i] < min) {
             min = array[i];
+        }
     }
     return min;
 }
 
-static int check_overhead(struct bench_results *results) {
+static int 
+check_overhead(struct bench_results *results)
+{
     ccnt_t overhead[NOVERHEADBENCHMARKS];
     int i;
-    for(i = 0; i < NOVERHEADBENCHMARKS; i++){
+    for (i = 0; i < NOVERHEADBENCHMARKS; i++) {
         if (!results_stable(results->overhead_benchmarks[i])) {
             printf("Benchmarking overhead of a %s is not stable! Cannot continue\n", overhead_benchmark_params[i].name);
             print_all(results->overhead_benchmarks[i]);
@@ -846,7 +939,8 @@ static int check_overhead(struct bench_results *results) {
     return 1;
 }
 
-static int process_result(ccnt_t *array, const char *error) {
+static int process_result(ccnt_t *array, const char *error)
+{
     if (!results_stable(array)) {
         printf("%s cycles are not stable\n", error);
         print_all(array);
@@ -854,23 +948,27 @@ static int process_result(ccnt_t *array, const char *error) {
     return results_min(array);
 }
 
-static int process_results(struct bench_results *results) {
+static int 
+process_results(struct bench_results *results)
+{
     int i;
-    for(i = 0; i < ARRAY_SIZE(results->results); i++){
+    for (i = 0; i < ARRAY_SIZE(results->results); i++) {
         results->results[i] = process_result(results->benchmarks[i], benchmark_params[i].name);
     }
     return 1;
 }
 
-static void print_results(struct bench_results *results) {
+static void 
+print_results(struct bench_results *results)
+{
     int i;
-    for(i = 0; i < ARRAY_SIZE(results->results); i++){
+    for (i = 0; i < ARRAY_SIZE(results->results); i++) {
         printf("\t<result name = \"%s\">"CCNT_FORMAT"</result>\n", benchmark_params[i].name, results->results[i]);
     }
 }
 
 void
-ipc_benchmarks_new(struct env* env, const timing_print_mode_t print_mode)
+ipc_benchmarks_new(struct env* env)
 {
     uint32_t i;
     struct bench_results results;
@@ -882,14 +980,15 @@ ipc_benchmarks_new(struct env* env, const timing_print_mode_t print_mode)
 
     for (i = 0; i < RUNS; i++) {
         int j;
-        printf("\tDoing iteration %d\n",i);
-        for(j = 0; j < ARRAY_SIZE(benchmark_params); j++){
+        printf("\tDoing iteration %d\n", i);
+        for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
             printf("Running %s\n", params->caption);
-            run_bench(env, params->funca, params->funcb, params->same_vspace, params->prioa, params->priob, &end, &start);
-            if(end > start){
+            run_bench(env, params->funca, params->funcb, params->same_vspace, params->prioa, 
+                      params->priob, &end, &start);
+            if (end > start) {
                 results.benchmarks[j][i] = end - start;
-            }else{
+            } else {
                 results.benchmarks[j][i] = start - end;
             }
             results.benchmarks[j][i] -= results.overheads[params->overhead_id];
