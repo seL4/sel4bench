@@ -17,11 +17,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <simple/simple.h>
+#include <sched/sched.h>
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
 #include <string.h>
-#include <utils/ansi.h>
+#include <utils/util.h>
 #include <vka/vka.h>
 
 #include "timing.h"
@@ -806,6 +807,11 @@ init_a_config(env_t env, helper_thread_t *a, helper_func_t a_fn, int prioa)
     a->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
     a->config.priority = prioa;
     a->config.entry_point = a_fn;
+
+    /* create an sc for everyone now, change later */
+    a->config.create_sc = true;
+    a->config.sched_params = timeslice_params(10 * US_IN_MS);
+    a->config.sched_control = simple_get_sched_ctrl(&env->simple);
 #ifndef CONFIG_KERNEL_STABLE
     a->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
 #endif

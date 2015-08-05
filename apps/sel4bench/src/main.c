@@ -76,13 +76,14 @@ setup_fault_handler(env_t env)
     /* set the fault endpoint for the current thread */
     error = seL4_TCB_SetSpace(simple_get_tcb(&env->simple), fault_ep.cptr,
                               simple_get_cnode(&env->simple), seL4_NilData, simple_get_pd(&env->simple),
-                              seL4_NilData);
+                              seL4_NilData, 0);
     assert(!error);
 
     error = sel4utils_start_fault_handler(fault_ep.cptr,
                                           &env->vka, &env->vspace, seL4_MaxPrio, simple_get_cnode(&env->simple),
                                           seL4_NilData,
-                                          "sel4bench-fault-handler", &fault_handler);
+                                          "sel4bench-fault-handler", simple_get_sched_ctrl(&env->simple),
+                                          &fault_handler);
     assert(!error);
 
 }

@@ -37,6 +37,7 @@ menu "seL4 Libraries"
     source "libs/libsel4simple-stable/Kconfig"
     source "libs/libplatsupport/Kconfig"
     source "libs/libutils/Kconfig"
+    source "libs/libsel4sched/Kconfig"
 endmenu
 
 menu "seL4 Applications"
