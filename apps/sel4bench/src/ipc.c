@@ -2,17 +2,17 @@
  * Copyright 2014, NICTA
  *
  * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
+ * the GNU General Public License version 2. Note that NO WARRANTY is provided.
+ * See "LICENSE_GPLv2.txt" for details.
  *
- * @TAG(NICTA_BSD)
+ * @TAG(NICTA_GPL)
  */
-
 /* This is very much a work in progress IPC benchmarking set. Goal is
    to eventually use this to replace the rest of the random benchmarking
    happening in this app with just what we need */
 
 #include <autoconf.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,18 +24,9 @@
 #include <utils/ansi.h>
 #include <vka/vka.h>
 
-#include "timing.h"
 #include "benchmark.h"
-
-#ifdef CONFIG_ARCH_IA32
-#define CCNT64BIT
-#define CCNT_FORMAT "%llu"
-typedef uint64_t ccnt_t;
-#else
-#define CCNT32BIT
-typedef uint32_t ccnt_t;
-#define CCNT_FORMAT "%d"
-#endif
+#include "math.h"
+#include "timing.h"
 
 #define __SWINUM(x) ((x) & 0x00ffffff)
 
@@ -570,6 +561,16 @@ static const struct overhead_benchmark_params overhead_benchmark_params[] = {
     [REPLY_WAIT_10_OVERHEAD] = OVERHEAD_BENCH_PARAMS("reply wait"),
 };
 
+typedef struct bench_result {
+    double variance;
+    double stddev;
+    double stddev_pc;
+    double mean;
+    ccnt_t min;
+    ccnt_t max;
+} bench_result_t;
+
+
 struct bench_results {
     /* Raw results from benchmarking. These get checked for sanity */
     ccnt_t overhead_benchmarks[NOVERHEADBENCHMARKS][RUNS];
@@ -577,7 +578,7 @@ struct bench_results {
     /* A worst case overhead */
     ccnt_t overheads[NOVERHEADS];
     /* Calculated results to print out */
-    ccnt_t results[ARRAY_SIZE(benchmark_params)];
+    bench_result_t results[ARRAY_SIZE(benchmark_params)];
 };
 
 #if defined(CCNT32BIT)
@@ -904,20 +905,7 @@ print_all(ccnt_t *array)
     }
 }
 
-static ccnt_t 
-results_min(ccnt_t *array)
-{
-    uint32_t i;
-    ccnt_t min = array[0];
-    for (i = 1; i < RUNS; i++) {
-        if (array[i] < min) {
-            min = array[i];
-        }
-    }
-    return min;
-}
-
-static int 
+static int
 check_overhead(struct bench_results *results)
 {
     ccnt_t overhead[NOVERHEADBENCHMARKS];
@@ -930,7 +918,7 @@ check_overhead(struct bench_results *results)
             return 0;
 #endif
         }
-        overhead[i] = results_min(results->overhead_benchmarks[i]);
+        overhead[i] = results_min(results->overhead_benchmarks[i], RUNS);
     }
     /* Take the smallest overhead to be our benchmarking overhead */
     results->overheads[CALL_REPLY_WAIT_OVERHEAD] = MIN(overhead[CALL_OVERHEAD], overhead[REPLY_WAIT_OVERHEAD]);
@@ -939,13 +927,24 @@ check_overhead(struct bench_results *results)
     return 1;
 }
 
-static int process_result(ccnt_t *array, const char *error)
+static bench_result_t
+process_result(ccnt_t *array, const char *error)
 {
+    bench_result_t result;
+
     if (!results_stable(array)) {
         printf("%s cycles are not stable\n", error);
         print_all(array);
     }
-    return results_min(array);
+
+    result.min = results_min(array, RUNS);
+    result.max = results_max(array, RUNS);
+    result.mean = results_mean(array, RUNS);
+    result.variance = results_variance(array, result.mean, RUNS);
+    result.stddev = results_stddev(array, result.variance, RUNS);
+    result.stddev_pc = (double) result.stddev / (double) result.mean * 100;
+
+    return result;
 }
 
 static int 
@@ -963,7 +962,24 @@ print_results(struct bench_results *results)
 {
     int i;
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
-        printf("\t<result name = \"%s\">"CCNT_FORMAT"</result>\n", benchmark_params[i].name, results->results[i]);
+        printf("\t<result name = \"%s-min\">"CCNT_FORMAT"</result>\n",
+               benchmark_params[i].name, results->results[i].min);
+
+        printf("\t<result name = \"%s-max\">"CCNT_FORMAT"</result>\n",
+               benchmark_params[i].name, results->results[i].max);
+
+        printf("\t<result name = \"%s-variance\">%.2lf</result>\n",
+               benchmark_params[i].name, results->results[i].variance);
+
+        printf("\t<result name = \"%s-mean\">%.2lf</result>\n",
+               benchmark_params[i].name, results->results[i].mean);
+
+        printf("\t<result name = \"%s-stddev\">%.2lf</result>\n",
+               benchmark_params[i].name, results->results[i].stddev);
+
+        printf("\t<result name = \"%s-stddev%%\">%.0lf%%</result>\n",
+               benchmark_params[i].name, results->results[i].stddev_pc);
+
     }
 }
 
