@@ -582,7 +582,7 @@ struct bench_results {
 };
 
 #if defined(CCNT32BIT)
-static void 
+static void
 send_result(seL4_CPtr ep, ccnt_t result)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
@@ -590,7 +590,7 @@ send_result(seL4_CPtr ep, ccnt_t result)
     seL4_Send(ep, tag);
 }
 #elif defined(CCNT64BIT)
-static void 
+static void
 send_result(seL4_CPtr ep, ccnt_t result)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 2);
@@ -609,7 +609,7 @@ dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
     (void)tag;
 }
 
-static inline void 
+static inline void
 dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag)
 {
     (void)ep;
@@ -623,7 +623,7 @@ dummy_seL4_Wait(seL4_CPtr ep, void *badge)
     (void)badge;
 }
 
-static inline void 
+static inline void
 dummy_seL4_Reply(seL4_MessageInfo_t tag)
 {
     (void)tag;
@@ -679,7 +679,7 @@ IPC_REPLY_WAIT_FUNC(ipc_replywait_func, DO_REAL_REPLY_WAIT, dummy_seL4_Reply, se
 IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func2, DO_REAL_REPLY_WAIT_10, seL4_Reply, seL4_Wait, end, 10)
 IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func, DO_REAL_REPLY_WAIT_10, dummy_seL4_Reply, seL4_Wait, start, 10)
 
-uint32_t 
+uint32_t
 ipc_wait_func(int argc, char *argv[])
 {
     uint32_t i;
@@ -698,7 +698,7 @@ ipc_wait_func(int argc, char *argv[])
     return 0;
 }
 
-uint32_t 
+uint32_t
 ipc_send_func(int argc, char *argv[])
 {
     uint32_t i;
@@ -741,7 +741,7 @@ ipc_send_func(int argc, char *argv[])
     timing_destroy(); \
 } while(0)
 
-static int 
+static int
 results_stable(ccnt_t *array)
 {
     uint32_t i;
@@ -753,7 +753,7 @@ results_stable(ccnt_t *array)
     return 1;
 }
 
-static void 
+static void
 measure_overhead(struct bench_results *results)
 {
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
@@ -792,7 +792,7 @@ static ccnt_t get_result(seL4_CPtr ep)
 #error Unknown ccnt size
 #endif
 
-void 
+void
 init_a_config(env_t env, helper_thread_t *a, helper_func_t a_fn, int prioa)
 {
     /* set up process a */
@@ -813,11 +813,11 @@ init_a_config(env_t env, helper_thread_t *a, helper_func_t a_fn, int prioa)
 
 }
 
-void 
+void
 init_b_config(env_t env, helper_thread_t *b, helper_func_t b_fn, int priob,
-                              helper_thread_t *a, int same_vspace)
+              helper_thread_t *a, int same_vspace)
 {
-   /* set up process b - b's config is nearly the same as a's */
+    /* set up process b - b's config is nearly the same as a's */
     b->config = a->config;
     b->config.priority = priob;
     b->config.entry_point = b_fn;
@@ -831,7 +831,7 @@ init_b_config(env_t env, helper_thread_t *b, helper_func_t b_fn, int priob,
     }
 }
 
-void 
+void
 run_bench(env_t env, helper_func_t a_fn, helper_func_t b_fn, int same_vspace, int prioa, int priob, ccnt_t *ret1, ccnt_t *ret2)
 {
     UNUSED int error;
@@ -846,7 +846,7 @@ run_bench(env_t env, helper_func_t a_fn, helper_func_t b_fn, int same_vspace, in
     assert(error == 0);
 
     init_b_config(env, &b, b_fn, priob, &a, same_vspace);
-    
+
     error = sel4utils_configure_process_custom(&b.process, &env->vka, &env->vspace, b.config);
     assert(error == 0);
 
@@ -947,7 +947,7 @@ process_result(ccnt_t *array, const char *error)
     return result;
 }
 
-static int 
+static int
 process_results(struct bench_results *results)
 {
     int i;
@@ -957,10 +957,11 @@ process_results(struct bench_results *results)
     return 1;
 }
 
-static void 
+static void
 print_results(struct bench_results *results)
 {
     int i;
+
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
         printf("\t<result name = \"%s-min\">"CCNT_FORMAT"</result>\n",
                benchmark_params[i].name, results->results[i].min);
@@ -1000,7 +1001,7 @@ ipc_benchmarks_new(struct env* env)
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
             printf("Running %s\n", params->caption);
-            run_bench(env, params->funca, params->funcb, params->same_vspace, params->prioa, 
+            run_bench(env, params->funca, params->funcb, params->same_vspace, params->prioa,
                       params->priob, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
