@@ -479,12 +479,6 @@
 
 
 #define OVERHEAD_BENCH_PARAMS(n) { .name = n }
-#define BENCH_PARAMS(n, c, fa, fb, v, pa, pb, o) { .name = n, .caption = c,    \
-                                                   .funca = (helper_func_t)fa, \
-                                                   .funcb = (helper_func_t)fb, \
-                                                   .prioa = pa, .priob = pb,   \
-                                                   .same_vspace = v,           \
-                                                   .overhead_id = o            }
 
 enum overhead_benchmarks {
     CALL_OVERHEAD,
@@ -505,14 +499,14 @@ enum overheads {
     NOVERHEADS
 };
 
-struct benchmark_params {
+typedef struct benchmark_params {
     const char* name;
     const char* caption;
-    helper_func_t funca, funcb;
-    int prioa, priob;
-    int same_vspace;
+    helper_func_t server_fn, client_fn;
+    bool same_vspace;
+    uint8_t server_prio, client_prio;
     enum overheads overhead_id;
-};
+} benchmark_params_t;
 
 struct overhead_benchmark_params {
     const char* name;
@@ -538,28 +532,127 @@ uint32_t ipc_replywait_10_func(int argc, char *argv[]);
 uint32_t ipc_send_func(int argc, char *argv[]);
 uint32_t ipc_wait_func(int argc, char *argv[]);
 
-
-static const struct benchmark_params benchmark_params[] = {
-    BENCH_PARAMS("Intra-AS Call"                   , "Call+ReplyWait Intra-AS test 1"      , ipc_call_func2,    ipc_replywait_func2,    TRUE,  100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Intra-AS ReplyWait"              , "Call+ReplyWait Intra-AS test 2"      , ipc_call_func,     ipc_replywait_func,     TRUE,  100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Call"                   , "Call+ReplyWait Inter-AS test 1"      , ipc_call_func2,    ipc_replywait_func2,    FALSE, 100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS ReplyWait"              , "Call+ReplyWait Inter-AS test 2"      , ipc_call_func,     ipc_replywait_func,     FALSE, 100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Call (Low to High)"     , "Call+ReplyWait Different prio test 1", ipc_call_func2,    ipc_replywait_func2,    FALSE,  50, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS ReplyWait (High to Low)", "Call+ReplyWait Different prio test 4", ipc_call_func,     ipc_replywait_func,     FALSE,  50, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Call (High to Low)"     , "Call+ReplyWait Different prio test 3", ipc_call_func2,    ipc_replywait_func2,    FALSE, 100,  50, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS ReplyWait (Low to High)", "Call+ReplyWait Different prio test 2", ipc_call_func,     ipc_replywait_func,     FALSE, 100,  50, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Send"                   , "Send test"                           , ipc_send_func,     ipc_wait_func,          FALSE, 100, 100, SEND_WAIT_OVERHEAD         ),
-    BENCH_PARAMS("Inter-AS Call(10)"               , "Call+ReplyWait long message test 1"  , ipc_call_10_func2, ipc_replywait_10_func2, FALSE, 100, 100, CALL_REPLY_WAIT_10_OVERHEAD),
-    BENCH_PARAMS("Inter-AS ReplyWait(10)"          , "Call+ReplyWait long message test 2"  , ipc_call_10_func,  ipc_replywait_10_func,  FALSE, 100, 100, CALL_REPLY_WAIT_10_OVERHEAD)
+/* array of benchmarks to run */
+static const benchmark_params_t benchmark_params[] = {
+    {
+        .name        = "Intra-AS Call",
+        .caption     = "Call+ReplyWait Intra-AS test 1",
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = true,
+        .client_prio = 100,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Intra-AS ReplyWait",
+        .caption     = "Call+ReplyWait Intra-AS test 2",
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = true,
+        .client_prio = 100,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS Call",
+        .caption     = "Call+ReplyWait Inter-AS test 1",
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS ReplyWait",
+        .caption     = "Call+ReplyWait Inter-AS test 2",
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS Call (Low to High)",
+        .caption     = "Call+ReplyWait Different prio test 1",
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .client_prio = 50,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS ReplyWait (High to Low)",
+        .caption     = "Call+ReplyWait Different prio test 4",
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .client_prio = 50,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS Call (High to Low)",
+        .caption     = "Call+ReplyWait Different prio test 3",
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 50,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS ReplyWait (Low to High)",
+        .caption     = "Call+ReplyWait Different prio test 2",
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 50,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS Send",
+        .caption     = "Send test",
+        .client_fn   = ipc_send_func,
+        .server_fn   = ipc_wait_func,
+        .same_vspace = FALSE,
+        .client_prio = 100,
+        .server_prio = 100,
+        .overhead_id = SEND_WAIT_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS Call(10)",
+        .caption     = "Call+ReplyWait long message test 1",
+        .client_fn   = ipc_call_10_func2,
+        .server_fn   = ipc_replywait_10_func2,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
+    },
+    {
+        .name        = "Inter-AS ReplyWait(10)",
+        .caption     = "Call+ReplyWait long message test 2",
+        .client_fn   = ipc_call_10_func,
+        .server_fn   = ipc_replywait_10_func,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
+    }
 };
 
 static const struct overhead_benchmark_params overhead_benchmark_params[] = {
-    [CALL_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("call"      ),
-    [REPLY_WAIT_OVERHEAD]    = OVERHEAD_BENCH_PARAMS("reply wait"),
-    [SEND_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("send"      ),
-    [WAIT_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("wait"      ),
-    [CALL_10_OVERHEAD]       = OVERHEAD_BENCH_PARAMS("call"      ),
-    [REPLY_WAIT_10_OVERHEAD] = OVERHEAD_BENCH_PARAMS("reply wait"),
+    [CALL_OVERHEAD]          = {"call"},
+    [REPLY_WAIT_OVERHEAD]    = {"reply wait"},
+    [SEND_OVERHEAD]          = {"send"},
+    [WAIT_OVERHEAD]          = {"wait"},
+    [CALL_10_OVERHEAD]       = {"call"},
+    [REPLY_WAIT_10_OVERHEAD] = {"reply wait"},
 };
 
 typedef struct bench_result {
@@ -794,101 +887,96 @@ static ccnt_t get_result(seL4_CPtr ep)
 #endif
 
 void
-init_a_config(env_t env, helper_thread_t *a, helper_func_t a_fn, int prioa)
+init_client_config(env_t env, helper_thread_t *client, helper_func_t client_fn, int prio)
 {
     /* set up process a */
-    bzero(&a->config, sizeof(a->config));
-    a->config.is_elf = false;
-    a->config.create_cspace = true;
-    a->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
-    a->config.create_vspace = true;
-    a->config.reservations = &env->region;
-    a->config.num_reservations = 1;
-    a->config.create_fault_endpoint = false;
-    a->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
-    a->config.priority = prioa;
-    a->config.entry_point = a_fn;
-
-    /* create an sc for everyone now, change later */
-    a->config.create_sc = true;
-    a->config.sched_params = timeslice_params(10 * US_IN_MS);
-    a->config.sched_control = simple_get_sched_ctrl(&env->simple);
+    bzero(&client->config, sizeof(client->config));
+    client->config.is_elf = false;
+    client->config.create_cspace = true;
+    client->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
+    client->config.create_vspace = true;
+    client->config.reservations = &env->region;
+    client->config.num_reservations = 1;
+    client->config.create_fault_endpoint = false;
+    client->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
+    client->config.priority = prio;
+    client->config.entry_point = client_fn;
 #ifndef CONFIG_KERNEL_STABLE
-    a->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
+    client->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
 #endif
 
 }
 
 void
-init_b_config(env_t env, helper_thread_t *b, helper_func_t b_fn, int priob,
-              helper_thread_t *a, int same_vspace)
+init_server_config(env_t env, helper_thread_t *server, helper_func_t server_fn, int prio,
+                   helper_thread_t *client, int same_vspace)
 {
     /* set up process b - b's config is nearly the same as a's */
-    b->config = a->config;
-    b->config.priority = priob;
-    b->config.entry_point = b_fn;
+    server->config = client->config;
+    server->config.priority = prio;
+    server->config.entry_point = server_fn;
 
     if (same_vspace) {
         /* b shares a's cspace and vspace */
-        b->config.create_cspace = false;
-        b->config.cnode = a->process.cspace;
-        b->config.create_vspace = false;
-        b->config.vspace = &a->process.vspace;
+        server->config.create_cspace = false;
+        server->config.cnode = client->process.cspace;
+        server->config.create_vspace = false;
+        server->config.vspace = &client->process.vspace;
     }
 }
 
 void
-run_bench(env_t env, helper_func_t a_fn, helper_func_t b_fn, int same_vspace, int prioa, int priob, ccnt_t *ret1, ccnt_t *ret2)
+run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
 {
     UNUSED int error;
-    helper_thread_t a, b;
+    helper_thread_t client, server;
 
     timing_init();
 
     /* configure processes */
-    init_a_config(env, &a, a_fn, prioa);
+    init_client_config(env, &client, params.client_fn, params.client_prio);
 
-    error = sel4utils_configure_process_custom(&a.process, &env->vka, &env->vspace, a.config);
+    error = sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config);
     assert(error == 0);
 
-    init_b_config(env, &b, b_fn, priob, &a, same_vspace);
+    init_server_config(env, &server, params.server_fn, params.server_prio, &client, params.same_vspace);
 
-    error = sel4utils_configure_process_custom(&b.process, &env->vka, &env->vspace, b.config);
+    error = sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config);
     assert(error == 0);
 
     /* clone the text segment into the vspace - note that as we are only cloning the text
      * segment, you will not be able to use anything that relies on initialisation in benchmark
      * threads - like printf, (but seL4_Debug_PutChar is ok)
      */
-    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &a.process.vspace, env->region.reservation);
+    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation);
     assert(error == 0);
 
-    if (!same_vspace) {
-        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &b.process.vspace, env->region.reservation);
+    if (!params.same_vspace) {
+        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation);
         assert(error == 0);
     }
 
     /* copy endpoint cptrs into a and b's respective cspaces*/
-    a.ep = sel4utils_copy_cap_to_process(&a.process, env->ep_path);
-    a.result_ep = sel4utils_copy_cap_to_process(&a.process, env->result_ep_path);
+    client.ep = sel4utils_copy_cap_to_process(&client.process, env->ep_path);
+    client.result_ep = sel4utils_copy_cap_to_process(&client.process, env->result_ep_path);
 
-    if (!same_vspace) {
-        b.ep = sel4utils_copy_cap_to_process(&b.process, env->ep_path);
-        b.result_ep = sel4utils_copy_cap_to_process(&b.process, env->result_ep_path);
+    if (!params.same_vspace) {
+        server.ep = sel4utils_copy_cap_to_process(&server.process, env->ep_path);
+        server.result_ep = sel4utils_copy_cap_to_process(&server.process, env->result_ep_path);
     } else {
-        b.ep = a.ep;
-        b.result_ep = a.result_ep;
+        server.ep = client.ep;
+        server.result_ep = client.result_ep;
     }
 
     /* set up args */
-    sel4utils_create_word_args(a.argv_strings, a.argv, NUM_ARGS, a.ep, a.result_ep);
-    sel4utils_create_word_args(b.argv_strings, b.argv, NUM_ARGS, b.ep, b.result_ep);
+    sel4utils_create_word_args(client.argv_strings, client.argv, NUM_ARGS, client.ep, client.result_ep);
+    sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
 
     /* start processes */
-    error = sel4utils_spawn_process(&a.process, &env->vka, &env->vspace, NUM_ARGS, a.argv, 1);
+    error = sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1);
     assert(error == 0);
 
-    error = sel4utils_spawn_process(&b.process, &env->vka, &env->vspace, NUM_ARGS, b.argv, 1);
+    error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
     assert(error == 0);
 
     /* wait for results */
@@ -896,8 +984,8 @@ run_bench(env_t env, helper_func_t a_fn, helper_func_t b_fn, int same_vspace, in
     *ret2 = get_result(env->result_ep.cptr);
 
     /* clean up - clean b first in case it is sharing a's cspace and vspace */
-    sel4utils_destroy_process(&b.process, &env->vka);
-    sel4utils_destroy_process(&a.process, &env->vka);
+    sel4utils_destroy_process(&server.process, &env->vka);
+    sel4utils_destroy_process(&client.process, &env->vka);
 
     timing_destroy();
 }
@@ -1007,8 +1095,7 @@ ipc_benchmarks_new(struct env* env)
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
             printf("Running %s\n", params->caption);
-            run_bench(env, params->funca, params->funcb, params->same_vspace, params->prioa,
-                      params->priob, &end, &start);
+            run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
             } else {
