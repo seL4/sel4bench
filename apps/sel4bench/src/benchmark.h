@@ -49,7 +49,7 @@ struct env {
 };
 
 typedef struct env *env_t;
-typedef seL4_Word (*helper_func_t)(seL4_Word, seL4_Word, seL4_Word, seL4_Word);
+typedef seL4_Word (*helper_func_t)(int argc, char *argv[]);
 
 void ipc_benchmarks_new(struct env* env);
 void run_benchmarks(void);
