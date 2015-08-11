@@ -29,448 +29,17 @@
 #include "math.h"
 #include "timing.h"
 
+/* ipc.h requires these defines */
 #define __SWINUM(x) ((x) & 0x00ffffff)
+#define NOPS ""
+
+#include <arch/ipc.h>
 
 #define NUM_ARGS 2
 #define WARMUPS 16
 #define RUNS 16
 #define OVERHEAD_RETRIES 4
 
-#define NOPS ""
-
-#define DO_CALL_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysCall) \
-        : \
-         "ecx", \
-         "edx" \
-    ); \
-} while(0)
-#define DO_CALL_10_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "pushl %%ebp \n"\
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        "popl %%ebp \n"\
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysCall) \
-        : \
-         "ecx", \
-         "edx", \
-         "edi" \
-    ); \
-} while(0)
-#define DO_SEND_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    uint32_t tag_copy = tag.words[0]; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+S" (tag_copy), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysSend) \
-        : \
-         "ecx", \
-         "edx" \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysReplyWait) \
-        : \
-         "ecx", \
-         "edx" \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_10_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "pushl %%ebp \n"\
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        "popl %%ebp \n"\
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysReplyWait) \
-        : \
-         "ecx", \
-         "edx", \
-         "edi" \
-    ); \
-} while(0)
-#define DO_WAIT_X86(ep, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysWait) \
-        : \
-         "ecx", \
-         "edx", \
-         "esi" \
-    ); \
-} while(0)
-#define DO_CALL_ARM(ep, tag, swi) do { \
-    register seL4_Word dest asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysCall; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysCall), "r"(scno) \
-    ); \
-} while(0)
-#define DO_CALL_10_ARM(ep, tag, swi) do { \
-    register seL4_Word dest asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysCall; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysCall), "r"(scno) \
-        : "r2", "r3", "r4", "r5" \
-    ); \
-} while(0)
-#define DO_SEND_ARM(ep, tag, swi) do { \
-    register seL4_Word dest asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysSend; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysSend), "r"(scno) \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_10_ARM(ep, tag, swi) do { \
-    register seL4_Word src asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysReplyWait; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyWait), "r"(scno) \
-        : "r2", "r3", "r4", "r5" \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_ARM(ep, tag, swi) do { \
-    register seL4_Word src asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysReplyWait; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyWait), "r"(scno) \
-    ); \
-} while(0)
-#define DO_WAIT_ARM(ep, swi) do { \
-    register seL4_Word src asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1"); \
-    register seL4_Word scno asm("r7") = seL4_SysWait; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(src), "=r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysWait), "r"(scno) \
-    ); \
-} while(0)
-
-#define DO_CALL_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep; \
-    asm volatile(\
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag), \
-            "+b" (ep_copy) \
-            : \
-            "a" (seL4_SysCall) \
-            : \
-            "rcx", "rdx"\
-            ); \
-} while (0)
-
-#define DO_CALL_10_X64(ep, tag, sys) do {\
-    uint64_t ep_copy = ep; \
-    seL4_Word mr0 = 0; \
-    seL4_Word mr1 = 1; \
-    register seL4_Word mr2 asm ("r8") = 2;  \
-    register seL4_Word mr3 asm ("r9") = 3;  \
-    register seL4_Word mr4 asm ("r10") = 4; \
-    register seL4_Word mr5 asm ("r11") = 5; \
-    register seL4_Word mr6 asm ("r12") = 6; \
-    register seL4_Word mr7 asm ("r13") = 7; \
-    register seL4_Word mr8 asm ("r14") = 8; \
-    register seL4_Word mr9 asm ("r15") = 9; \
-    asm volatile(                           \
-            "push   %%rbp \n"               \
-            "movq   %%rcx, %%rbp \n"        \
-            "movq   %%rsp, %%rcx \n"        \
-            "leaq   1f, %%rdx \n"           \
-            "1: \n"                         \
-            sys" \n"                        \
-            "movq   %%rbp, %%rcx \n"        \
-            "pop    %%rbp \n"               \
-            :                               \
-            "+S" (tag),                     \
-            "+b" (ep_copy),                 \
-            "+D" (mr0), "+c" (mr1), "+r" (mr2), "+r" (mr3), \
-            "+r" (mr4), "+r" (mr5), "+r" (mr6), "+r" (mr7), \
-            "+r" (mr8), "+r" (mr9)          \
-            :                               \
-            "a" (seL4_SysCall)              \
-            :                               \
-            "rdx"                           \
-            );                              \
-} while (0)
-
-#define DO_SEND_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep; \
-    uint32_t tag_copy = tag.words[0]; \
-    asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag_copy), \
-            "+b" (ep_copy) \
-            : \
-            "a" (seL4_SysSend) \
-            : \
-            "rcx", "rdx" \
-            ); \
-} while (0)
-
-#define DO_REPLY_WAIT_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep; \
-    asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag), \
-            "+b" (ep_copy) \
-            : \
-            "a"(seL4_SysReplyWait) \
-            : \
-            "rcx", "rdx" \
-            ); \
-} while (0)
-
-#define DO_REPLY_WAIT_10_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep;                      \
-    seL4_Word mr0 = 0;                          \
-    seL4_Word mr1 = -1;                         \
-    register seL4_Word mr2 asm ("r8") = -2;     \
-    register seL4_Word mr3 asm ("r9") = -3;     \
-    register seL4_Word mr4 asm ("r10") = -4;    \
-    register seL4_Word mr5 asm ("r11") = -5;    \
-    register seL4_Word mr6 asm ("r12") = -6;    \
-    register seL4_Word mr7 asm ("r13") = -7;    \
-    register seL4_Word mr8 asm ("r14") = -8;    \
-    register seL4_Word mr9 asm ("r15") = -9;    \
-    asm volatile(                               \
-            "push   %%rbp \n"                   \
-            "movq   %%rcx, %%rbp \n"            \
-            "movq   %%rsp, %%rcx \n"            \
-            "leaq   1f, %%rdx \n"               \
-            "1: \n"                             \
-            sys" \n"                            \
-            "movq   %%rbp, %%rcx \n"            \
-            "pop    %%rbp \n"                   \
-            :                                   \
-            "+S" (tag),                         \
-            "+b" (ep_copy),                     \
-            "+D" (mr0), "+c" (mr1), "+r" (mr2), \
-            "+r" (mr3), "+r" (mr4), "+r" (mr5), \
-            "+r" (mr6), "+r" (mr7), "+r" (mr8), \
-            "+r" (mr9)                          \
-            :                                   \
-            "a" (seL4_SysReplyWait)             \
-            :                                   \
-            "rdx"                               \
-            );                                  \
-} while (0)
-
-#define DO_WAIT_X64(ep, sys) do { \
-    uint64_t ep_copy = ep; \
-    uint64_t tag = 0; \
-    asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag) ,\
-            "+b" (ep_copy) \
-            : \
-            "a" (seL4_SysWait) \
-            :  "rcx", "rdx" \
-            ); \
-} while (0)
-
-#define READ_COUNTER_ARMV6(var) do { \
-    asm volatile("b 2f\n\
-                1:mrc p15, 0, %[counter], c15, c12," SEL4BENCH_ARM1136_COUNTER_CCNT "\n\
-                  bx lr\n\
-                2:sub r8, pc, #16\n\
-                  .word 0xe7f000f0" \
-        : [counter] "=r"(var) \
-        : \
-        : "r8", "lr"); \
-} while(0)
-
-#define READ_COUNTER_ARMV7(var) do { \
-    asm volatile("mrc p15, 0, %0, c9, c13, 0\n" \
-        : "=r"(var) \
-    ); \
-} while(0)
-
-#define READ_COUNTER_X86(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-        "movl $0, %%eax \n" \
-        "movl $0, %%ecx \n" \
-        "cpuid \n" \
-        "rdtsc \n" \
-        "movl %%edx, %0 \n" \
-        "movl %%eax, %1 \n" \
-        "movl $0, %%eax \n" \
-        "movl $0, %%ecx \n" \
-        "cpuid \n" \
-        : \
-         "=r"(high), \
-         "=r"(low) \
-        : \
-        : "eax", "ebx", "ecx", "edx" \
-    ); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while(0)
-
-#define READ_COUNTER_X64_BEFORE(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-            "cpuid \n" \
-            "rdtsc \n" \
-            "movl %%edx, %0 \n" \
-            "movl %%eax, %1 \n" \
-            : "=r"(high), "=r"(low) \
-            : \
-            : "%rax", "%rbx", "%rcx", "%rdx"); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while (0)
-
-#define READ_COUNTER_X64_AFTER(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-            "rdtscp \n" \
-            "movl %%edx, %0 \n" \
-            "movl %%eax, %1 \n" \
-            "cpuid \n" \
-            : "=r"(high), "=r"(low) \
-            : \
-            : "%rax", "rbx", "%rcx", "%rdx"); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while (0)
-
-#if defined(CONFIG_ARCH_ARM)
-#define DO_REAL_CALL(ep, tag) DO_CALL_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_CALL(ep, tag) DO_CALL_ARM(ep, tag, "nop")
-#define DO_REAL_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_ARM(ep, tag, "nop")
-#define DO_REAL_CALL_10(ep, tag) DO_CALL_10_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_CALL_10(ep, tag) DO_CALL_10_ARM(ep, tag, "nop")
-#define DO_REAL_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_ARM(ep, tag, "nop")
-#define DO_REAL_SEND(ep, tag) DO_SEND_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_SEND(ep, tag) DO_SEND_ARM(ep, tag, "nop")
-#define DO_REAL_WAIT(ep) DO_WAIT_ARM(ep, "swi %[swi_num]")
-#define DO_NOP_WAIT(ep) DO_WAIT_ARM(ep, "nop")
-#elif defined(CONFIG_ARCH_IA32)
-
-#ifdef CONFIG_X86_64
-#define DO_REAL_CALL(ep, tag) DO_CALL_X64(ep, tag, "sysenter")
-#define DO_NOP_CALL(ep, tg) DO_CALL_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X64(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_CALL_10(ep, tag) DO_CALL_10_X64(ep, tag, "sysenter")
-#define DO_NOP_CALL_10(ep, tag) DO_CALL_10_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X64(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_SEND(ep, tag) DO_SEND_X64(ep, tag, "sysenter")
-#define DO_NOP_SEND(ep, tag) DO_SEND_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_WAIT(ep) DO_WAIT_X64(ep, "sysenter")
-#define DO_NOP_WAIT(ep) DO_WAIT_X64(ep, ".byte 0x90")
-#else
-#define DO_REAL_CALL(ep, tag) DO_CALL_X86(ep, tag, "sysenter")
-#define DO_NOP_CALL(ep, tag) DO_CALL_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X86(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_CALL_10(ep, tag) DO_CALL_10_X86(ep, tag, "sysenter")
-#define DO_NOP_CALL_10(ep, tag) DO_CALL_10_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X86(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_SEND(ep, tag) DO_SEND_X86(ep, tag, "sysenter")
-#define DO_NOP_SEND(ep, tag) DO_SEND_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_WAIT(ep) DO_WAIT_X86(ep, "sysenter")
-#define DO_NOP_WAIT(ep) DO_WAIT_X86(ep, ".byte 0x66\n.byte 0x90")
-#endif
-#else
-#error Unsupported arch
-#endif
-
-#if defined(CONFIG_ARCH_ARM_V6)
-#define READ_COUNTER_BEFORE READ_COUNTER_ARMV6
-#define READ_COUNTER_AFTER  READ_COUNTER_ARMV6
-#elif defined(CONFIG_ARCH_ARM_V7A)
-#define READ_COUNTER_BEFORE READ_COUNTER_ARMV7
-#define READ_COUNTER_AFTER  READ_COUNTER_ARMV7
-#elif defined(CONFIG_ARCH_IA32)
-#ifdef CONFIG_X86_64
-#define READ_COUNTER_BEFORE READ_COUNTER_X64_BEFORE
-#define READ_COUNTER_AFTER  READ_COUNTER_X64_AFTER
-#define ALLOW_UNSTABLE_OVERHEAD
-#else
-#define READ_COUNTER_BEFORE READ_COUNTER_X86
-#define READ_COUNTER_AFTER  READ_COUNTER_X86
-#define ALLOW_UNSTABLE_OVERHEAD
-#endif
-#else
-#error Unsupported arch
-#endif
 
 /* The fence is designed to try and prevent the compiler optimizing across code boundaries
    that we don't want it to. The reason for preventing optimization is so that things like
@@ -499,12 +68,20 @@ enum overheads {
     NOVERHEADS
 };
 
+typedef enum dir {
+    /* client ---> server */
+    DIR_TO,
+    /* server --> client */
+    DIR_FROM
+} dir_t;
+
 typedef struct benchmark_params {
     const char* name;
-    const char* caption;
+    dir_t direction;
     helper_func_t server_fn, client_fn;
     bool same_vspace;
     uint8_t server_prio, client_prio;
+    uint8_t length;
     enum overheads overhead_id;
 } benchmark_params_t;
 
@@ -534,114 +111,127 @@ uint32_t ipc_wait_func(int argc, char *argv[]);
 
 /* array of benchmarks to run */
 static const benchmark_params_t benchmark_params[] = {
+    /* one way IPC benchmarks - varying size, direction and priority */
     {
-        .name        = "Intra-AS Call",
-        .caption     = "Call+ReplyWait Intra-AS test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = true,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Intra-AS ReplyWait",
-        .caption     = "Call+ReplyWait Intra-AS test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = true,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call",
-        .caption     = "Call+ReplyWait Inter-AS test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait",
-        .caption     = "Call+ReplyWait Inter-AS test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call (Low to High)",
-        .caption     = "Call+ReplyWait Different prio test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
         .client_prio = 50,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait (High to Low)",
-        .caption     = "Call+ReplyWait Different prio test 4",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
         .client_prio = 50,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call (High to Low)",
-        .caption     = "Call+ReplyWait Different prio test 3",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 50,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait (Low to High)",
-        .caption     = "Call+ReplyWait Different prio test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 50,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Send",
-        .caption     = "Send test",
+        .name        = "seL4_Send",
+        .direction   = DIR_TO,
         .client_fn   = ipc_send_func,
         .server_fn   = ipc_wait_func,
         .same_vspace = FALSE,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = SEND_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call(10)",
-        .caption     = "Call+ReplyWait long message test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_10_func2,
         .server_fn   = ipc_replywait_10_func2,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait(10)",
-        .caption     = "Call+ReplyWait long message test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_10_func,
         .server_fn   = ipc_replywait_10_func,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     }
 };
@@ -926,7 +516,7 @@ init_server_config(env_t env, helper_thread_t *server, helper_func_t server_fn, 
 }
 
 void
-run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
+run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret2)
 {
     UNUSED int error;
     helper_thread_t client, server;
@@ -934,12 +524,12 @@ run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
     timing_init();
 
     /* configure processes */
-    init_client_config(env, &client, params.client_fn, params.client_prio);
+    init_client_config(env, &client, params->client_fn, params->client_prio);
 
     error = sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config);
     assert(error == 0);
 
-    init_server_config(env, &server, params.server_fn, params.server_prio, &client, params.same_vspace);
+    init_server_config(env, &server, params->server_fn, params->server_prio, &client, params->same_vspace);
 
     error = sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config);
     assert(error == 0);
@@ -951,7 +541,7 @@ run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
     error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation);
     assert(error == 0);
 
-    if (!params.same_vspace) {
+    if (!params->same_vspace) {
         error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation);
         assert(error == 0);
     }
@@ -960,7 +550,7 @@ run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
     client.ep = sel4utils_copy_cap_to_process(&client.process, env->ep_path);
     client.result_ep = sel4utils_copy_cap_to_process(&client.process, env->result_ep_path);
 
-    if (!params.same_vspace) {
+    if (!params->same_vspace) {
         server.ep = sel4utils_copy_cap_to_process(&server.process, env->ep_path);
         server.result_ep = sel4utils_copy_cap_to_process(&server.process, env->result_ep_path);
     } else {
@@ -1051,31 +641,56 @@ process_results(struct bench_results *results)
     return 1;
 }
 
+/* for pasting into a spreadsheet or parsing */
+static void 
+print_results_tsv(struct bench_results *results) {
+
+    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tLength\tmin\tmax\t"
+            "mean\tvariance\tstddev\tstddev %%\n");
+    for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
+        printf("%s\t", benchmark_params[i].name);
+        printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
+        printf("%d\t", benchmark_params[i].client_prio);
+        printf("%d\t", benchmark_params[i].server_prio);
+        printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
+        printf("%d\t", benchmark_params[i].length);
+        printf("%d\t", results->results[i].min);
+        printf("%d\t", results->results[i].max);
+        printf("%.2lf\t", results->results[i].mean);
+        printf("%.2lf\t", results->results[i].variance);
+        printf("%.2lf\t", results->results[i].stddev);
+        printf("%.0lf%%\n", results->results[i].stddev_pc);
+    }
+}
+
+static void 
+single_xml_result(int result, int value, char *name) 
+{
+
+    printf("\t<result name=\"");
+    printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
+    printf("-%s", benchmark_params[result].name);
+    printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
+                benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
+                benchmark_params[result].server_prio, benchmark_params[result].length);
+    printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
+
+}
+
+
+/* for bamboo */
 static void
-print_results(struct bench_results *results)
+print_results_xml(struct bench_results *results)
 {
     int i;
 
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
-        printf("\t<result name = \"%s-min\">"CCNT_FORMAT"</result>\n",
-               benchmark_params[i].name, results->results[i].min);
-
-        printf("\t<result name = \"%s-max\">"CCNT_FORMAT"</result>\n",
-               benchmark_params[i].name, results->results[i].max);
-
-        printf("\t<result name = \"%s-variance\">%.2lf</result>\n",
-               benchmark_params[i].name, results->results[i].variance);
-
-        printf("\t<result name = \"%s-mean\">%.2lf</result>\n",
-               benchmark_params[i].name, results->results[i].mean);
-
-        printf("\t<result name = \"%s-stddev\">%.2lf</result>\n",
-               benchmark_params[i].name, results->results[i].stddev);
-
-        printf("\t<result name = \"%s-stddev%%\">%.0lf%%</result>\n",
-               benchmark_params[i].name, results->results[i].stddev_pc);
-
+        single_xml_result(i, results->results[i].min, "min");
+        single_xml_result(i, results->results[i].max, "max");
+        single_xml_result(i, results->results[i].mean, "mean");
+        single_xml_result(i, results->results[i].stddev, "stdev");
     }
+
 }
 
 void
@@ -1091,10 +706,16 @@ ipc_benchmarks_new(struct env* env)
 
     for (i = 0; i < RUNS; i++) {
         int j;
-        printf("\tDoing iteration %d\n", i);
+        printf("--------------------------------------------------\n");
+        printf("Doing iteration %d\n", i);
+        printf("--------------------------------------------------\n");
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
-            printf("Running %s\n", params->caption);
+            printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
+                    params->name,
+                    params->direction == DIR_TO ? "client --> server" : "server --> client",
+                    params->client_prio, params->server_prio, 
+                    params->same_vspace ? "same" : "diff", params->length);
             run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
@@ -1107,6 +728,15 @@ ipc_benchmarks_new(struct env* env)
     if (!process_results(&results)) {
         return;
     }
-    print_results(&results);
+    printf("--------------------------------------------------\n");
+    printf("XML results\n");
+    printf("--------------------------------------------------\n");
+    print_results_xml(&results);
+    printf("--------------------------------------------------\n");
+    printf("TSV results\n");
+    printf("--------------------------------------------------\n");
+    print_results_tsv(&results);
+    printf("--------------------------------------------------\n");
+
 }
 
