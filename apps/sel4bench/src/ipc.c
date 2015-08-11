@@ -67,12 +67,20 @@ enum overheads {
     NOVERHEADS
 };
 
+typedef enum dir {
+    /* client ---> server */
+    DIR_TO,
+    /* server --> client */
+    DIR_FROM
+} dir_t;
+
 typedef struct benchmark_params {
     const char* name;
-    const char* caption;
+    dir_t direction;
     helper_func_t server_fn, client_fn;
     bool same_vspace;
     uint8_t server_prio, client_prio;
+    uint8_t length;
     enum overheads overhead_id;
 } benchmark_params_t;
 
@@ -102,114 +110,127 @@ uint32_t ipc_wait_func(int argc, char *argv[]);
 
 /* array of benchmarks to run */
 static const benchmark_params_t benchmark_params[] = {
+    /* one way IPC benchmarks - varying size, direction and priority */
     {
-        .name        = "Intra-AS Call",
-        .caption     = "Call+ReplyWait Intra-AS test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = true,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Intra-AS ReplyWait",
-        .caption     = "Call+ReplyWait Intra-AS test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = true,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call",
-        .caption     = "Call+ReplyWait Inter-AS test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait",
-        .caption     = "Call+ReplyWait Inter-AS test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call (Low to High)",
-        .caption     = "Call+ReplyWait Different prio test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
         .client_prio = 50,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait (High to Low)",
-        .caption     = "Call+ReplyWait Different prio test 4",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
         .client_prio = 50,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call (High to Low)",
-        .caption     = "Call+ReplyWait Different prio test 3",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 50,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait (Low to High)",
-        .caption     = "Call+ReplyWait Different prio test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 50,
+        .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Send",
-        .caption     = "Send test",
+        .name        = "seL4_Send",
+        .direction   = DIR_TO,
         .client_fn   = ipc_send_func,
         .server_fn   = ipc_wait_func,
         .same_vspace = FALSE,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 0,
         .overhead_id = SEND_WAIT_OVERHEAD
     },
     {
-        .name        = "Inter-AS Call(10)",
-        .caption     = "Call+ReplyWait long message test 1",
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
         .client_fn   = ipc_call_10_func2,
         .server_fn   = ipc_replywait_10_func2,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     },
     {
-        .name        = "Inter-AS ReplyWait(10)",
-        .caption     = "Call+ReplyWait long message test 2",
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
         .client_fn   = ipc_call_10_func,
         .server_fn   = ipc_replywait_10_func,
         .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
+        .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     }
 };
@@ -619,31 +640,56 @@ process_results(struct bench_results *results)
     return 1;
 }
 
+/* for pasting into a spreadsheet or parsing */
+static void 
+print_results_tsv(struct bench_results *results) {
+
+    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tLength\tmin\tmax\t"
+            "mean\tvariance\tstddev\tstddev %%\n");
+    for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
+        printf("%s\t", benchmark_params[i].name);
+        printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
+        printf("%d\t", benchmark_params[i].client_prio);
+        printf("%d\t", benchmark_params[i].server_prio);
+        printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
+        printf("%d\t", benchmark_params[i].length);
+        printf("%d\t", results->results[i].min);
+        printf("%d\t", results->results[i].max);
+        printf("%.2lf\t", results->results[i].mean);
+        printf("%.2lf\t", results->results[i].variance);
+        printf("%.2lf\t", results->results[i].stddev);
+        printf("%.0lf%%\n", results->results[i].stddev_pc);
+    }
+}
+
+static void 
+single_xml_result(int result, int value, char *name) 
+{
+
+    printf("\t<result name=\"");
+    printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
+    printf("-%s", benchmark_params[result].name);
+    printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
+                benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
+                benchmark_params[result].server_prio, benchmark_params[result].length);
+    printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
+
+}
+
+
+/* for bamboo */
 static void
-print_results(struct bench_results *results)
+print_results_xml(struct bench_results *results)
 {
     int i;
 
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
-        printf("\t<result name = \"%s-min\">"CCNT_FORMAT"</result>\n",
-               benchmark_params[i].name, results->results[i].min);
-
-        printf("\t<result name = \"%s-max\">"CCNT_FORMAT"</result>\n",
-               benchmark_params[i].name, results->results[i].max);
-
-        printf("\t<result name = \"%s-variance\">%.2lf</result>\n",
-               benchmark_params[i].name, results->results[i].variance);
-
-        printf("\t<result name = \"%s-mean\">%.2lf</result>\n",
-               benchmark_params[i].name, results->results[i].mean);
-
-        printf("\t<result name = \"%s-stddev\">%.2lf</result>\n",
-               benchmark_params[i].name, results->results[i].stddev);
-
-        printf("\t<result name = \"%s-stddev%%\">%.0lf%%</result>\n",
-               benchmark_params[i].name, results->results[i].stddev_pc);
-
+        single_xml_result(i, results->results[i].min, "min");
+        single_xml_result(i, results->results[i].max, "max");
+        single_xml_result(i, results->results[i].mean, "mean");
+        single_xml_result(i, results->results[i].stddev, "stdev");
     }
+
 }
 
 void
@@ -659,10 +705,16 @@ ipc_benchmarks_new(struct env* env)
 
     for (i = 0; i < RUNS; i++) {
         int j;
-        printf("\tDoing iteration %d\n", i);
+        printf("--------------------------------------------------\n");
+        printf("Doing iteration %d\n", i);
+        printf("--------------------------------------------------\n");
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
-            printf("Running %s\n", params->caption);
+            printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
+                    params->name,
+                    params->direction == DIR_TO ? "client --> server" : "server --> client",
+                    params->client_prio, params->server_prio, 
+                    params->same_vspace ? "same" : "diff", params->length);
             run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
@@ -675,6 +727,15 @@ ipc_benchmarks_new(struct env* env)
     if (!process_results(&results)) {
         return;
     }
-    print_results(&results);
+    printf("--------------------------------------------------\n");
+    printf("XML results\n");
+    printf("--------------------------------------------------\n");
+    print_results_xml(&results);
+    printf("--------------------------------------------------\n");
+    printf("TSV results\n");
+    printf("--------------------------------------------------\n");
+    print_results_tsv(&results);
+    printf("--------------------------------------------------\n");
+
 }
 
