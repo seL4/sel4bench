@@ -110,8 +110,9 @@ uint32_t ipc_send_func(int argc, char *argv[]);
 uint32_t ipc_wait_func(int argc, char *argv[]);
 
 /* array of benchmarks to run */
+/* one way IPC benchmarks - varying size, direction and priority.*/
 static const benchmark_params_t benchmark_params[] = {
-    /* one way IPC benchmarks - varying size, direction and priority */
+    /* Call fastpath between client and server in the same address space */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -123,6 +124,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* ReplyWait fastpath between server and client in the same address space */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
@@ -134,6 +136,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* Call faspath between client and server in different address spaces */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -145,6 +148,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* ReplyWait fastpathi between server and client in different address spaces */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
@@ -156,6 +160,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* Call fastpath, low prio client to high prio server in  different address space */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -168,6 +173,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* ReplyWait slowpath, high prio server to low prio client, different address space */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
@@ -179,6 +185,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* Call slowpath, high prio client to low prio server, different address space */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -190,6 +197,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* ReplyWait fastpath, low prio server to high prio client, different address space */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
@@ -201,6 +209,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
+    /* Send slowpath (no fastpath for send) same prio client-server, different address space */
     {
         .name        = "seL4_Send",
         .direction   = DIR_TO,
@@ -212,6 +221,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = SEND_WAIT_OVERHEAD
     },
+    /* Call slowpath, long IPC (10), same prio client to server, different address space */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -223,6 +233,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     },
+    /* ReplyWait slowpath, long IPC (10), same prio server to client, on the slowpath, different address space */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
