@@ -494,7 +494,7 @@ init_server_config(env_t env, helper_thread_t *server, helper_func_t server_fn, 
 }
 
 void
-run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
+run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret2)
 {
     UNUSED int error;
     helper_thread_t client, server;
@@ -502,12 +502,12 @@ run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
     timing_init();
 
     /* configure processes */
-    init_client_config(env, &client, params.client_fn, params.client_prio);
+    init_client_config(env, &client, params->client_fn, params->client_prio);
 
     error = sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config);
     assert(error == 0);
 
-    init_server_config(env, &server, params.server_fn, params.server_prio, &client, params.same_vspace);
+    init_server_config(env, &server, params->server_fn, params->server_prio, &client, params->same_vspace);
 
     error = sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config);
     assert(error == 0);
@@ -519,7 +519,7 @@ run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
     error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation);
     assert(error == 0);
 
-    if (!params.same_vspace) {
+    if (!params->same_vspace) {
         error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation);
         assert(error == 0);
     }
@@ -528,7 +528,7 @@ run_bench(env_t env, benchmark_params_t params, ccnt_t *ret1, ccnt_t *ret2)
     client.ep = sel4utils_copy_cap_to_process(&client.process, env->ep_path);
     client.result_ep = sel4utils_copy_cap_to_process(&client.process, env->result_ep_path);
 
-    if (!params.same_vspace) {
+    if (!params->same_vspace) {
         server.ep = sel4utils_copy_cap_to_process(&server.process, env->ep_path);
         server.result_ep = sel4utils_copy_cap_to_process(&server.process, env->result_ep_path);
     } else {
