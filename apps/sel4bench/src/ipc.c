@@ -147,7 +147,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
-    /* ReplyWait fastpathi between server and client in different address spaces */
+    /* ReplyWait fastpath between server and client in different address spaces */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
@@ -159,7 +159,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
-    /* Call fastpath, low prio client to high prio server in  different address space */
+    /* Call fastpath, low prio client to high prio server in different address space */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -214,7 +214,7 @@ static const benchmark_params_t benchmark_params[] = {
         .direction   = DIR_TO,
         .client_fn   = ipc_send_func,
         .server_fn   = ipc_wait_func,
-        .same_vspace = FALSE,
+        .same_vspace = false,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
@@ -664,8 +664,8 @@ print_results_tsv(struct bench_results *results) {
         printf("%d\t", benchmark_params[i].server_prio);
         printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
         printf("%d\t", benchmark_params[i].length);
-        printf("%d\t", results->results[i].min);
-        printf("%d\t", results->results[i].max);
+        printf(CCNT_FORMAT"\t", results->results[i].min);
+        printf(CCNT_FORMAT"\t", results->results[i].max);
         printf("%.2lf\t", results->results[i].mean);
         printf("%.2lf\t", results->results[i].variance);
         printf("%.2lf\t", results->results[i].stddev);
@@ -674,7 +674,7 @@ print_results_tsv(struct bench_results *results) {
 }
 
 static void 
-single_xml_result(int result, int value, char *name) 
+single_xml_result(int result, ccnt_t value, char *name) 
 {
 
     printf("\t<result name=\"");
@@ -697,8 +697,8 @@ print_results_xml(struct bench_results *results)
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
         single_xml_result(i, results->results[i].min, "min");
         single_xml_result(i, results->results[i].max, "max");
-        single_xml_result(i, results->results[i].mean, "mean");
-        single_xml_result(i, results->results[i].stddev, "stdev");
+        single_xml_result(i, (ccnt_t) results->results[i].mean, "mean");
+        single_xml_result(i, (ccnt_t) results->results[i].stddev, "stdev");
     }
 
 }
