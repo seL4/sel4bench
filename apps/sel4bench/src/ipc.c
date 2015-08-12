@@ -80,6 +80,7 @@ typedef struct benchmark_params {
     dir_t direction;
     helper_func_t server_fn, client_fn;
     bool same_vspace;
+    bool same_sc;
     uint8_t server_prio, client_prio;
     uint8_t length;
     enum overheads overhead_id;
@@ -119,6 +120,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = true,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
@@ -131,6 +133,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = true,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
@@ -143,6 +146,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
@@ -155,6 +159,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
@@ -168,6 +173,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 50,
         .server_prio = 100,
         .length = 0,
@@ -180,6 +186,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 50,
         .server_prio = 100,
         .length = 0,
@@ -192,6 +199,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 50,
         .length = 0,
@@ -204,6 +212,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 50,
         .length = 0,
@@ -215,7 +224,8 @@ static const benchmark_params_t benchmark_params[] = {
         .direction   = DIR_TO,
         .client_fn   = ipc_send_func,
         .server_fn   = ipc_wait_func,
-        .same_vspace = FALSE,
+        .same_vspace = false,
+        .same_sc     = false,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
@@ -228,6 +238,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_10_func2,
         .server_fn   = ipc_replywait_10_func2,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 10,
@@ -240,11 +251,38 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_10_func,
         .server_fn   = ipc_replywait_10_func,
         .same_vspace = false,
+        .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
-    }
+    },
+     /* Call faspath between client and server in different address spaces */
+    {
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .same_sc     = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* ReplyWait fastpathi between server and client in different address spaces */
+    {
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .same_sc     = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
 };
 
 static const struct overhead_benchmark_params overhead_benchmark_params[] = {
@@ -331,7 +369,6 @@ uint32_t name(int argc, char *argv[]) { \
     seL4_CPtr ep = atoi(argv[0]);\
     seL4_CPtr result_ep = atoi(argv[1]);\
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
-    call_func(ep, tag); \
     FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
         READ_COUNTER_BEFORE(start); \
@@ -340,7 +377,7 @@ uint32_t name(int argc, char *argv[]) { \
     } \
     FENCE(); \
     send_result(result_ep, send_start_end); \
-    send_func(ep, tag); \
+    while(1) seL4_Wait(ep, NULL);\
     return 0; \
 }
 
@@ -356,7 +393,8 @@ uint32_t name(int argc, char *argv[]) { \
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
     seL4_CPtr ep = atoi(argv[0]);\
     seL4_CPtr result_ep = atoi(argv[1]);\
-    wait_func(ep, NULL); \
+    seL4_Word badge;\
+    seL4_SendWait(ep, ep, tag, &badge);\
     FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
         READ_COUNTER_BEFORE(start); \
@@ -365,7 +403,7 @@ uint32_t name(int argc, char *argv[]) { \
     } \
     FENCE(); \
     send_result(result_ep, send_start_end); \
-    reply_func(tag); \
+    while (1) seL4_Wait(ep, NULL);\
     return 0; \
 }
 
@@ -381,6 +419,8 @@ ipc_wait_func(int argc, char *argv[])
     ccnt_t start UNUSED, end UNUSED;
     seL4_CPtr ep = atoi(argv[0]);
     seL4_CPtr result_ep = atoi(argv[1]);
+    seL4_Word badge;
+    seL4_SendWait(ep, ep, seL4_MessageInfo_new(0, 0, 0, 0), &badge);
     FENCE();
     for (i = 0; i < WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
@@ -390,6 +430,7 @@ ipc_wait_func(int argc, char *argv[])
     FENCE();
     DO_REAL_WAIT(ep);
     send_result(result_ep, end);
+    while (1) seL4_Wait(ep, NULL);
     return 0;
 }
 
@@ -410,6 +451,7 @@ ipc_send_func(int argc, char *argv[])
     FENCE();
     send_result(result_ep, start);
     DO_REAL_SEND(ep, tag);
+    while (1) seL4_Wait(ep, NULL);
     return 0;
 }
 
@@ -502,6 +544,9 @@ init_client_config(env_t env, helper_thread_t *client, helper_func_t client_fn, 
     client->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
     client->config.priority = prio;
     client->config.entry_point = client_fn;
+    client->config.create_sc = true;
+    client->config.sched_params = timeslice_params(10 * US_IN_MS);
+    client->config.sched_control = simple_get_sched_ctrl(&env->simple);
 #ifndef CONFIG_KERNEL_STABLE
     client->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
 #endif
@@ -573,19 +618,53 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     sel4utils_create_word_args(client.argv_strings, client.argv, NUM_ARGS, client.ep, client.result_ep);
     sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
 
-    /* start processes */
+    assert(error == 0);
+
+    /* start the server */
+    error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
+    assert(error == 0);
+    
+        printf("Waiting for server\n");
+        seL4_Word badge;
+        seL4_Wait(env->ep.cptr, &badge);
+    if (params->same_sc) {
+        /* we need to initialise the server, then take its sc away.*/
+        printf("Success, taking servers sc away\n");
+        /* now take the server's sc away */
+       error = seL4_TCB_ClearSchedContext(server.process.thread.tcb.cptr);
+        assert(error == 0);
+   }
+
+    /* start the client */
     error = sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1);
     assert(error == 0);
 
-    error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
-    assert(error == 0);
+    /* make sure the client runs first */
+    UNUSED seL4_SchedContext_YieldTo_t r = seL4_SchedContext_YieldTo(client.process.thread.sched_context.cptr);
+    assert(r.error == 0);
 
     /* wait for results */
+    printf("Waiting for client result\n");
     *ret1 = get_result(env->result_ep.cptr);
+    
+    if (params->same_sc) {
+        /* give the server back it's sc so it can reply to us */
+        error = seL4_TCB_SetSchedContext(server.process.thread.tcb.cptr, server.process.thread.sched_context.cptr);
+        assert(error == 0);
+
+    }
+        seL4_Send(env->ep.cptr, seL4_MessageInfo_new(0, 0, 0, 0));
+
+    printf("Waiting for server result\n");
     *ret2 = get_result(env->result_ep.cptr);
 
+    seL4_TCB_Suspend(server.process.thread.tcb.cptr);
+    seL4_TCB_Suspend(client.process.thread.tcb.cptr);
+    printf("Clean up\n");
     /* clean up - clean b first in case it is sharing a's cspace and vspace */
+    printf("Clean server\n");
     sel4utils_destroy_process(&server.process, &env->vka);
+    printf("CLean client\n");
     sel4utils_destroy_process(&client.process, &env->vka);
 
     timing_destroy();
@@ -656,7 +735,7 @@ process_results(struct bench_results *results)
 static void 
 print_results_tsv(struct bench_results *results) {
 
-    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tLength\tmin\tmax\t"
+    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tSC donation?\tLength\tmin\tmax\t"
             "mean\tvariance\tstddev\tstddev %%\n");
     for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
         printf("%s\t", benchmark_params[i].name);
@@ -664,6 +743,7 @@ print_results_tsv(struct bench_results *results) {
         printf("%d\t", benchmark_params[i].client_prio);
         printf("%d\t", benchmark_params[i].server_prio);
         printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
+        printf("%s\t", benchmark_params[i].same_sc ? "true" : "false");
         printf("%d\t", benchmark_params[i].length);
         printf("%d\t", results->results[i].min);
         printf("%d\t", results->results[i].max);
@@ -680,6 +760,7 @@ single_xml_result(int result, int value, char *name)
 
     printf("\t<result name=\"");
     printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
+    printf("-%sdonation", benchmark_params[result].same_sc ? "with" : "without");
     printf("-%s", benchmark_params[result].name);
     printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
                 benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
@@ -722,11 +803,13 @@ ipc_benchmarks_new(struct env* env)
         printf("--------------------------------------------------\n");
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
-            printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
+            printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, %s sched_context, length %2d\n",
                     params->name,
                     params->direction == DIR_TO ? "client --> server" : "server --> client",
                     params->client_prio, params->server_prio, 
-                    params->same_vspace ? "same" : "diff", params->length);
+                    params->same_vspace ? "same" : "diff",
+                    params->same_sc ? "same" : "diff", 
+                    params->length);
             run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
