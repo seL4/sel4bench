@@ -682,7 +682,7 @@ single_xml_result(int result, ccnt_t value, char *name)
     printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
     printf("-%s", benchmark_params[result].name);
     printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
-           benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
+           benchmark_params[result].direction == DIR_TO ? "--&gt;" : "&lt;--",
            benchmark_params[result].server_prio, benchmark_params[result].length);
     printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
 
