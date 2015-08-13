@@ -257,7 +257,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     },
-    /* Call faspath between client and server in different address spaces */
+    /* Call slowpath between client and server in different address spaces - no sched context donation */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -270,7 +270,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
-    /* ReplyWait fastpathi between server and client in different address spaces */
+    /* ReplyWait fastpath between server and client in different address spaces - no sched context donation */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
