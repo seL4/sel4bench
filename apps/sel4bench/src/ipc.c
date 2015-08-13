@@ -652,11 +652,12 @@ process_results(struct bench_results *results)
 }
 
 /* for pasting into a spreadsheet or parsing */
-static void 
-print_results_tsv(struct bench_results *results) {
+static void
+print_results_tsv(struct bench_results *results)
+{
 
     printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tLength\tmin\tmax\t"
-            "mean\tvariance\tstddev\tstddev %%\n");
+           "mean\tvariance\tstddev\tstddev %%\n");
     for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
         printf("%s\t", benchmark_params[i].name);
         printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
@@ -673,16 +674,16 @@ print_results_tsv(struct bench_results *results) {
     }
 }
 
-static void 
-single_xml_result(int result, ccnt_t value, char *name) 
+static void
+single_xml_result(int result, ccnt_t value, char *name)
 {
 
     printf("\t<result name=\"");
     printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
     printf("-%s", benchmark_params[result].name);
     printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
-                benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
-                benchmark_params[result].server_prio, benchmark_params[result].length);
+           benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
+           benchmark_params[result].server_prio, benchmark_params[result].length);
     printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
 
 }
@@ -722,10 +723,10 @@ ipc_benchmarks_new(struct env* env)
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
             printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
-                    params->name,
-                    params->direction == DIR_TO ? "client --> server" : "server --> client",
-                    params->client_prio, params->server_prio, 
-                    params->same_vspace ? "same" : "diff", params->length);
+                   params->name,
+                   params->direction == DIR_TO ? "client --> server" : "server --> client",
+                   params->client_prio, params->server_prio,
+                   params->same_vspace ? "same" : "diff", params->length);
             run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
