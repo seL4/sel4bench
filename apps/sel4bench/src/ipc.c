@@ -257,7 +257,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     },
-     /* Call faspath between client and server in different address spaces */
+    /* Call faspath between client and server in different address spaces */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -621,11 +621,11 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     /* start the server */
     error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
     assert(error == 0);
-    
+
     /* wait for the server to tell us it's been initialised */
     seL4_Word badge;
     seL4_Wait(env->ep.cptr, &badge);
-    
+
     if (params->same_sc) {
         /* now take the server's sc away */
         error = seL4_TCB_ClearSchedContext(server.process.thread.tcb.cptr);
@@ -642,7 +642,7 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
 
     /* wait for client result */
     *ret1 = get_result(env->result_ep.cptr);
-    
+
     if (params->same_sc) {
         /* give the server back it's sc so it can reply to us */
         error = seL4_TCB_SetSchedContext(server.process.thread.tcb.cptr, server.process.thread.sched_context.cptr);
@@ -653,7 +653,7 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
 
     seL4_TCB_Suspend(server.process.thread.tcb.cptr);
     seL4_TCB_Suspend(client.process.thread.tcb.cptr);
-    
+
     /* clean up - clean b first in case it is sharing a's cspace and vspace */
     sel4utils_destroy_process(&server.process, &env->vka);
     sel4utils_destroy_process(&client.process, &env->vka);
@@ -723,11 +723,12 @@ process_results(struct bench_results *results)
 }
 
 /* for pasting into a spreadsheet or parsing */
-static void 
-print_results_tsv(struct bench_results *results) {
+static void
+print_results_tsv(struct bench_results *results)
+{
 
     printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tSC donation?\tLength\tmin\tmax\t"
-            "mean\tvariance\tstddev\tstddev %%\n");
+           "mean\tvariance\tstddev\tstddev %%\n");
     for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
         printf("%s\t", benchmark_params[i].name);
         printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
@@ -745,8 +746,8 @@ print_results_tsv(struct bench_results *results) {
     }
 }
 
-static void 
-single_xml_result(int result, ccnt_t value, char *name) 
+static void
+single_xml_result(int result, ccnt_t value, char *name)
 {
 
     printf("\t<result name=\"");
@@ -754,8 +755,8 @@ single_xml_result(int result, ccnt_t value, char *name)
     printf("-%sdonation", benchmark_params[result].same_sc ? "with" : "without");
     printf("-%s", benchmark_params[result].name);
     printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
-                benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
-                benchmark_params[result].server_prio, benchmark_params[result].length);
+           benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
+           benchmark_params[result].server_prio, benchmark_params[result].length);
     printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
 
 }
@@ -795,12 +796,12 @@ ipc_benchmarks_new(struct env* env)
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
             printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, %s sched_context, length %2d\n",
-                    params->name,
-                    params->direction == DIR_TO ? "client --> server" : "server --> client",
-                    params->client_prio, params->server_prio, 
-                    params->same_vspace ? "same" : "diff",
-                    params->same_sc ? "same" : "diff", 
-                    params->length);
+                   params->name,
+                   params->direction == DIR_TO ? "client --> server" : "server --> client",
+                   params->client_prio, params->server_prio,
+                   params->same_vspace ? "same" : "diff",
+                   params->same_sc ? "same" : "diff",
+                   params->length);
             run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
