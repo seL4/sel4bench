@@ -2,17 +2,17 @@
  * Copyright 2014, NICTA
  *
  * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
+ * the GNU General Public License version 2. Note that NO WARRANTY is provided.
+ * See "LICENSE_GPLv2.txt" for details.
  *
- * @TAG(NICTA_BSD)
+ * @TAG(NICTA_GPL)
  */
-
 /* This is very much a work in progress IPC benchmarking set. Goal is
    to eventually use this to replace the rest of the random benchmarking
    happening in this app with just what we need */
 
 #include <autoconf.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,461 +24,21 @@
 #include <utils/ansi.h>
 #include <vka/vka.h>
 
-#include "timing.h"
 #include "benchmark.h"
+#include "math.h"
+#include "timing.h"
 
-#ifdef CONFIG_ARCH_IA32
-#define CCNT64BIT
-#define CCNT_FORMAT "%llu"
-typedef uint64_t ccnt_t;
-#else
-#define CCNT32BIT
-typedef uint32_t ccnt_t;
-#define CCNT_FORMAT "%d"
-#endif
-
+/* ipc.h requires these defines */
 #define __SWINUM(x) ((x) & 0x00ffffff)
+#define NOPS ""
+
+#include <arch/ipc.h>
 
 #define NUM_ARGS 2
 #define WARMUPS 16
 #define RUNS 16
 #define OVERHEAD_RETRIES 4
 
-#define NOPS ""
-
-#define DO_CALL_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysCall) \
-        : \
-         "ecx", \
-         "edx" \
-    ); \
-} while(0)
-#define DO_CALL_10_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "pushl %%ebp \n"\
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        "popl %%ebp \n"\
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysCall) \
-        : \
-         "ecx", \
-         "edx", \
-         "edi" \
-    ); \
-} while(0)
-#define DO_SEND_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    uint32_t tag_copy = tag.words[0]; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+S" (tag_copy), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysSend) \
-        : \
-         "ecx", \
-         "edx" \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysReplyWait) \
-        : \
-         "ecx", \
-         "edx" \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_10_X86(ep, tag, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "pushl %%ebp \n"\
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        "popl %%ebp \n"\
-        : \
-         "+S" (tag), \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysReplyWait) \
-        : \
-         "ecx", \
-         "edx", \
-         "edi" \
-    ); \
-} while(0)
-#define DO_WAIT_X86(ep, sys) do { \
-    uint32_t ep_copy = ep; \
-    asm volatile( \
-        "movl %%esp, %%ecx \n"\
-        "leal 1f, %%edx \n"\
-        "1: \n" \
-        sys" \n" \
-        : \
-         "+b" (ep_copy) \
-        : \
-         "a" (seL4_SysWait) \
-        : \
-         "ecx", \
-         "edx", \
-         "esi" \
-    ); \
-} while(0)
-#define DO_CALL_ARM(ep, tag, swi) do { \
-    register seL4_Word dest asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysCall; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysCall), "r"(scno) \
-    ); \
-} while(0)
-#define DO_CALL_10_ARM(ep, tag, swi) do { \
-    register seL4_Word dest asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysCall; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysCall), "r"(scno) \
-        : "r2", "r3", "r4", "r5" \
-    ); \
-} while(0)
-#define DO_SEND_ARM(ep, tag, swi) do { \
-    register seL4_Word dest asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysSend; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysSend), "r"(scno) \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_10_ARM(ep, tag, swi) do { \
-    register seL4_Word src asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysReplyWait; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyWait), "r"(scno) \
-        : "r2", "r3", "r4", "r5" \
-    ); \
-} while(0)
-#define DO_REPLY_WAIT_ARM(ep, tag, swi) do { \
-    register seL4_Word src asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1") = tag; \
-    register seL4_Word scno asm("r7") = seL4_SysReplyWait; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyWait), "r"(scno) \
-    ); \
-} while(0)
-#define DO_WAIT_ARM(ep, swi) do { \
-    register seL4_Word src asm("r0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("r1"); \
-    register seL4_Word scno asm("r7") = seL4_SysWait; \
-    asm volatile(NOPS swi NOPS \
-        : "+r"(src), "=r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysWait), "r"(scno) \
-    ); \
-} while(0)
-
-#define DO_CALL_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep; \
-    asm volatile(\
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag), \
-            "+b" (ep_copy) \
-            : \
-            "a" (seL4_SysCall) \
-            : \
-            "rcx", "rdx"\
-            ); \
-} while (0)
-
-#define DO_CALL_10_X64(ep, tag, sys) do {\
-    uint64_t ep_copy = ep; \
-    seL4_Word mr0 = 0; \
-    seL4_Word mr1 = 1; \
-    register seL4_Word mr2 asm ("r8") = 2;  \
-    register seL4_Word mr3 asm ("r9") = 3;  \
-    register seL4_Word mr4 asm ("r10") = 4; \
-    register seL4_Word mr5 asm ("r11") = 5; \
-    register seL4_Word mr6 asm ("r12") = 6; \
-    register seL4_Word mr7 asm ("r13") = 7; \
-    register seL4_Word mr8 asm ("r14") = 8; \
-    register seL4_Word mr9 asm ("r15") = 9; \
-    asm volatile(                           \
-            "push   %%rbp \n"               \
-            "movq   %%rcx, %%rbp \n"        \
-            "movq   %%rsp, %%rcx \n"        \
-            "leaq   1f, %%rdx \n"           \
-            "1: \n"                         \
-            sys" \n"                        \
-            "movq   %%rbp, %%rcx \n"        \
-            "pop    %%rbp \n"               \
-            :                               \
-            "+S" (tag),                     \
-            "+b" (ep_copy),                 \
-            "+D" (mr0), "+c" (mr1), "+r" (mr2), "+r" (mr3), \
-            "+r" (mr4), "+r" (mr5), "+r" (mr6), "+r" (mr7), \
-            "+r" (mr8), "+r" (mr9)          \
-            :                               \
-            "a" (seL4_SysCall)              \
-            :                               \
-            "rdx"                           \
-            );                              \
-} while (0)
-
-#define DO_SEND_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep; \
-    uint32_t tag_copy = tag.words[0]; \
-    asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag_copy), \
-            "+b" (ep_copy) \
-            : \
-            "a" (seL4_SysSend) \
-            : \
-            "rcx", "rdx" \
-            ); \
-} while (0)
-
-#define DO_REPLY_WAIT_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep; \
-    asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag), \
-            "+b" (ep_copy) \
-            : \
-            "a"(seL4_SysReplyWait) \
-            : \
-            "rcx", "rdx" \
-            ); \
-} while (0)
-
-#define DO_REPLY_WAIT_10_X64(ep, tag, sys) do { \
-    uint64_t ep_copy = ep;                      \
-    seL4_Word mr0 = 0;                          \
-    seL4_Word mr1 = -1;                         \
-    register seL4_Word mr2 asm ("r8") = -2;     \
-    register seL4_Word mr3 asm ("r9") = -3;     \
-    register seL4_Word mr4 asm ("r10") = -4;    \
-    register seL4_Word mr5 asm ("r11") = -5;    \
-    register seL4_Word mr6 asm ("r12") = -6;    \
-    register seL4_Word mr7 asm ("r13") = -7;    \
-    register seL4_Word mr8 asm ("r14") = -8;    \
-    register seL4_Word mr9 asm ("r15") = -9;    \
-    asm volatile(                               \
-            "push   %%rbp \n"                   \
-            "movq   %%rcx, %%rbp \n"            \
-            "movq   %%rsp, %%rcx \n"            \
-            "leaq   1f, %%rdx \n"               \
-            "1: \n"                             \
-            sys" \n"                            \
-            "movq   %%rbp, %%rcx \n"            \
-            "pop    %%rbp \n"                   \
-            :                                   \
-            "+S" (tag),                         \
-            "+b" (ep_copy),                     \
-            "+D" (mr0), "+c" (mr1), "+r" (mr2), \
-            "+r" (mr3), "+r" (mr4), "+r" (mr5), \
-            "+r" (mr6), "+r" (mr7), "+r" (mr8), \
-            "+r" (mr9)                          \
-            :                                   \
-            "a" (seL4_SysReplyWait)             \
-            :                                   \
-            "rdx"                               \
-            );                                  \
-} while (0)
-
-#define DO_WAIT_X64(ep, sys) do { \
-    uint64_t ep_copy = ep; \
-    uint64_t tag = 0; \
-    asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
-            : \
-            "+S" (tag) ,\
-            "+b" (ep_copy) \
-            : \
-            "a" (seL4_SysWait) \
-            :  "rcx", "rdx" \
-            ); \
-} while (0)
-
-#define READ_COUNTER_ARMV6(var) do { \
-    asm volatile("b 2f\n\
-                1:mrc p15, 0, %[counter], c15, c12," SEL4BENCH_ARM1136_COUNTER_CCNT "\n\
-                  bx lr\n\
-                2:sub r8, pc, #16\n\
-                  .word 0xe7f000f0" \
-        : [counter] "=r"(var) \
-        : \
-        : "r8", "lr"); \
-} while(0)
-
-#define READ_COUNTER_ARMV7(var) do { \
-    asm volatile("mrc p15, 0, %0, c9, c13, 0\n" \
-        : "=r"(var) \
-    ); \
-} while(0)
-
-#define READ_COUNTER_X86(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-        "movl $0, %%eax \n" \
-        "movl $0, %%ecx \n" \
-        "cpuid \n" \
-        "rdtsc \n" \
-        "movl %%edx, %0 \n" \
-        "movl %%eax, %1 \n" \
-        "movl $0, %%eax \n" \
-        "movl $0, %%ecx \n" \
-        "cpuid \n" \
-        : \
-         "=r"(high), \
-         "=r"(low) \
-        : \
-        : "eax", "ebx", "ecx", "edx" \
-    ); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while(0)
-
-#define READ_COUNTER_X64_BEFORE(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-            "cpuid \n" \
-            "rdtsc \n" \
-            "movl %%edx, %0 \n" \
-            "movl %%eax, %1 \n" \
-            : "=r"(high), "=r"(low) \
-            : \
-            : "%rax", "%rbx", "%rcx", "%rdx"); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while (0)
-
-#define READ_COUNTER_X64_AFTER(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-            "rdtscp \n" \
-            "movl %%edx, %0 \n" \
-            "movl %%eax, %1 \n" \
-            "cpuid \n" \
-            : "=r"(high), "=r"(low) \
-            : \
-            : "%rax", "rbx", "%rcx", "%rdx"); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while (0)
-
-#if defined(CONFIG_ARCH_ARM)
-#define DO_REAL_CALL(ep, tag) DO_CALL_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_CALL(ep, tag) DO_CALL_ARM(ep, tag, "nop")
-#define DO_REAL_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_ARM(ep, tag, "nop")
-#define DO_REAL_CALL_10(ep, tag) DO_CALL_10_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_CALL_10(ep, tag) DO_CALL_10_ARM(ep, tag, "nop")
-#define DO_REAL_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_ARM(ep, tag, "nop")
-#define DO_REAL_SEND(ep, tag) DO_SEND_ARM(ep, tag, "swi %[swi_num]")
-#define DO_NOP_SEND(ep, tag) DO_SEND_ARM(ep, tag, "nop")
-#define DO_REAL_WAIT(ep) DO_WAIT_ARM(ep, "swi %[swi_num]")
-#define DO_NOP_WAIT(ep) DO_WAIT_ARM(ep, "nop")
-#elif defined(CONFIG_ARCH_IA32)
-
-#ifdef CONFIG_X86_64
-#define DO_REAL_CALL(ep, tag) DO_CALL_X64(ep, tag, "sysenter")
-#define DO_NOP_CALL(ep, tg) DO_CALL_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X64(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_CALL_10(ep, tag) DO_CALL_10_X64(ep, tag, "sysenter")
-#define DO_NOP_CALL_10(ep, tag) DO_CALL_10_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X64(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_SEND(ep, tag) DO_SEND_X64(ep, tag, "sysenter")
-#define DO_NOP_SEND(ep, tag) DO_SEND_X64(ep, tag, ".byte 0x90")
-#define DO_REAL_WAIT(ep) DO_WAIT_X64(ep, "sysenter")
-#define DO_NOP_WAIT(ep) DO_WAIT_X64(ep, ".byte 0x90")
-#else
-#define DO_REAL_CALL(ep, tag) DO_CALL_X86(ep, tag, "sysenter")
-#define DO_NOP_CALL(ep, tag) DO_CALL_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X86(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT(ep, tag) DO_REPLY_WAIT_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_CALL_10(ep, tag) DO_CALL_10_X86(ep, tag, "sysenter")
-#define DO_NOP_CALL_10(ep, tag) DO_CALL_10_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X86(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_SEND(ep, tag) DO_SEND_X86(ep, tag, "sysenter")
-#define DO_NOP_SEND(ep, tag) DO_SEND_X86(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_WAIT(ep) DO_WAIT_X86(ep, "sysenter")
-#define DO_NOP_WAIT(ep) DO_WAIT_X86(ep, ".byte 0x66\n.byte 0x90")
-#endif
-#else
-#error Unsupported arch
-#endif
-
-#if defined(CONFIG_ARCH_ARM_V6)
-#define READ_COUNTER_BEFORE READ_COUNTER_ARMV6
-#define READ_COUNTER_AFTER  READ_COUNTER_ARMV6
-#elif defined(CONFIG_ARCH_ARM_V7A)
-#define READ_COUNTER_BEFORE READ_COUNTER_ARMV7
-#define READ_COUNTER_AFTER  READ_COUNTER_ARMV7
-#elif defined(CONFIG_ARCH_IA32)
-#ifdef CONFIG_X86_64
-#define READ_COUNTER_BEFORE READ_COUNTER_X64_BEFORE
-#define READ_COUNTER_AFTER  READ_COUNTER_X64_AFTER
-#define ALLOW_UNSTABLE_OVERHEAD
-#else
-#define READ_COUNTER_BEFORE READ_COUNTER_X86
-#define READ_COUNTER_AFTER  READ_COUNTER_X86
-#define ALLOW_UNSTABLE_OVERHEAD
-#endif
-#else
-#error Unsupported arch
-#endif
 
 /* The fence is designed to try and prevent the compiler optimizing across code boundaries
    that we don't want it to. The reason for preventing optimization is so that things like
@@ -487,12 +47,6 @@ typedef uint32_t ccnt_t;
 
 
 #define OVERHEAD_BENCH_PARAMS(n) { .name = n }
-#define BENCH_PARAMS(n, c, fa, fb, v, pa, pb, o) { .name = n, .caption = c,    \
-                                                   .funca = (helper_func_t)fa, \
-                                                   .funcb = (helper_func_t)fb, \
-                                                   .prioa = pa, .priob = pb,   \
-                                                   .same_vspace = v,           \
-                                                   .overhead_id = o            }
 
 enum overhead_benchmarks {
     CALL_OVERHEAD,
@@ -513,14 +67,22 @@ enum overheads {
     NOVERHEADS
 };
 
-struct benchmark_params {
+typedef enum dir {
+    /* client ---> server */
+    DIR_TO,
+    /* server --> client */
+    DIR_FROM
+} dir_t;
+
+typedef struct benchmark_params {
     const char* name;
-    const char* caption;
-    helper_func_t funca, funcb;
-    int prioa, priob;
-    int same_vspace;
+    dir_t direction;
+    helper_func_t server_fn, client_fn;
+    bool same_vspace;
+    uint8_t server_prio, client_prio;
+    uint8_t length;
     enum overheads overhead_id;
-};
+} benchmark_params_t;
 
 struct overhead_benchmark_params {
     const char* name;
@@ -546,29 +108,162 @@ uint32_t ipc_replywait_10_func(int argc, char *argv[]);
 uint32_t ipc_send_func(int argc, char *argv[]);
 uint32_t ipc_wait_func(int argc, char *argv[]);
 
-
-static const struct benchmark_params benchmark_params[] = {
-    BENCH_PARAMS("Intra-AS Call"                   , "Call+ReplyWait Intra-AS test 1"      , ipc_call_func2,    ipc_replywait_func2,    TRUE,  100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Intra-AS ReplyWait"              , "Call+ReplyWait Intra-AS test 2"      , ipc_call_func,     ipc_replywait_func,     TRUE,  100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Call"                   , "Call+ReplyWait Inter-AS test 1"      , ipc_call_func2,    ipc_replywait_func2,    FALSE, 100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS ReplyWait"              , "Call+ReplyWait Inter-AS test 2"      , ipc_call_func,     ipc_replywait_func,     FALSE, 100, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Call (Low to High)"     , "Call+ReplyWait Different prio test 1", ipc_call_func2,    ipc_replywait_func2,    FALSE,  50, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS ReplyWait (High to Low)", "Call+ReplyWait Different prio test 4", ipc_call_func,     ipc_replywait_func,     FALSE,  50, 100, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Call (High to Low)"     , "Call+ReplyWait Different prio test 3", ipc_call_func2,    ipc_replywait_func2,    FALSE, 100,  50, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS ReplyWait (Low to High)", "Call+ReplyWait Different prio test 2", ipc_call_func,     ipc_replywait_func,     FALSE, 100,  50, CALL_REPLY_WAIT_OVERHEAD   ),
-    BENCH_PARAMS("Inter-AS Send"                   , "Send test"                           , ipc_send_func,     ipc_wait_func,          FALSE, 100, 100, SEND_WAIT_OVERHEAD         ),
-    BENCH_PARAMS("Inter-AS Call(10)"               , "Call+ReplyWait long message test 1"  , ipc_call_10_func2, ipc_replywait_10_func2, FALSE, 100, 100, CALL_REPLY_WAIT_10_OVERHEAD),
-    BENCH_PARAMS("Inter-AS ReplyWait(10)"          , "Call+ReplyWait long message test 2"  , ipc_call_10_func,  ipc_replywait_10_func,  FALSE, 100, 100, CALL_REPLY_WAIT_10_OVERHEAD)
+/* array of benchmarks to run */
+/* one way IPC benchmarks - varying size, direction and priority.*/
+static const benchmark_params_t benchmark_params[] = {
+    /* Call fastpath between client and server in the same address space */
+    {
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = true,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* ReplyWait fastpath between server and client in the same address space */
+    {
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = true,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* Call faspath between client and server in different address spaces */
+    {
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* ReplyWait fastpath between server and client in different address spaces */
+    {
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* Call fastpath, low prio client to high prio server in different address space */
+    {
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .client_prio = 50,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* ReplyWait slowpath, high prio server to low prio client, different address space */
+    {
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .client_prio = 50,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* Call slowpath, high prio client to low prio server, different address space */
+    {
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 50,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* ReplyWait fastpath, low prio server to high prio client, different address space */
+    {
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 50,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+    /* Send slowpath (no fastpath for send) same prio client-server, different address space */
+    {
+        .name        = "seL4_Send",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_send_func,
+        .server_fn   = ipc_wait_func,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 0,
+        .overhead_id = SEND_WAIT_OVERHEAD
+    },
+    /* Call slowpath, long IPC (10), same prio client to server, different address space */
+    {
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_10_func2,
+        .server_fn   = ipc_replywait_10_func2,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 10,
+        .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
+    },
+    /* ReplyWait slowpath, long IPC (10), same prio server to client, on the slowpath, different address space */
+    {
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
+        .client_fn   = ipc_call_10_func,
+        .server_fn   = ipc_replywait_10_func,
+        .same_vspace = false,
+        .client_prio = 100,
+        .server_prio = 100,
+        .length = 10,
+        .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
+    }
 };
 
 static const struct overhead_benchmark_params overhead_benchmark_params[] = {
-    [CALL_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("call"      ),
-    [REPLY_WAIT_OVERHEAD]    = OVERHEAD_BENCH_PARAMS("reply wait"),
-    [SEND_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("send"      ),
-    [WAIT_OVERHEAD]          = OVERHEAD_BENCH_PARAMS("wait"      ),
-    [CALL_10_OVERHEAD]       = OVERHEAD_BENCH_PARAMS("call"      ),
-    [REPLY_WAIT_10_OVERHEAD] = OVERHEAD_BENCH_PARAMS("reply wait"),
+    [CALL_OVERHEAD]          = {"call"},
+    [REPLY_WAIT_OVERHEAD]    = {"reply wait"},
+    [SEND_OVERHEAD]          = {"send"},
+    [WAIT_OVERHEAD]          = {"wait"},
+    [CALL_10_OVERHEAD]       = {"call"},
+    [REPLY_WAIT_10_OVERHEAD] = {"reply wait"},
 };
+
+typedef struct bench_result {
+    double variance;
+    double stddev;
+    double stddev_pc;
+    double mean;
+    ccnt_t min;
+    ccnt_t max;
+} bench_result_t;
+
 
 struct bench_results {
     /* Raw results from benchmarking. These get checked for sanity */
@@ -577,11 +272,11 @@ struct bench_results {
     /* A worst case overhead */
     ccnt_t overheads[NOVERHEADS];
     /* Calculated results to print out */
-    ccnt_t results[ARRAY_SIZE(benchmark_params)];
+    bench_result_t results[ARRAY_SIZE(benchmark_params)];
 };
 
 #if defined(CCNT32BIT)
-static void 
+static void
 send_result(seL4_CPtr ep, ccnt_t result)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
@@ -589,7 +284,7 @@ send_result(seL4_CPtr ep, ccnt_t result)
     seL4_Send(ep, tag);
 }
 #elif defined(CCNT64BIT)
-static void 
+static void
 send_result(seL4_CPtr ep, ccnt_t result)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 2);
@@ -608,7 +303,7 @@ dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
     (void)tag;
 }
 
-static inline void 
+static inline void
 dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag)
 {
     (void)ep;
@@ -622,7 +317,7 @@ dummy_seL4_Wait(seL4_CPtr ep, void *badge)
     (void)badge;
 }
 
-static inline void 
+static inline void
 dummy_seL4_Reply(seL4_MessageInfo_t tag)
 {
     (void)tag;
@@ -678,7 +373,7 @@ IPC_REPLY_WAIT_FUNC(ipc_replywait_func, DO_REAL_REPLY_WAIT, dummy_seL4_Reply, se
 IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func2, DO_REAL_REPLY_WAIT_10, seL4_Reply, seL4_Wait, end, 10)
 IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func, DO_REAL_REPLY_WAIT_10, dummy_seL4_Reply, seL4_Wait, start, 10)
 
-uint32_t 
+uint32_t
 ipc_wait_func(int argc, char *argv[])
 {
     uint32_t i;
@@ -697,7 +392,7 @@ ipc_wait_func(int argc, char *argv[])
     return 0;
 }
 
-uint32_t 
+uint32_t
 ipc_send_func(int argc, char *argv[])
 {
     uint32_t i;
@@ -740,7 +435,7 @@ ipc_send_func(int argc, char *argv[])
     timing_destroy(); \
 } while(0)
 
-static int 
+static int
 results_stable(ccnt_t *array)
 {
     uint32_t i;
@@ -752,7 +447,7 @@ results_stable(ccnt_t *array)
     return 1;
 }
 
-static void 
+static void
 measure_overhead(struct bench_results *results)
 {
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
@@ -791,97 +486,97 @@ static ccnt_t get_result(seL4_CPtr ep)
 #error Unknown ccnt size
 #endif
 
-void 
-init_a_config(env_t env, helper_thread_t *a, helper_func_t a_fn, int prioa)
+void
+init_client_config(env_t env, helper_thread_t *client, helper_func_t client_fn, int prio)
 {
     /* set up process a */
-    bzero(&a->config, sizeof(a->config));
-    a->config.is_elf = false;
-    a->config.create_cspace = true;
-    a->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
-    a->config.create_vspace = true;
-    a->config.reservations = &env->region;
-    a->config.num_reservations = 1;
-    a->config.create_fault_endpoint = false;
-    a->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
-    a->config.priority = prioa;
-    a->config.entry_point = a_fn;
+    bzero(&client->config, sizeof(client->config));
+    client->config.is_elf = false;
+    client->config.create_cspace = true;
+    client->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
+    client->config.create_vspace = true;
+    client->config.reservations = &env->region;
+    client->config.num_reservations = 1;
+    client->config.create_fault_endpoint = false;
+    client->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
+    client->config.priority = prio;
+    client->config.entry_point = client_fn;
 #ifndef CONFIG_KERNEL_STABLE
-    a->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
+    client->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
 #endif
 
 }
 
-void 
-init_b_config(env_t env, helper_thread_t *b, helper_func_t b_fn, int priob,
-                              helper_thread_t *a, int same_vspace)
+void
+init_server_config(env_t env, helper_thread_t *server, helper_func_t server_fn, int prio,
+                   helper_thread_t *client, int same_vspace)
 {
-   /* set up process b - b's config is nearly the same as a's */
-    b->config = a->config;
-    b->config.priority = priob;
-    b->config.entry_point = b_fn;
+    /* set up process b - b's config is nearly the same as a's */
+    server->config = client->config;
+    server->config.priority = prio;
+    server->config.entry_point = server_fn;
 
     if (same_vspace) {
         /* b shares a's cspace and vspace */
-        b->config.create_cspace = false;
-        b->config.cnode = a->process.cspace;
-        b->config.create_vspace = false;
-        b->config.vspace = &a->process.vspace;
+        server->config.create_cspace = false;
+        server->config.cnode = client->process.cspace;
+        server->config.create_vspace = false;
+        server->config.vspace = &client->process.vspace;
     }
 }
 
-void 
-run_bench(env_t env, helper_func_t a_fn, helper_func_t b_fn, int same_vspace, int prioa, int priob, ccnt_t *ret1, ccnt_t *ret2)
+void
+run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret2)
 {
     UNUSED int error;
-    helper_thread_t a, b;
+    helper_thread_t client, server;
 
     timing_init();
 
     /* configure processes */
-    init_a_config(env, &a, a_fn, prioa);
+    init_client_config(env, &client, params->client_fn, params->client_prio);
 
-    error = sel4utils_configure_process_custom(&a.process, &env->vka, &env->vspace, a.config);
+    error = sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config);
     assert(error == 0);
 
-    init_b_config(env, &b, b_fn, priob, &a, same_vspace);
-    
-    error = sel4utils_configure_process_custom(&b.process, &env->vka, &env->vspace, b.config);
+    init_server_config(env, &server, params->server_fn, params->server_prio, &client, params->same_vspace);
+
+    error = sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config);
     assert(error == 0);
 
     /* clone the text segment into the vspace - note that as we are only cloning the text
      * segment, you will not be able to use anything that relies on initialisation in benchmark
      * threads - like printf, (but seL4_Debug_PutChar is ok)
      */
-    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &a.process.vspace, env->region.reservation);
+    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation);
     assert(error == 0);
 
-    if (!same_vspace) {
-        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &b.process.vspace, env->region.reservation);
+    if (!params->same_vspace) {
+        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation);
         assert(error == 0);
     }
 
     /* copy endpoint cptrs into a and b's respective cspaces*/
-    a.ep = sel4utils_copy_cap_to_process(&a.process, env->ep_path);
-    a.result_ep = sel4utils_copy_cap_to_process(&a.process, env->result_ep_path);
+    client.ep = sel4utils_copy_cap_to_process(&client.process, env->ep_path);
+    client.result_ep = sel4utils_copy_cap_to_process(&client.process, env->result_ep_path);
 
-    if (!same_vspace) {
-        b.ep = sel4utils_copy_cap_to_process(&b.process, env->ep_path);
-        b.result_ep = sel4utils_copy_cap_to_process(&b.process, env->result_ep_path);
+    if (!params->same_vspace) {
+        server.ep = sel4utils_copy_cap_to_process(&server.process, env->ep_path);
+        server.result_ep = sel4utils_copy_cap_to_process(&server.process, env->result_ep_path);
     } else {
-        b.ep = a.ep;
-        b.result_ep = a.result_ep;
+        server.ep = client.ep;
+        server.result_ep = client.result_ep;
     }
 
     /* set up args */
-    sel4utils_create_word_args(a.argv_strings, a.argv, NUM_ARGS, a.ep, a.result_ep);
-    sel4utils_create_word_args(b.argv_strings, b.argv, NUM_ARGS, b.ep, b.result_ep);
+    sel4utils_create_word_args(client.argv_strings, client.argv, NUM_ARGS, client.ep, client.result_ep);
+    sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
 
     /* start processes */
-    error = sel4utils_spawn_process(&a.process, &env->vka, &env->vspace, NUM_ARGS, a.argv, 1);
+    error = sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1);
     assert(error == 0);
 
-    error = sel4utils_spawn_process(&b.process, &env->vka, &env->vspace, NUM_ARGS, b.argv, 1);
+    error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
     assert(error == 0);
 
     /* wait for results */
@@ -889,8 +584,8 @@ run_bench(env_t env, helper_func_t a_fn, helper_func_t b_fn, int same_vspace, in
     *ret2 = get_result(env->result_ep.cptr);
 
     /* clean up - clean b first in case it is sharing a's cspace and vspace */
-    sel4utils_destroy_process(&b.process, &env->vka);
-    sel4utils_destroy_process(&a.process, &env->vka);
+    sel4utils_destroy_process(&server.process, &env->vka);
+    sel4utils_destroy_process(&client.process, &env->vka);
 
     timing_destroy();
 }
@@ -904,20 +599,7 @@ print_all(ccnt_t *array)
     }
 }
 
-static ccnt_t 
-results_min(ccnt_t *array)
-{
-    uint32_t i;
-    ccnt_t min = array[0];
-    for (i = 1; i < RUNS; i++) {
-        if (array[i] < min) {
-            min = array[i];
-        }
-    }
-    return min;
-}
-
-static int 
+static int
 check_overhead(struct bench_results *results)
 {
     ccnt_t overhead[NOVERHEADBENCHMARKS];
@@ -930,7 +612,7 @@ check_overhead(struct bench_results *results)
             return 0;
 #endif
         }
-        overhead[i] = results_min(results->overhead_benchmarks[i]);
+        overhead[i] = results_min(results->overhead_benchmarks[i], RUNS);
     }
     /* Take the smallest overhead to be our benchmarking overhead */
     results->overheads[CALL_REPLY_WAIT_OVERHEAD] = MIN(overhead[CALL_OVERHEAD], overhead[REPLY_WAIT_OVERHEAD]);
@@ -939,16 +621,27 @@ check_overhead(struct bench_results *results)
     return 1;
 }
 
-static int process_result(ccnt_t *array, const char *error)
+static bench_result_t
+process_result(ccnt_t *array, const char *error)
 {
+    bench_result_t result;
+
     if (!results_stable(array)) {
         printf("%s cycles are not stable\n", error);
         print_all(array);
     }
-    return results_min(array);
+
+    result.min = results_min(array, RUNS);
+    result.max = results_max(array, RUNS);
+    result.mean = results_mean(array, RUNS);
+    result.variance = results_variance(array, result.mean, RUNS);
+    result.stddev = results_stddev(array, result.variance, RUNS);
+    result.stddev_pc = (double) result.stddev / (double) result.mean * 100;
+
+    return result;
 }
 
-static int 
+static int
 process_results(struct bench_results *results)
 {
     int i;
@@ -958,13 +651,57 @@ process_results(struct bench_results *results)
     return 1;
 }
 
-static void 
-print_results(struct bench_results *results)
+/* for pasting into a spreadsheet or parsing */
+static void
+print_results_tsv(struct bench_results *results)
+{
+
+    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tLength\tmin\tmax\t"
+           "mean\tvariance\tstddev\tstddev %%\n");
+    for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
+        printf("%s\t", benchmark_params[i].name);
+        printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
+        printf("%d\t", benchmark_params[i].client_prio);
+        printf("%d\t", benchmark_params[i].server_prio);
+        printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
+        printf("%d\t", benchmark_params[i].length);
+        printf(CCNT_FORMAT"\t", results->results[i].min);
+        printf(CCNT_FORMAT"\t", results->results[i].max);
+        printf("%.2lf\t", results->results[i].mean);
+        printf("%.2lf\t", results->results[i].variance);
+        printf("%.2lf\t", results->results[i].stddev);
+        printf("%.0lf%%\n", results->results[i].stddev_pc);
+    }
+}
+
+static void
+single_xml_result(int result, ccnt_t value, char *name)
+{
+
+    printf("\t<result name=\"");
+    printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
+    printf("-%s", benchmark_params[result].name);
+    printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
+           benchmark_params[result].direction == DIR_TO ? "-->" : "<--",
+           benchmark_params[result].server_prio, benchmark_params[result].length);
+    printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
+
+}
+
+
+/* for bamboo */
+static void
+print_results_xml(struct bench_results *results)
 {
     int i;
+
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
-        printf("\t<result name = \"%s\">"CCNT_FORMAT"</result>\n", benchmark_params[i].name, results->results[i]);
+        single_xml_result(i, results->results[i].min, "min");
+        single_xml_result(i, results->results[i].max, "max");
+        single_xml_result(i, (ccnt_t) results->results[i].mean, "mean");
+        single_xml_result(i, (ccnt_t) results->results[i].stddev, "stdev");
     }
+
 }
 
 void
@@ -980,12 +717,17 @@ ipc_benchmarks_new(struct env* env)
 
     for (i = 0; i < RUNS; i++) {
         int j;
-        printf("\tDoing iteration %d\n", i);
+        printf("--------------------------------------------------\n");
+        printf("Doing iteration %d\n", i);
+        printf("--------------------------------------------------\n");
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
-            printf("Running %s\n", params->caption);
-            run_bench(env, params->funca, params->funcb, params->same_vspace, params->prioa, 
-                      params->priob, &end, &start);
+            printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
+                   params->name,
+                   params->direction == DIR_TO ? "client --> server" : "server --> client",
+                   params->client_prio, params->server_prio,
+                   params->same_vspace ? "same" : "diff", params->length);
+            run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
             } else {
@@ -997,6 +739,15 @@ ipc_benchmarks_new(struct env* env)
     if (!process_results(&results)) {
         return;
     }
-    print_results(&results);
+    printf("--------------------------------------------------\n");
+    printf("XML results\n");
+    printf("--------------------------------------------------\n");
+    print_results_xml(&results);
+    printf("--------------------------------------------------\n");
+    printf("TSV results\n");
+    printf("--------------------------------------------------\n");
+    print_results_tsv(&results);
+    printf("--------------------------------------------------\n");
+
 }
 
