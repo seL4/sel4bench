@@ -27,6 +27,8 @@
 #include "benchmark.h"
 #include "math.h"
 #include "timing.h"
+#include "processing.h"
+#include "printing.h"
 
 /* ipc.h requires these defines */
 #define __SWINUM(x) ((x) & 0x00ffffff)
@@ -296,16 +298,6 @@ static const struct overhead_benchmark_params overhead_benchmark_params[] = {
     [REPLY_WAIT_10_OVERHEAD] = {"reply wait"},
 };
 
-typedef struct bench_result {
-    double variance;
-    double stddev;
-    double stddev_pc;
-    double mean;
-    ccnt_t min;
-    ccnt_t max;
-} bench_result_t;
-
-
 struct bench_results {
     /* Raw results from benchmarking. These get checked for sanity */
     ccnt_t overhead_benchmarks[NOVERHEADBENCHMARKS][RUNS];
@@ -471,22 +463,10 @@ ipc_send_func(int argc, char *argv[])
             FENCE(); \
             dest[j] = end - start; \
         } \
-        if (results_stable(dest)) break; \
+        if (results_stable(dest, RUNS)) break; \
     } \
     timing_destroy(); \
 } while(0)
-
-static int
-results_stable(ccnt_t *array)
-{
-    uint32_t i;
-    for (i = 1; i < RUNS; i++) {
-        if (array[i] != array[i - 1]) {
-            return 0;
-        }
-    }
-    return 1;
-}
 
 static void
 measure_overhead(struct bench_results *results)
@@ -657,24 +637,15 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     timing_destroy();
 }
 
-static void
-print_all(ccnt_t *array)
-{
-    uint32_t i;
-    for (i = 0; i < RUNS; i++) {
-        printf("\t"CCNT_FORMAT"\n", array[i]);
-    }
-}
-
 static int
 check_overhead(struct bench_results *results)
 {
     ccnt_t overhead[NOVERHEADBENCHMARKS];
     int i;
     for (i = 0; i < NOVERHEADBENCHMARKS; i++) {
-        if (!results_stable(results->overhead_benchmarks[i])) {
+        if (!results_stable(results->overhead_benchmarks[i], RUNS)) {
             printf("Benchmarking overhead of a %s is not stable! Cannot continue\n", overhead_benchmark_params[i].name);
-            print_all(results->overhead_benchmarks[i]);
+            print_all(results->overhead_benchmarks[i], RUNS);
 #ifndef ALLOW_UNSTABLE_OVERHEAD
             return 0;
 #endif
@@ -688,32 +659,12 @@ check_overhead(struct bench_results *results)
     return 1;
 }
 
-static bench_result_t
-process_result(ccnt_t *array, const char *error)
-{
-    bench_result_t result;
-
-    if (!results_stable(array)) {
-        ZF_LOGW("%s cycles are not stable\n", error);
-        print_all(array);
-    }
-
-    result.min = results_min(array, RUNS);
-    result.max = results_max(array, RUNS);
-    result.mean = results_mean(array, RUNS);
-    result.variance = results_variance(array, result.mean, RUNS);
-    result.stddev = results_stddev(array, result.variance, RUNS);
-    result.stddev_pc = (double) result.stddev / (double) result.mean * 100;
-
-    return result;
-}
-
 static int
 process_results(struct bench_results *results)
 {
     int i;
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
-        results->results[i] = process_result(results->benchmarks[i], benchmark_params[i].name);
+        results->results[i] = process_result(results->benchmarks[i], RUNS, benchmark_params[i].name);
     }
     return 1;
 }
