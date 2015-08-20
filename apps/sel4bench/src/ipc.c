@@ -681,10 +681,10 @@ single_xml_result(int result, ccnt_t value, char *name)
     printf("\t<result name=\"");
     printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
     printf("-%s", benchmark_params[result].name);
-    printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
+    printf("(%d %s %d, size %d)\" ", benchmark_params[result].client_prio,
            benchmark_params[result].direction == DIR_TO ? "--&gt;" : "&lt;--",
            benchmark_params[result].server_prio, benchmark_params[result].length);
-    printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
+    printf("type=\"%s\">"CCNT_FORMAT"</result>\n", name, value);
 
 }
 
@@ -694,14 +694,14 @@ static void
 print_results_xml(struct bench_results *results)
 {
     int i;
-
+    printf("<results>\n");
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
         single_xml_result(i, results->results[i].min, "min");
         single_xml_result(i, results->results[i].max, "max");
         single_xml_result(i, (ccnt_t) results->results[i].mean, "mean");
         single_xml_result(i, (ccnt_t) results->results[i].stddev, "stdev");
     }
-
+    printf("</results>\n");
 }
 
 void
