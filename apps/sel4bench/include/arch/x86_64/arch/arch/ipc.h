@@ -10,6 +10,8 @@
 #ifndef __ARCH_IPC_H
 #define __ARCH_IPC_H
 
+#define ALLOW_UNSTABLE_OVERHEAD
+
 #define DO_CALL(ep, tag, sys) do { \
     uint64_t ep_copy = ep; \
     asm volatile(\
