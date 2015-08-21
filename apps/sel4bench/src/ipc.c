@@ -257,7 +257,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 10,
         .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
     },
-     /* Call faspath between client and server in different address spaces */
+    /* Call slowpath between client and server in different address spaces - no sched context donation */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
@@ -270,7 +270,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
-    /* ReplyWait fastpathi between server and client in different address spaces */
+    /* ReplyWait fastpath between server and client in different address spaces - no sched context donation */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
@@ -369,6 +369,7 @@ uint32_t name(int argc, char *argv[]) { \
     seL4_CPtr ep = atoi(argv[0]);\
     seL4_CPtr result_ep = atoi(argv[1]);\
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
+    call_func(ep, tag);\
     FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
         READ_COUNTER_BEFORE(start); \
@@ -377,7 +378,7 @@ uint32_t name(int argc, char *argv[]) { \
     } \
     FENCE(); \
     send_result(result_ep, send_start_end); \
-    while(1) seL4_Wait(ep, NULL);\
+    send_func(ep, tag); \
     return 0; \
 }
 
@@ -403,7 +404,7 @@ uint32_t name(int argc, char *argv[]) { \
     } \
     FENCE(); \
     send_result(result_ep, send_start_end); \
-    while (1) seL4_Wait(ep, NULL);\
+    reply_func(tag);\
     return 0; \
 }
 
@@ -419,8 +420,7 @@ ipc_wait_func(int argc, char *argv[])
     ccnt_t start UNUSED, end UNUSED;
     seL4_CPtr ep = atoi(argv[0]);
     seL4_CPtr result_ep = atoi(argv[1]);
-    seL4_Word badge;
-    seL4_SendWait(ep, ep, seL4_MessageInfo_new(0, 0, 0, 0), &badge);
+    DO_REAL_SEND(ep, seL4_MessageInfo_new(0, 0, 0, 0));
     FENCE();
     for (i = 0; i < WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
@@ -430,7 +430,6 @@ ipc_wait_func(int argc, char *argv[])
     FENCE();
     DO_REAL_WAIT(ep);
     send_result(result_ep, end);
-    while (1) seL4_Wait(ep, NULL);
     return 0;
 }
 
@@ -451,7 +450,6 @@ ipc_send_func(int argc, char *argv[])
     FENCE();
     send_result(result_ep, start);
     DO_REAL_SEND(ep, tag);
-    while (1) seL4_Wait(ep, NULL);
     return 0;
 }
 
@@ -623,17 +621,16 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     /* start the server */
     error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
     assert(error == 0);
-    
-        printf("Waiting for server\n");
-        seL4_Word badge;
-        seL4_Wait(env->ep.cptr, &badge);
+
+    /* wait for the server to tell us it's been initialised */
+    seL4_Word badge;
+    seL4_Wait(env->ep.cptr, &badge);
+
     if (params->same_sc) {
-        /* we need to initialise the server, then take its sc away.*/
-        printf("Success, taking servers sc away\n");
         /* now take the server's sc away */
-       error = seL4_TCB_ClearSchedContext(server.process.thread.tcb.cptr);
+        error = seL4_TCB_ClearSchedContext(server.process.thread.tcb.cptr);
         assert(error == 0);
-   }
+    }
 
     /* start the client */
     error = sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1);
@@ -643,28 +640,22 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     UNUSED seL4_SchedContext_YieldTo_t r = seL4_SchedContext_YieldTo(client.process.thread.sched_context.cptr);
     assert(r.error == 0);
 
-    /* wait for results */
-    printf("Waiting for client result\n");
+    /* wait for client result */
     *ret1 = get_result(env->result_ep.cptr);
-    
+
     if (params->same_sc) {
         /* give the server back it's sc so it can reply to us */
         error = seL4_TCB_SetSchedContext(server.process.thread.tcb.cptr, server.process.thread.sched_context.cptr);
         assert(error == 0);
 
     }
-        seL4_Send(env->ep.cptr, seL4_MessageInfo_new(0, 0, 0, 0));
-
-    printf("Waiting for server result\n");
     *ret2 = get_result(env->result_ep.cptr);
 
     seL4_TCB_Suspend(server.process.thread.tcb.cptr);
     seL4_TCB_Suspend(client.process.thread.tcb.cptr);
-    printf("Clean up\n");
+
     /* clean up - clean b first in case it is sharing a's cspace and vspace */
-    printf("Clean server\n");
     sel4utils_destroy_process(&server.process, &env->vka);
-    printf("CLean client\n");
     sel4utils_destroy_process(&client.process, &env->vka);
 
     timing_destroy();
