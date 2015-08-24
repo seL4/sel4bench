@@ -681,10 +681,10 @@ single_xml_result(int result, ccnt_t value, char *name)
     printf("\t<result name=\"");
     printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
     printf("-%s", benchmark_params[result].name);
-    printf("(%d %s %d, size %d)", benchmark_params[result].client_prio,
+    printf("(%d %s %d, size %d)\" ", benchmark_params[result].client_prio,
            benchmark_params[result].direction == DIR_TO ? "--&gt;" : "&lt;--",
            benchmark_params[result].server_prio, benchmark_params[result].length);
-    printf("-%s \">"CCNT_FORMAT"</result>\n", name, value);
+    printf("type=\"%s\">"CCNT_FORMAT"</result>\n", name, value);
 
 }
 
@@ -694,14 +694,14 @@ static void
 print_results_xml(struct bench_results *results)
 {
     int i;
-
+    printf("<results>\n");
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
         single_xml_result(i, results->results[i].min, "min");
         single_xml_result(i, results->results[i].max, "max");
         single_xml_result(i, (ccnt_t) results->results[i].mean, "mean");
         single_xml_result(i, (ccnt_t) results->results[i].stddev, "stdev");
     }
-
+    printf("</results>\n");
 }
 
 void
@@ -717,16 +717,22 @@ ipc_benchmarks_new(struct env* env)
 
     for (i = 0; i < RUNS; i++) {
         int j;
+#ifdef DEBUG
         printf("--------------------------------------------------\n");
+#endif
         printf("Doing iteration %d\n", i);
+#ifdef DEBUG
         printf("--------------------------------------------------\n");
+#endif
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
+#ifdef DEBUG
             printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
                    params->name,
                    params->direction == DIR_TO ? "client --> server" : "server --> client",
                    params->client_prio, params->server_prio,
                    params->same_vspace ? "same" : "diff", params->length);
+#endif
             run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
