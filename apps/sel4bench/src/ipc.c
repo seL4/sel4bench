@@ -627,7 +627,7 @@ process_result(ccnt_t *array, const char *error)
     bench_result_t result;
 
     if (!results_stable(array)) {
-        printf("%s cycles are not stable\n", error);
+        ZF_LOGW("%s cycles are not stable\n", error);
         print_all(array);
     }
 
@@ -717,22 +717,16 @@ ipc_benchmarks_new(struct env* env)
 
     for (i = 0; i < RUNS; i++) {
         int j;
-#ifdef DEBUG
-        printf("--------------------------------------------------\n");
-#endif
-        printf("Doing iteration %d\n", i);
-#ifdef DEBUG
-        printf("--------------------------------------------------\n");
-#endif
+        ZF_LOGI("--------------------------------------------------\n");
+        ZF_LOGI("Doing iteration %d\n", i);
+        ZF_LOGI("--------------------------------------------------\n");
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params* params = &benchmark_params[j];
-#ifdef DEBUG
-            printf("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
+            ZF_LOGI("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, length %2d\n",
                    params->name,
                    params->direction == DIR_TO ? "client --> server" : "server --> client",
                    params->client_prio, params->server_prio,
                    params->same_vspace ? "same" : "diff", params->length);
-#endif
             run_bench(env, params, &end, &start);
             if (end > start) {
                 results.benchmarks[j][i] = end - start;
