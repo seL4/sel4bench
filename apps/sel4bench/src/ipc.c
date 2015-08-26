@@ -75,12 +75,19 @@ typedef enum dir {
 } dir_t;
 
 typedef struct benchmark_params {
+    /* name of the function we are benchmarking */
     const char* name;
+    /* direction of the ipc */
     dir_t direction;
+    /* functions for client and server to run */
     helper_func_t server_fn, client_fn;
+    /* should client and server run in the same vspace? */
     bool same_vspace;
+    /* prio for client and server to run at */
     uint8_t server_prio, client_prio;
+    /* length of ipc to send */
     uint8_t length;
+    /* id of overhead calculation for this function */
     enum overheads overhead_id;
 } benchmark_params_t;
 
