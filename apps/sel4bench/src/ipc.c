@@ -75,13 +75,24 @@ typedef enum dir {
 } dir_t;
 
 typedef struct benchmark_params {
+    /* name of the function we are benchmarking */
     const char* name;
+    /* direction of the ipc */
     dir_t direction;
+    /* functions for client and server to run */
     helper_func_t server_fn, client_fn;
+    /* should client and server run in the same vspace? */
     bool same_vspace;
+    /* prio for client and server to run at */
     uint8_t server_prio, client_prio;
+    /* length of ipc to send */
     uint8_t length;
+    /* id of overhead calculation for this function */
     enum overheads overhead_id;
+    /* should we put a dummy thread in the scheduler? */
+    bool dummy_thread;
+    /* if so, what prio should the dummy thread be at? */
+    uint8_t dummy_prio;
 } benchmark_params_t;
 
 struct overhead_benchmark_params {
@@ -118,8 +129,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = true,
-        .client_prio = 100,
-        .server_prio = 100,
+        .client_prio = seL4_MaxPrio - 1,
+        .server_prio = seL4_MaxPrio - 1,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
@@ -130,8 +141,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = true,
-        .client_prio = 100,
-        .server_prio = 100,
+        .client_prio = seL4_MaxPrio - 1,
+        .server_prio = seL4_MaxPrio - 1,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
@@ -142,8 +153,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
-        .client_prio = 100,
-        .server_prio = 100,
+        .client_prio = seL4_MaxPrio - 1,
+        .server_prio = seL4_MaxPrio - 1,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
@@ -154,8 +165,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
-        .client_prio = 100,
-        .server_prio = 100,
+        .client_prio = seL4_MaxPrio - 1,
+        .server_prio = seL4_MaxPrio - 1,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
@@ -167,8 +178,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
-        .client_prio = 50,
-        .server_prio = 100,
+        .client_prio = seL4_MinPrio,
+        .server_prio = seL4_MaxPrio - 1,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
@@ -179,8 +190,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
-        .client_prio = 50,
-        .server_prio = 100,
+        .client_prio = seL4_MinPrio,
+        .server_prio = seL4_MaxPrio - 1,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
@@ -191,8 +202,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func2,
         .server_fn   = ipc_replywait_func2,
         .same_vspace = false,
-        .client_prio = 100,
-        .server_prio = 50,
+        .client_prio = seL4_MaxPrio - 1,
+        .server_prio = seL4_MinPrio,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
     },
@@ -203,10 +214,40 @@ static const benchmark_params_t benchmark_params[] = {
         .client_fn   = ipc_call_func,
         .server_fn   = ipc_replywait_func,
         .same_vspace = false,
-        .client_prio = 100,
-        .server_prio = 50,
+        .client_prio = seL4_MaxPrio - 1,
+        .server_prio = seL4_MinPrio,
         .length = 0,
         .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+    },
+     /* ReplyWait slowpath, high prio server to low prio client, different address space, with
+      * low prio dummy thread also in scheduler */
+    {
+        .name        = "seL4_ReplyWait",
+        .direction   = DIR_FROM,
+        .client_fn   = ipc_call_func,
+        .server_fn   = ipc_replywait_func,
+        .same_vspace = false,
+        .client_prio = seL4_MinPrio + 1,
+        .server_prio = seL4_MaxPrio - 1,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD,
+        .dummy_thread = true,
+        .dummy_prio = seL4_MinPrio, 
+    },
+    /* Call slowpath, high prio client to low prio server, different address space, with 
+     * low prio dummy thread also in scheduler */
+    {
+        .name        = "seL4_Call",
+        .direction   = DIR_TO,
+        .client_fn   = ipc_call_func2,
+        .server_fn   = ipc_replywait_func2,
+        .same_vspace = false,
+        .client_prio = seL4_MaxPrio - 1,
+        .server_prio = seL4_MinPrio + 1,
+        .length = 0,
+        .overhead_id = CALL_REPLY_WAIT_OVERHEAD,
+        .dummy_thread = true,
+        .dummy_prio = seL4_MinPrio, 
     },
     /* Send slowpath (no fastpath for send) same prio client-server, different address space */
     {
@@ -487,22 +528,22 @@ static ccnt_t get_result(seL4_CPtr ep)
 #endif
 
 void
-init_client_config(env_t env, helper_thread_t *client, helper_func_t client_fn, int prio)
+init_config(env_t env, helper_thread_t *thread, helper_func_t thread_fn, int prio)
 {
-    /* set up process a */
-    bzero(&client->config, sizeof(client->config));
-    client->config.is_elf = false;
-    client->config.create_cspace = true;
-    client->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
-    client->config.create_vspace = true;
-    client->config.reservations = &env->region;
-    client->config.num_reservations = 1;
-    client->config.create_fault_endpoint = false;
-    client->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
-    client->config.priority = prio;
-    client->config.entry_point = client_fn;
+    /* set up a process that runs in its own address space */
+    bzero(&thread->config, sizeof(&thread->config));
+    thread->config.is_elf = false;
+    thread->config.create_cspace = true;
+    thread->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
+    thread->config.create_vspace = true;
+    thread->config.reservations = &env->region;
+    thread->config.num_reservations = 1;
+    thread->config.create_fault_endpoint = false;
+    thread->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
+    thread->config.priority = prio;
+    thread->config.entry_point = thread_fn;
 #ifndef CONFIG_KERNEL_STABLE
-    client->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
+    thread->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
 #endif
 
 }
@@ -511,13 +552,12 @@ void
 init_server_config(env_t env, helper_thread_t *server, helper_func_t server_fn, int prio,
                    helper_thread_t *client, int same_vspace)
 {
-    /* set up process b - b's config is nearly the same as a's */
+    /* set up a server process which may share its address space with the client */
     server->config = client->config;
     server->config.priority = prio;
     server->config.entry_point = server_fn;
 
     if (same_vspace) {
-        /* b shares a's cspace and vspace */
         server->config.create_cspace = false;
         server->config.cnode = client->process.cspace;
         server->config.create_vspace = false;
@@ -525,36 +565,58 @@ init_server_config(env_t env, helper_thread_t *server, helper_func_t server_fn, 
     }
 }
 
+/* this function is never exeucted, it just lives in the scheduler queue */
+static NORETURN seL4_Word 
+dummy_fn(int argc, char *argv[]) {
+    while(1);
+}
+
 void
 run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret2)
 {
-    UNUSED int error;
-    helper_thread_t client, server;
+    helper_thread_t client, server, dummy;
 
     timing_init();
 
     /* configure processes */
-    init_client_config(env, &client, params->client_fn, params->client_prio);
+    init_config(env, &client, params->client_fn, params->client_prio);
 
-    error = sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config);
-    assert(error == 0);
+    if (sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config)) {
+        ZF_LOGF("Failed to configure client\n");
+    }
 
     init_server_config(env, &server, params->server_fn, params->server_prio, &client, params->same_vspace);
 
-    error = sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config);
-    assert(error == 0);
+    if (sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config)) {
+        ZF_LOGF("Failed to configure server\n");
+    }
 
     /* clone the text segment into the vspace - note that as we are only cloning the text
      * segment, you will not be able to use anything that relies on initialisation in benchmark
      * threads - like printf, (but seL4_Debug_PutChar is ok)
      */
-    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation);
-    assert(error == 0);
+    if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation)) {
+        ZF_LOGF("Failed to bootstrap client\n");
+    }
 
     if (!params->same_vspace) {
-        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation);
-        assert(error == 0);
+        if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation)) {
+            ZF_LOGF("Failed to bootstrap server\n");
+        }
     }
+
+    if (params->dummy_thread) {
+        init_config(env, &dummy, dummy_fn, params->dummy_prio);
+        if (sel4utils_configure_process_custom(&dummy.process, &env->vka, &env->vspace, dummy.config)) {
+            ZF_LOGF("Failed to configure dummy\n");
+        }
+        if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &dummy.process.vspace, env->region.reservation)) {
+            ZF_LOGF("Failed to bootstrap dummy thread\n");
+        }
+        if (sel4utils_spawn_process(&dummy.process, &env->vka, &env->vspace, 0, NULL, 1)) {
+            ZF_LOGF("Failed to spawn dummy process\n");
+        }
+    }   
 
     /* copy endpoint cptrs into a and b's respective cspaces*/
     client.ep = sel4utils_copy_cap_to_process(&client.process, env->ep_path);
@@ -573,19 +635,24 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
 
     /* start processes */
-    error = sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1);
-    assert(error == 0);
+    if (sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1)) {
+        ZF_LOGF("Failed to spawn client\n");
+    }
 
-    error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
-    assert(error == 0);
+    if (sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1)) {
+        ZF_LOGF("Failed to spawn server\n");
+    }
 
     /* wait for results */
     *ret1 = get_result(env->result_ep.cptr);
     *ret2 = get_result(env->result_ep.cptr);
 
-    /* clean up - clean b first in case it is sharing a's cspace and vspace */
+    /* clean up - clean server first in case it is sharing the client's cspace and vspace */
     sel4utils_destroy_process(&server.process, &env->vka);
     sel4utils_destroy_process(&client.process, &env->vka);
+    if (params->dummy_thread) {
+        sel4utils_destroy_process(&dummy.process, &env->vka);
+    }
 
     timing_destroy();
 }
@@ -656,7 +723,7 @@ static void
 print_results_tsv(struct bench_results *results)
 {
 
-    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tLength\tmin\tmax\t"
+    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tDummy (prio)?\tLength\tmin\tmax\t"
            "mean\tvariance\tstddev\tstddev %%\n");
     for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
         printf("%s\t", benchmark_params[i].name);
@@ -664,6 +731,7 @@ print_results_tsv(struct bench_results *results)
         printf("%d\t", benchmark_params[i].client_prio);
         printf("%d\t", benchmark_params[i].server_prio);
         printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
+        printf("%s (%d)\t", benchmark_params[i].dummy_thread ? "true" : "false", benchmark_params[i].dummy_prio);
         printf("%d\t", benchmark_params[i].length);
         printf(CCNT_FORMAT"\t", results->results[i].min);
         printf(CCNT_FORMAT"\t", results->results[i].max);
