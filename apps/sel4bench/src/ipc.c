@@ -705,7 +705,7 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
 
     /* make sure the client runs first */
     seL4_SchedContext_YieldTo_t r = seL4_SchedContext_YieldTo(client.process.thread.sched_context.cptr);
-    if (r.error == 0) {
+    if (r.error != seL4_NoError) {
         ZF_LOGF("Failed to yieldTo client\n");
     }
 
