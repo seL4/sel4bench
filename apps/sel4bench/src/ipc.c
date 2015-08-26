@@ -543,24 +543,28 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     /* configure processes */
     init_client_config(env, &client, params->client_fn, params->client_prio);
 
-    error = sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config);
-    assert(error == 0);
+    if (sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config)) {
+        ZF_LOGF("Failed to configure client\n");
+    }
 
     init_server_config(env, &server, params->server_fn, params->server_prio, &client, params->same_vspace);
 
-    error = sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config);
-    assert(error == 0);
+    if (sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config)) {
+        ZF_LOGF("Failed to configure server\n");
+    }
 
     /* clone the text segment into the vspace - note that as we are only cloning the text
      * segment, you will not be able to use anything that relies on initialisation in benchmark
      * threads - like printf, (but seL4_Debug_PutChar is ok)
      */
-    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation);
-    assert(error == 0);
+    if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation)) {
+        ZF_LOGF("Failed to bootstrap client\n");
+    }
 
     if (!params->same_vspace) {
-        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation);
-        assert(error == 0);
+        if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation)) {
+            ZF_LOGF("Failed to bootstrap server\n");
+        }
     }
 
     /* copy endpoint cptrs into a and b's respective cspaces*/
@@ -580,11 +584,13 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
 
     /* start processes */
-    error = sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1);
-    assert(error == 0);
+    if (sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1)) {
+        ZF_LOGF("Failed to spawn client\n");
+    }
 
-    error = sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1);
-    assert(error == 0);
+    if (sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1)) {
+        ZF_LOGF("Failed to spawn server\n");
+    }
 
     /* wait for results */
     *ret1 = get_result(env->result_ep.cptr);
