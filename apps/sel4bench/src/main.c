@@ -115,17 +115,17 @@ void *main_continued(void *arg)
     /* Run the benchmarking */
     printf("Doing benchmarks...\n\n");
 
-    #ifdef CONFIG_IPC_BENCHMARK
+#ifdef CONFIG_IPC_BENCHMARK
     printf("\nIPC Benchmarks\n"
            "==============\n\n");
     ipc_benchmarks_new(&global_env);
-    #endif
+#endif
     
-    #ifdef CONFIG_IRQ_PATH_BENCHMARK
+#ifdef CONFIG_IRQ_PATH_BENCHMARK
     printf("\nIRQ Path Benchmarks\n"
            "===================\n\n");
     irq_benchmarks_new(&global_env);
-    #endif
+#endif
 
     printf("All is well in the universe.\n");
     printf("\n\nFin\n");

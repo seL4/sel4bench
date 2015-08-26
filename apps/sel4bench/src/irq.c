@@ -31,8 +31,8 @@
 #define TRACE_POINT_IRQ_PATH_END 2
 
 /* Arrays to hold log data and metadata */
-static log_entry_t kernel_log[KERNEL_LOG_BUFFER_SIZE];
-static seL4_Word kernel_log_data[KERNEL_LOG_BUFFER_SIZE];
+static seL4_LogEntry kernel_log[KERNEL_MAX_LOG_SIZE];
+static seL4_Word kernel_log_data[KERNEL_MAX_LOG_SIZE];
 static unsigned int offsets[CONFIG_MAX_NUM_TRACE_POINTS];
 static unsigned int sizes[CONFIG_MAX_NUM_TRACE_POINTS];
 
@@ -63,9 +63,17 @@ irq_benchmarks_new(struct env* env) {
     seL4_timer_t *timer = sel4platsupport_get_default_timer(
                             &env->vka, &env->vspace, 
                             &env->simple, timer_aep);
+    if (timer == NULL) {
+        ZF_LOGF("Failed to access timer driver\n");
+    }
 
-    timer_periodic(timer->timer, INTERRUPT_PERIOD_NS);
-    timer_start(timer->timer);
+    if (timer_periodic(timer->timer, INTERRUPT_PERIOD_NS) != 0) {
+        ZF_LOGF("Failed to configure timer\n");
+    }
+
+    if (timer_start(timer->timer) != 0) {
+        ZF_LOGF("Failed to start timer\n");
+    }
 
     timing_init();
 
@@ -91,10 +99,12 @@ irq_benchmarks_new(struct env* env) {
 
     timing_destroy();
 
-    timer_stop(timer->timer);
+    if (timer_stop(timer->timer) != 0) {
+        ZF_LOGF("Failed to stop timer\n");
+    }
 
     /* Extract data from kernel */
-    unsigned int n = kernel_logging_sync_log(kernel_log, KERNEL_LOG_BUFFER_SIZE);
+    unsigned int n = kernel_logging_sync_log(kernel_log, KERNEL_MAX_LOG_SIZE);
 
     /* Sort and group data by tracepoints. A stable sort is used so the first N_IGNORED
      * results of each tracepoint can be ignored, as this keeps the data in chronological
