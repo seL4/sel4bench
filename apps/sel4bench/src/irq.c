@@ -31,8 +31,8 @@
 #define TRACE_POINT_IRQ_PATH_END 2
 
 /* Arrays to hold log data and metadata */
-static seL4_LogEntry kernel_log[KERNEL_MAX_LOG_SIZE];
-static seL4_Word kernel_log_data[KERNEL_MAX_LOG_SIZE];
+static seL4_LogEntry kernel_log[KERNEL_MAX_NUM_LOG_ENTRIES];
+static ccnt_t kernel_log_data[KERNEL_MAX_NUM_LOG_ENTRIES];
 static unsigned int offsets[CONFIG_MAX_NUM_TRACE_POINTS];
 static unsigned int sizes[CONFIG_MAX_NUM_TRACE_POINTS];
 
@@ -104,13 +104,13 @@ irq_benchmarks_new(struct env* env) {
     }
 
     /* Extract data from kernel */
-    unsigned int n = kernel_logging_sync_log(kernel_log, KERNEL_MAX_LOG_SIZE);
+    unsigned int n = kernel_logging_sync_log(kernel_log, KERNEL_MAX_NUM_LOG_ENTRIES);
 
     /* Sort and group data by tracepoints. A stable sort is used so the first N_IGNORED
      * results of each tracepoint can be ignored, as this keeps the data in chronological
      * order.
      */
-    logging_sort_log(kernel_log, n);
+    logging_stable_sort_log(kernel_log, n);
     logging_group_log_by_key(kernel_log, n, sizes, offsets, CONFIG_MAX_NUM_TRACE_POINTS);
 
     /* Copy the cycle counts into a separate array to simplify further processing */
@@ -124,13 +124,13 @@ irq_benchmarks_new(struct env* env) {
      * using tracepoints.
      */
     int n_overhead_data = sizes[TRACE_POINT_OVERHEAD] - N_IGNORED;
-    seL4_Word *overhead_data = &kernel_log_data[offsets[TRACE_POINT_OVERHEAD] + N_IGNORED];
+    ccnt_t *overhead_data = &kernel_log_data[offsets[TRACE_POINT_OVERHEAD] + N_IGNORED];
     bench_result_t overhead_result = process_result(overhead_data, n_overhead_data, NULL);
 
     /* The results of the IRQ path benchmark are split over multiple tracepoints.
      * A new buffer is allocated to store the amalgamated results. */
     int n_data = sizes[TRACE_POINT_IRQ_PATH_START] - N_IGNORED;
-    seL4_Word *data = (seL4_Word*)malloc(sizeof(seL4_Word) * n_data);
+    ccnt_t *data = (ccnt_t*)malloc(sizeof(ccnt_t) * n_data);
     if (data == NULL) {
         ZF_LOGF("Failed to allocate memory\n");
     }
@@ -139,8 +139,8 @@ irq_benchmarks_new(struct env* env) {
      * The average overhead is subtracted from each cycle count (doubled as there are 2
      * tracepoints) to account for overhead added to the cycle counts by use of tracepoints.
      */
-    seL4_Word *starts = &kernel_log_data[offsets[TRACE_POINT_IRQ_PATH_START] + N_IGNORED];
-    seL4_Word *ends = &kernel_log_data[offsets[TRACE_POINT_IRQ_PATH_END] + N_IGNORED];
+    ccnt_t *starts = &kernel_log_data[offsets[TRACE_POINT_IRQ_PATH_START] + N_IGNORED];
+    ccnt_t *ends = &kernel_log_data[offsets[TRACE_POINT_IRQ_PATH_END] + N_IGNORED];
     for (int i = 0; i < n_data; ++i) {
         data[i] = starts[i] + ends[i] - (overhead_result.mean * 2);
     }
