@@ -124,12 +124,20 @@ irq_benchmarks_new(struct env* env) {
      * using tracepoints.
      */
     int n_overhead_data = sizes[TRACE_POINT_OVERHEAD] - N_IGNORED;
+    if (n_overhead_data <= 0) {
+        ZF_LOGF("Insufficient data recorded. Was the kernel built with the relevant tracepoints?\n");
+    }
+
     ccnt_t *overhead_data = &kernel_log_data[offsets[TRACE_POINT_OVERHEAD] + N_IGNORED];
     bench_result_t overhead_result = process_result(overhead_data, n_overhead_data, NULL);
 
     /* The results of the IRQ path benchmark are split over multiple tracepoints.
      * A new buffer is allocated to store the amalgamated results. */
     int n_data = sizes[TRACE_POINT_IRQ_PATH_START] - N_IGNORED;
+    if (n_data <= 0) {
+        ZF_LOGF("Insufficient data recorded. Was the kernel built with the relevant tracepoints?\n");
+    }
+
     ccnt_t *data = (ccnt_t*)malloc(sizeof(ccnt_t) * n_data);
     if (data == NULL) {
         ZF_LOGF("Failed to allocate memory\n");
