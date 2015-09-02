@@ -25,7 +25,7 @@ config IPC_BENCHMARK
 
 config IRQ_PATH_BENCHMARK
     bool "IRQ Path Benchmark"
-    default y
-    depends on APP_SEL4BENCH && BENCHMARK
+    default n
+    depends on APP_SEL4BENCH
     help
         Run IRQ Path Benchmark.
