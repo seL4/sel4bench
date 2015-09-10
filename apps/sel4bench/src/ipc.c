@@ -511,7 +511,7 @@ void
 init_config(env_t env, helper_thread_t *thread, helper_func_t thread_fn, int prio)
 {
     /* set up a process that runs in its own address space */
-    bzero(&thread->config, sizeof(&thread->config));
+    bzero(&thread->config, sizeof(thread->config));
     thread->config.is_elf = false;
     thread->config.create_cspace = true;
     thread->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
