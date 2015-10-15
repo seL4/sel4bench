@@ -52,17 +52,17 @@ print_result(bench_result_t *result)
 void
 irq_benchmarks_new(struct env* env) {
 
-    vka_object_t timer_aep_object;
+    vka_object_t timer_notification_object = {0};
 
     /* Set up timer as a source of interrupts */
-    if (vka_alloc_async_endpoint(&env->vka, &timer_aep_object) != 0) {
+    if (vka_alloc_notification(&env->vka, &timer_notification_object) != 0) {
         ZF_LOGF("Failed to allocate async endpoint\n");
     }
-    seL4_CPtr timer_aep = timer_aep_object.cptr;
+    seL4_CPtr timer_notification = timer_notification_object.cptr;
 
     seL4_timer_t *timer = sel4platsupport_get_default_timer(
                             &env->vka, &env->vspace, 
-                            &env->simple, timer_aep);
+                            &env->simple, timer_notification);
     if (timer == NULL) {
         ZF_LOGF("Failed to access timer driver\n");
     }
@@ -80,7 +80,7 @@ irq_benchmarks_new(struct env* env) {
     /* Record tracepoints for irq path */
     kernel_logging_reset_log();
     for (int i = 0; i < N_INTERRUPTS; ++i) {
-        seL4_Wait(timer_aep, NULL);
+        seL4_Wait(timer_notification, NULL);
         /* Each time an interrupt is processed by the kernel,
          * several tracepoints are invoked in the kernel which record
          * cycle counts between pairs of points.
