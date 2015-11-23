@@ -71,7 +71,7 @@
     ); \
 } while(0)
 
-#define DO_REPLY_WAIT(ep, tag, sys) do { \
+#define DO_REPLY_RECV(ep, tag, sys) do { \
     uint32_t ep_copy = ep; \
     asm volatile( \
         "movl %%esp, %%ecx \n"\
@@ -82,14 +82,14 @@
          "+S" (tag), \
          "+b" (ep_copy) \
         : \
-         "a" (seL4_SysReplyWait) \
+         "a" (seL4_SysReplyRecv) \
         : \
          "ecx", \
          "edx" \
     ); \
 } while(0)
 
-#define DO_REPLY_WAIT_10(ep, tag, sys) do { \
+#define DO_REPLY_RECV_10(ep, tag, sys) do { \
     uint32_t ep_copy = ep; \
     asm volatile( \
         "pushl %%ebp \n"\
@@ -102,7 +102,7 @@
          "+S" (tag), \
          "+b" (ep_copy) \
         : \
-         "a" (seL4_SysReplyWait) \
+         "a" (seL4_SysReplyRecv) \
         : \
          "ecx", \
          "edx", \
@@ -110,7 +110,7 @@
     ); \
 } while(0)
 
-#define DO_WAIT(ep, sys) do { \
+#define DO_RECV(ep, sys) do { \
     uint32_t ep_copy = ep; \
     asm volatile( \
         "movl %%esp, %%ecx \n"\
@@ -120,7 +120,7 @@
         : \
          "+b" (ep_copy) \
         : \
-         "a" (seL4_SysWait) \
+         "a" (seL4_SysRecv) \
         : \
          "ecx", \
          "edx", \
@@ -154,16 +154,16 @@
 
 #define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "sysenter")
 #define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_WAIT(ep, tag) DO_REPLY_WAIT(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT(ep, tag) DO_REPLY_WAIT(ep, tag, ".byte 0x66\n.byte 0x90")
+#define DO_REAL_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, "sysenter")
+#define DO_NOP_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_CALL_10(ep, tag) DO_CALL_10(ep, tag, "sysenter")
 #define DO_NOP_CALL_10(ep, tag) DO_CALL_10(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10(ep, tag, "sysenter")
-#define DO_NOP_REPLY_WAIT_10(ep, tag) DO_REPLY_WAIT_10(ep, tag, ".byte 0x66\n.byte 0x90")
+#define DO_REAL_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, "sysenter")
+#define DO_NOP_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_SEND(ep, tag) DO_SEND(ep, tag, "sysenter")
 #define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_WAIT(ep) DO_WAIT(ep, "sysenter")
-#define DO_NOP_WAIT(ep) DO_WAIT(ep, ".byte 0x66\n.byte 0x90")
+#define DO_REAL_RECV(ep) DO_RECV(ep, "sysenter")
+#define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
 
 
 #endif /* __ARCH_IPC_H */
