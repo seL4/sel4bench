@@ -179,7 +179,7 @@ int main(void)
 
     /* Switch to a bigger stack with some guard pages! */
     printf("Switching to a safer, bigger stack... ");
-    error = (int) sel4utils_run_on_stack(&global_env.vspace, main_continued, NULL);
+    error = sel4utils_run_on_stack(&global_env.vspace, main_continued, NULL, NULL);
     assert(error == 0);
 
     return 0;
