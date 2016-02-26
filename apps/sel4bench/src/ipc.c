@@ -28,6 +28,8 @@
 #include "benchmark.h"
 #include "math.h"
 #include "timing.h"
+#include "processing.h"
+#include "printing.h"
 
 /* ipc.h requires these defines */
 #define __SWINUM(x) ((x) & 0x00ffffff)
@@ -51,19 +53,19 @@
 
 enum overhead_benchmarks {
     CALL_OVERHEAD,
-    REPLY_WAIT_OVERHEAD,
+    REPLY_RECV_OVERHEAD,
     SEND_OVERHEAD,
-    WAIT_OVERHEAD,
+    RECV_OVERHEAD,
     CALL_10_OVERHEAD,
-    REPLY_WAIT_10_OVERHEAD,
+    REPLY_RECV_10_OVERHEAD,
     /******/
     NOVERHEADBENCHMARKS
 };
 
 enum overheads {
-    CALL_REPLY_WAIT_OVERHEAD,
-    CALL_REPLY_WAIT_10_OVERHEAD,
-    SEND_WAIT_OVERHEAD,
+    CALL_REPLY_RECV_OVERHEAD,
+    CALL_REPLY_RECV_10_OVERHEAD,
+    SEND_RECV_OVERHEAD,
     /******/
     NOVERHEADS
 };
@@ -115,12 +117,12 @@ uint32_t ipc_call_func(int argc, char *argv[]);
 uint32_t ipc_call_func2(int argc, char *argv[]);
 uint32_t ipc_call_10_func(int argc, char *argv[]);
 uint32_t ipc_call_10_func2(int argc, char *argv[]);
-uint32_t ipc_replywait_func2(int argc, char *argv[]);
-uint32_t ipc_replywait_func(int argc, char *argv[]);
-uint32_t ipc_replywait_10_func2(int argc, char *argv[]);
-uint32_t ipc_replywait_10_func(int argc, char *argv[]);
+uint32_t ipc_replyrecv_func2(int argc, char *argv[]);
+uint32_t ipc_replyrecv_func(int argc, char *argv[]);
+uint32_t ipc_replyrecv_10_func2(int argc, char *argv[]);
+uint32_t ipc_replyrecv_10_func(int argc, char *argv[]);
 uint32_t ipc_send_func(int argc, char *argv[]);
-uint32_t ipc_wait_func(int argc, char *argv[]);
+uint32_t ipc_recv_func(int argc, char *argv[]);
 
 /* array of benchmarks to run */
 /* one way IPC benchmarks - varying size, direction and priority.*/
@@ -130,52 +132,52 @@ static const benchmark_params_t benchmark_params[] = {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
-        .server_fn   = ipc_replywait_func2,
+        .server_fn   = ipc_replyrecv_func2,
         .same_vspace = true,
         .same_sc     = true,
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
-    /* ReplyWait fastpath between server and client in the same address space */
+    /* ReplyRecv fastpath between server and client in the same address space */
     {
-        .name        = "seL4_ReplyWait",
+        .name        = "seL4_ReplyRecv",
         .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
-        .server_fn   = ipc_replywait_func,
+        .server_fn   = ipc_replyrecv_func,
         .same_vspace = true,
         .same_sc     = true,
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
     /* Call faspath between client and server in different address spaces */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
-        .server_fn   = ipc_replywait_func2,
+        .server_fn   = ipc_replyrecv_func2,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
-    /* ReplyWait fastpath between server and client in different address spaces */
+    /* ReplyRecv fastpath between server and client in different address spaces */
     {
-        .name        = "seL4_ReplyWait",
+        .name        = "seL4_ReplyRecv",
         .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
-        .server_fn   = ipc_replywait_func,
+        .server_fn   = ipc_replyrecv_func,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
     /* Call fastpath, low prio client to high prio server in different address space */
     {
@@ -183,66 +185,66 @@ static const benchmark_params_t benchmark_params[] = {
         .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
         .client_fn   = ipc_call_func2,
-        .server_fn   = ipc_replywait_func2,
+        .server_fn   = ipc_replyrecv_func2,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MinPrio,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
-    /* ReplyWait slowpath, high prio server to low prio client, different address space */
+    /* ReplyRecv slowpath, high prio server to low prio client, different address space */
     {
-        .name        = "seL4_ReplyWait",
+        .name        = "seL4_ReplyRecv",
         .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
-        .server_fn   = ipc_replywait_func,
+        .server_fn   = ipc_replyrecv_func,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MinPrio,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
     /* Call slowpath, high prio client to low prio server, different address space */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
-        .server_fn   = ipc_replywait_func2,
+        .server_fn   = ipc_replyrecv_func2,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MinPrio,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
-    /* ReplyWait fastpath, low prio server to high prio client, different address space */
+    /* ReplyRecv fastpath, low prio server to high prio client, different address space */
     {
-        .name        = "seL4_ReplyWait",
+        .name        = "seL4_ReplyRecv",
         .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
-        .server_fn   = ipc_replywait_func,
+        .server_fn   = ipc_replyrecv_func,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MinPrio,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
-     /* ReplyWait slowpath, high prio server to low prio client, different address space, with
+     /* ReplyRecv slowpath, high prio server to low prio client, different address space, with
       * low prio dummy thread also in scheduler */
     {
-        .name        = "seL4_ReplyWait",
+        .name        = "seL4_ReplyRecv",
         .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
-        .server_fn   = ipc_replywait_func,
+        .server_fn   = ipc_replyrecv_func,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MinPrio + 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD,
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD,
         .dummy_thread = true,
         .dummy_prio = seL4_MinPrio, 
     },
@@ -252,13 +254,13 @@ static const benchmark_params_t benchmark_params[] = {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
-        .server_fn   = ipc_replywait_func2,
+        .server_fn   = ipc_replyrecv_func2,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MinPrio + 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD,
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD,
         .dummy_thread = true,
         .dummy_prio = seL4_MinPrio, 
     },
@@ -267,86 +269,76 @@ static const benchmark_params_t benchmark_params[] = {
         .name        = "seL4_Send",
         .direction   = DIR_TO,
         .client_fn   = ipc_send_func,
-        .server_fn   = ipc_wait_func,
+        .server_fn   = ipc_recv_func,
         .same_vspace = false,
         .same_sc     = false,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
-        .overhead_id = SEND_WAIT_OVERHEAD
+        .overhead_id = SEND_RECV_OVERHEAD
     },
     /* Call slowpath, long IPC (10), same prio client to server, different address space */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
         .client_fn   = ipc_call_10_func2,
-        .server_fn   = ipc_replywait_10_func2,
+        .server_fn   = ipc_replyrecv_10_func2,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 10,
-        .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_10_OVERHEAD
     },
-    /* ReplyWait slowpath, long IPC (10), same prio server to client, on the slowpath, different address space */
+    /* ReplyRecv slowpath, long IPC (10), same prio server to client, on the slowpath, different address space */
     {
-        .name        = "seL4_ReplyWait",
+        .name        = "seL4_ReplyRecv",
         .direction   = DIR_FROM,
         .client_fn   = ipc_call_10_func,
-        .server_fn   = ipc_replywait_10_func,
+        .server_fn   = ipc_replyrecv_10_func,
         .same_vspace = false,
         .same_sc     = true,
         .client_prio = 100,
         .server_prio = 100,
         .length = 10,
-        .overhead_id = CALL_REPLY_WAIT_10_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_10_OVERHEAD
     },
     /* Call slowpath between client and server in different address spaces - no sched context donation */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
         .client_fn   = ipc_call_func2,
-        .server_fn   = ipc_replywait_func2,
+        .server_fn   = ipc_replyrecv_func2,
         .same_vspace = false,
         .same_sc     = false,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
     /* ReplyWait fastpath between server and client in different address spaces - no sched context donation */
     {
         .name        = "seL4_ReplyWait",
         .direction   = DIR_FROM,
         .client_fn   = ipc_call_func,
-        .server_fn   = ipc_replywait_func,
+        .server_fn   = ipc_replyrecv_func,
         .same_vspace = false,
         .same_sc     = false,
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
-        .overhead_id = CALL_REPLY_WAIT_OVERHEAD
+        .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
 };
 
 static const struct overhead_benchmark_params overhead_benchmark_params[] = {
     [CALL_OVERHEAD]          = {"call"},
-    [REPLY_WAIT_OVERHEAD]    = {"reply wait"},
+    [REPLY_RECV_OVERHEAD]    = {"reply recv"},
     [SEND_OVERHEAD]          = {"send"},
-    [WAIT_OVERHEAD]          = {"wait"},
+    [RECV_OVERHEAD]          = {"recv"},
     [CALL_10_OVERHEAD]       = {"call"},
-    [REPLY_WAIT_10_OVERHEAD] = {"reply wait"},
+    [REPLY_RECV_10_OVERHEAD] = {"reply recv"},
 };
-
-typedef struct bench_result {
-    double variance;
-    double stddev;
-    double stddev_pc;
-    double mean;
-    ccnt_t min;
-    ccnt_t max;
-} bench_result_t;
-
 
 struct bench_results {
     /* Raw results from benchmarking. These get checked for sanity */
@@ -394,7 +386,7 @@ dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag)
 }
 
 static inline void
-dummy_seL4_Wait(seL4_CPtr ep, void *badge)
+dummy_seL4_Recv(seL4_CPtr ep, void *badge)
 {
     (void)ep;
     (void)badge;
@@ -431,7 +423,7 @@ IPC_CALL_FUNC(ipc_call_func2, DO_REAL_CALL, dummy_seL4_Send, seL4_Call, start, 0
 IPC_CALL_FUNC(ipc_call_10_func, DO_REAL_CALL_10, seL4_Send, dummy_seL4_Call, end, 10)
 IPC_CALL_FUNC(ipc_call_10_func2, DO_REAL_CALL_10, dummy_seL4_Send, seL4_Call, start, 10)
 
-#define IPC_REPLY_WAIT_FUNC(name, bench_func, reply_func, wait_func, send_start_end, length) \
+#define IPC_REPLY_RECV_FUNC(name, bench_func, reply_func, recv_func, send_start_end, length) \
 uint32_t name(int argc, char *argv[]) { \
     uint32_t i; \
     ccnt_t start UNUSED, end UNUSED; \
@@ -439,7 +431,7 @@ uint32_t name(int argc, char *argv[]) { \
     seL4_CPtr ep = atoi(argv[0]);\
     seL4_CPtr result_ep = atoi(argv[1]);\
     seL4_Word badge;\
-    seL4_SendWait(ep, ep, tag, &badge);\
+    seL4_NBSendRecv(ep, tag, ep, &badge);\
     FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
         READ_COUNTER_BEFORE(start); \
@@ -452,13 +444,13 @@ uint32_t name(int argc, char *argv[]) { \
     return 0; \
 }
 
-IPC_REPLY_WAIT_FUNC(ipc_replywait_func2, DO_REAL_REPLY_WAIT, seL4_Reply, seL4_Wait, end, 0)
-IPC_REPLY_WAIT_FUNC(ipc_replywait_func, DO_REAL_REPLY_WAIT, dummy_seL4_Reply, seL4_Wait, start, 0)
-IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func2, DO_REAL_REPLY_WAIT_10, seL4_Reply, seL4_Wait, end, 10)
-IPC_REPLY_WAIT_FUNC(ipc_replywait_10_func, DO_REAL_REPLY_WAIT_10, dummy_seL4_Reply, seL4_Wait, start, 10)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_func2, DO_REAL_REPLY_RECV, seL4_Reply, seL4_Recv, end, 0)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_func, DO_REAL_REPLY_RECV, dummy_seL4_Reply, seL4_Recv, start, 0)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func2, DO_REAL_REPLY_RECV_10, seL4_Reply, seL4_Recv, end, 10)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func, DO_REAL_REPLY_RECV_10, dummy_seL4_Reply, seL4_Recv, start, 10)
 
 uint32_t
-ipc_wait_func(int argc, char *argv[])
+ipc_recv_func(int argc, char *argv[])
 {
     uint32_t i;
     ccnt_t start UNUSED, end UNUSED;
@@ -468,11 +460,11 @@ ipc_wait_func(int argc, char *argv[])
     FENCE();
     for (i = 0; i < WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
-        DO_REAL_WAIT(ep);
+        DO_REAL_RECV(ep);
         READ_COUNTER_AFTER(end);
     }
     FENCE();
-    DO_REAL_WAIT(ep);
+    DO_REAL_RECV(ep);
     send_result(result_ep, end);
     return 0;
 }
@@ -515,22 +507,10 @@ ipc_send_func(int argc, char *argv[])
             FENCE(); \
             dest[j] = end - start; \
         } \
-        if (results_stable(dest)) break; \
+        if (results_stable(dest, RUNS)) break; \
     } \
     timing_destroy(); \
 } while(0)
-
-static int
-results_stable(ccnt_t *array)
-{
-    uint32_t i;
-    for (i = 1; i < RUNS; i++) {
-        if (array[i] != array[i - 1]) {
-            return 0;
-        }
-    }
-    return 1;
-}
 
 static void
 measure_overhead(struct bench_results *results)
@@ -538,33 +518,33 @@ measure_overhead(struct bench_results *results)
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
                      results->overhead_benchmarks[CALL_OVERHEAD],
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
-    MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT(0, tag),
-                     results->overhead_benchmarks[REPLY_WAIT_OVERHEAD],
+    MEASURE_OVERHEAD(DO_NOP_REPLY_RECV(0, tag),
+                     results->overhead_benchmarks[REPLY_RECV_OVERHEAD],
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
     MEASURE_OVERHEAD(DO_NOP_SEND(0, tag),
                      results->overhead_benchmarks[SEND_OVERHEAD],
                      seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0));
-    MEASURE_OVERHEAD(DO_NOP_WAIT(0),
-                     results->overhead_benchmarks[WAIT_OVERHEAD],
+    MEASURE_OVERHEAD(DO_NOP_RECV(0),
+                     results->overhead_benchmarks[RECV_OVERHEAD],
                      {});
     MEASURE_OVERHEAD(DO_NOP_CALL_10(0, tag10),
                      results->overhead_benchmarks[CALL_10_OVERHEAD],
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
-    MEASURE_OVERHEAD(DO_NOP_REPLY_WAIT_10(0, tag10),
-                     results->overhead_benchmarks[REPLY_WAIT_10_OVERHEAD],
+    MEASURE_OVERHEAD(DO_NOP_REPLY_RECV_10(0, tag10),
+                     results->overhead_benchmarks[REPLY_RECV_10_OVERHEAD],
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
 }
 
 #if defined(CCNT32BIT)
 static ccnt_t get_result(seL4_CPtr ep)
 {
-    seL4_Wait(ep, NULL);
+    seL4_Recv(ep, NULL);
     return seL4_GetMR(0);
 }
 #elif defined(CCNT64BIT)
 static ccnt_t get_result(seL4_CPtr ep)
 {
-    seL4_Wait(ep, NULL);
+    seL4_Recv(ep, NULL);
     return ( ((ccnt_t)seL4_GetMR(0)) << 32ull) | ((ccnt_t)seL4_GetMR(1));
 }
 #else
@@ -575,7 +555,7 @@ void
 init_config(env_t env, helper_thread_t *thread, helper_func_t thread_fn, int prio)
 {
     /* set up a process that runs in its own address space */
-    bzero(&thread->config, sizeof(&thread->config));
+    bzero(&thread->config, sizeof(thread->config));
     thread->config.is_elf = false;
     thread->config.create_cspace = true;
     thread->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
@@ -730,24 +710,15 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     timing_destroy();
 }
 
-static void
-print_all(ccnt_t *array)
-{
-    uint32_t i;
-    for (i = 0; i < RUNS; i++) {
-        printf("\t"CCNT_FORMAT"\n", array[i]);
-    }
-}
-
 static int
 check_overhead(struct bench_results *results)
 {
     ccnt_t overhead[NOVERHEADBENCHMARKS];
     int i;
     for (i = 0; i < NOVERHEADBENCHMARKS; i++) {
-        if (!results_stable(results->overhead_benchmarks[i])) {
+        if (!results_stable(results->overhead_benchmarks[i], RUNS)) {
             printf("Benchmarking overhead of a %s is not stable! Cannot continue\n", overhead_benchmark_params[i].name);
-            print_all(results->overhead_benchmarks[i]);
+            print_all(results->overhead_benchmarks[i], RUNS);
 #ifndef ALLOW_UNSTABLE_OVERHEAD
             return 0;
 #endif
@@ -755,30 +726,10 @@ check_overhead(struct bench_results *results)
         overhead[i] = results_min(results->overhead_benchmarks[i], RUNS);
     }
     /* Take the smallest overhead to be our benchmarking overhead */
-    results->overheads[CALL_REPLY_WAIT_OVERHEAD] = MIN(overhead[CALL_OVERHEAD], overhead[REPLY_WAIT_OVERHEAD]);
-    results->overheads[SEND_WAIT_OVERHEAD] = MIN(overhead[SEND_OVERHEAD], overhead[WAIT_OVERHEAD]);
-    results->overheads[CALL_REPLY_WAIT_10_OVERHEAD] = MIN(overhead[CALL_10_OVERHEAD], overhead[REPLY_WAIT_10_OVERHEAD]);
+    results->overheads[CALL_REPLY_RECV_OVERHEAD] = MIN(overhead[CALL_OVERHEAD], overhead[REPLY_RECV_OVERHEAD]);
+    results->overheads[SEND_RECV_OVERHEAD] = MIN(overhead[SEND_OVERHEAD], overhead[RECV_OVERHEAD]);
+    results->overheads[CALL_REPLY_RECV_10_OVERHEAD] = MIN(overhead[CALL_10_OVERHEAD], overhead[REPLY_RECV_10_OVERHEAD]);
     return 1;
-}
-
-static bench_result_t
-process_result(ccnt_t *array, const char *error)
-{
-    bench_result_t result;
-
-    if (!results_stable(array)) {
-        ZF_LOGW("%s cycles are not stable\n", error);
-        print_all(array);
-    }
-
-    result.min = results_min(array, RUNS);
-    result.max = results_max(array, RUNS);
-    result.mean = results_mean(array, RUNS);
-    result.variance = results_variance(array, result.mean, RUNS);
-    result.stddev = results_stddev(array, result.variance, RUNS);
-    result.stddev_pc = (double) result.stddev / (double) result.mean * 100;
-
-    return result;
 }
 
 static int
@@ -786,7 +737,7 @@ process_results(struct bench_results *results)
 {
     int i;
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
-        results->results[i] = process_result(results->benchmarks[i], benchmark_params[i].name);
+        results->results[i] = process_result(results->benchmarks[i], RUNS, benchmark_params[i].name);
     }
     return 1;
 }

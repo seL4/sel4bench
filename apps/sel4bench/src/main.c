@@ -116,7 +116,17 @@ void *main_continued(void *arg)
     /* Run the benchmarking */
     printf("Doing benchmarks...\n\n");
 
+#ifdef CONFIG_IPC_BENCHMARK
+    printf("\nIPC Benchmarks\n"
+           "==============\n\n");
     ipc_benchmarks_new(&global_env);
+#endif
+    
+#ifdef CONFIG_IRQ_PATH_BENCHMARK
+    printf("\nIRQ Path Benchmarks\n"
+           "===================\n\n");
+    irq_benchmarks_new(&global_env);
+#endif
 
     printf("All is well in the universe.\n");
     printf("\n\nFin\n");
@@ -170,7 +180,7 @@ int main(void)
 
     /* Switch to a bigger stack with some guard pages! */
     printf("Switching to a safer, bigger stack... ");
-    error = (int) sel4utils_run_on_stack(&global_env.vspace, main_continued, NULL);
+    error = sel4utils_run_on_stack(&global_env.vspace, main_continued, NULL, NULL);
     assert(error == 0);
 
     return 0;

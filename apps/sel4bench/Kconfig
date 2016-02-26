@@ -16,3 +16,16 @@ config APP_SEL4BENCH
     help
         seL4 Benchmark application.
 
+config IPC_BENCHMARK
+    bool "IPC Benchmark"
+    default y
+    depends on APP_SEL4BENCH
+    help
+        Run IPC Benchmark.
+
+config IRQ_PATH_BENCHMARK
+    bool "IRQ Path Benchmark"
+    default n
+    depends on APP_SEL4BENCH
+    help
+        Run IRQ Path Benchmark.

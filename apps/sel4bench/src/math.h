@@ -11,6 +11,8 @@
 #ifndef __SEL4BENCH_MATH_H
 #define __SEL4BENCH_MATH_H
 
+#include "benchmark.h"
+
 /* these functions adapted from libgsl -- require code to be GPL */
 double results_mean(ccnt_t *array, int n);
 double results_variance(ccnt_t *array, ccnt_t mean, int n);
