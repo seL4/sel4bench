@@ -105,7 +105,7 @@ CONFIG_ARM_ERRATA_764369=y
 #
 # Toolchain Options
 #
-CONFIG_CROSS_COMPILER_PREFIX="arm-linux-gnueabi-"
+CONFIG_CROSS_COMPILER_PREFIX="arm-none-eabi-"
 CONFIG_KERNEL_COMPILER="/opt/bin/arm-gnueabi-ccomp"
 CONFIG_KERNEL_CFLAGS="-fall -fno-sse -dc"
 CONFIG_KERNEL_EXTRA_CPPFLAGS=""
