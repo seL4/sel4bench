@@ -36,7 +36,7 @@ CFLAGS += -std=gnu99
 CFLAGS += -Os
 
 # Libraries required to build the target
-LIBS := c sel4 elf cpio sel4muslcsys sel4allocman sel4utils sel4platsupport sel4bench sel4simple utils platsupport sel4vka sel4vspace sel4sched
+LIBS := c sel4 elf cpio sel4muslcsys sel4allocman sel4utils sel4platsupport sel4bench sel4simple utils platsupport sel4vka sel4vspace 
 ifdef CONFIG_KERNEL_STABLE
 LIBS += sel4simple-stable
 else

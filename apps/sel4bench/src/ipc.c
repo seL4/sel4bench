@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <simple/simple.h>
-#include <sched/util.h>
 #include <sel4/sel4.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
@@ -567,8 +566,8 @@ init_config(env_t env, helper_thread_t *thread, helper_func_t thread_fn, int pri
     thread->config.priority = prio;
     thread->config.entry_point = thread_fn;
     thread->config.create_sc = true;
-    thread->config.sched_params = seL4_TimeSliceParams_new(10 * US_IN_MS);
-    thread->config.sched_control = simple_get_sched_ctrl(&env->simple);
+    thread->config.custom_budget = 10 * US_IN_MS;
+    thread->config.custom_period = 10 * US_IN_MS;
 #ifndef CONFIG_KERNEL_STABLE
     thread->config.asid_pool = simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool);
 #endif
@@ -608,13 +607,13 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
     /* configure processes */
     init_config(env, &client, params->client_fn, params->client_prio);
 
-    if (sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config)) {
+    if (sel4utils_configure_process_custom(&client.process, &env->simple, &env->vka, &env->vspace, client.config)) {
         ZF_LOGF("Failed to configure client\n");
     }
 
     init_server_config(env, &server, params->server_fn, params->server_prio, &client, params->same_vspace);
 
-    if (sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config)) {
+    if (sel4utils_configure_process_custom(&server.process, &env->simple, &env->vka, &env->vspace, server.config)) {
         ZF_LOGF("Failed to configure server\n");
     }
 
@@ -634,7 +633,7 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
 
     if (params->dummy_thread) {
         init_config(env, &dummy, dummy_fn, params->dummy_prio);
-        if (sel4utils_configure_process_custom(&dummy.process, &env->vka, &env->vspace, dummy.config)) {
+        if (sel4utils_configure_process_custom(&dummy.process, &env->simple, &env->vka, &env->vspace, dummy.config)) {
             ZF_LOGF("Failed to configure dummy\n");
         }
         if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &dummy.process.vspace, env->region.reservation)) {
@@ -673,7 +672,7 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
 
     if (params->same_sc) {
         /* now take the server's sc away */
-        if (seL4_TCB_ClearSchedContext(server.process.thread.tcb.cptr)) {
+        if (seL4_SchedContext_Unbind(server.process.thread.sched_context.cptr)) {
             ZF_LOGF("Failed to clean server sched context\n");
         }
     }
@@ -694,7 +693,8 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
 
     if (params->same_sc) {
         /* give the server back it's sc so it can reply to us */
-        if (seL4_TCB_SetSchedContext(server.process.thread.tcb.cptr, server.process.thread.sched_context.cptr)) {
+        if (seL4_SchedContext_Bind(server.process.thread.sched_context.cptr, 
+                                      server.process.thread.tcb.cptr)) {
             ZF_LOGF("Failed to set sched context for server\n");
         }
     }
