@@ -10,20 +10,11 @@
 #ifndef __BENCHMARK_H__
 #define __BENCHMARK_H__
 
+#include <sel4bench/sel4bench.h>
 #include <simple/simple.h>
 #include <sel4utils/process.h>
 #include <vka/vka.h>
 #include <vspace/vspace.h>
-
-#ifdef CONFIG_ARCH_IA32
-#define CCNT64BIT
-#define CCNT_FORMAT "%llu"
-typedef uint64_t ccnt_t;
-#else
-#define CCNT32BIT
-typedef uint32_t ccnt_t;
-#define CCNT_FORMAT "%d"
-#endif
 
 /* Contains information about the test environment. */
 struct env {

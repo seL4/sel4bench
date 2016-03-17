@@ -308,26 +308,35 @@ struct bench_results {
     bench_result_t results[ARRAY_SIZE(benchmark_params)];
 };
 
-#if defined(CCNT32BIT)
 static void
 send_result(seL4_CPtr ep, ccnt_t result)
 {
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
-    seL4_SetMR(0, result);
+    int length = sizeof(ccnt_t) / sizeof(seL4_Word);
+    unsigned int shift = length > 1u ? seL4_WordBits : 0;
+    for (int i = length - 1; i >= 0; i--) {
+        seL4_SetMR(i, (seL4_Word) result);
+        result = result >> shift;
+    }
+
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
     seL4_Send(ep, tag);
 }
-#elif defined(CCNT64BIT)
-static void
-send_result(seL4_CPtr ep, ccnt_t result)
+
+static ccnt_t
+get_result(seL4_CPtr ep)
 {
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 2);
-    seL4_SetMR(0, (uint32_t)(result >> 32ull));
-    seL4_SetMR(1, (uint32_t)(result & 0xFFFFFFFF));
-    seL4_Send(ep, tag);
+    ccnt_t result = 0;
+    seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);
+    int length = seL4_MessageInfo_get_length(tag);
+    unsigned int shift = length > 1u ? seL4_WordBits : 0;
+   
+    for (int i = 0; i < length; i++) {
+        result = result << shift;
+        result += seL4_GetMR(0);
+    }
+
+    return result;
 }
-#else
-#error Unknown ccnt size
-#endif
 
 static inline void
 dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
@@ -490,22 +499,6 @@ measure_overhead(struct bench_results *results)
                      results->overhead_benchmarks[REPLY_RECV_10_OVERHEAD],
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
 }
-
-#if defined(CCNT32BIT)
-static ccnt_t get_result(seL4_CPtr ep)
-{
-    seL4_Recv(ep, NULL);
-    return seL4_GetMR(0);
-}
-#elif defined(CCNT64BIT)
-static ccnt_t get_result(seL4_CPtr ep)
-{
-    seL4_Recv(ep, NULL);
-    return ( ((ccnt_t)seL4_GetMR(0)) << 32ull) | ((ccnt_t)seL4_GetMR(1));
-}
-#else
-#error Unknown ccnt size
-#endif
 
 void
 init_config(env_t env, helper_thread_t *thread, helper_func_t thread_fn, int prio)
