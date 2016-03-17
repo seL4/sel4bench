@@ -42,14 +42,14 @@ struct env {
 typedef struct env *env_t;
 typedef seL4_Word (*helper_func_t)(int argc, char *argv[]);
 
-typedef struct bench_result {
+typedef struct result {
     double variance;
     double stddev;
     double stddev_pc;
     double mean;
     ccnt_t min;
     ccnt_t max;
-} bench_result_t;
+} result_t;
 
 void ipc_benchmarks_new(struct env* env);
 void run_benchmarks(void);

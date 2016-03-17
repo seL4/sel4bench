@@ -298,15 +298,15 @@ static const struct overhead_benchmark_params overhead_benchmark_params[] = {
     [REPLY_RECV_10_OVERHEAD] = {"reply recv"},
 };
 
-struct bench_results {
+typedef struct ipc_results {
     /* Raw results from benchmarking. These get checked for sanity */
     ccnt_t overhead_benchmarks[NOVERHEADBENCHMARKS][RUNS];
     ccnt_t benchmarks[ARRAY_SIZE(benchmark_params)][RUNS];
     /* A worst case overhead */
     ccnt_t overheads[NOVERHEADS];
     /* Calculated results to print out */
-    bench_result_t results[ARRAY_SIZE(benchmark_params)];
-};
+    result_t results[ARRAY_SIZE(benchmark_params)];
+} ipc_results_t;
 
 static void
 send_result(seL4_CPtr ep, ccnt_t result)
@@ -478,7 +478,7 @@ ipc_send_func(int argc, char *argv[])
 } while(0)
 
 static void
-measure_overhead(struct bench_results *results)
+measure_overhead(ipc_results_t *results)
 {
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
                      results->overhead_benchmarks[CALL_OVERHEAD],
@@ -631,7 +631,7 @@ run_bench(env_t env, const benchmark_params_t *params, ccnt_t *ret1, ccnt_t *ret
 }
 
 static int
-check_overhead(struct bench_results *results)
+check_overhead(ipc_results_t *results)
 {
     ccnt_t overhead[NOVERHEADBENCHMARKS];
     int i;
@@ -653,7 +653,7 @@ check_overhead(struct bench_results *results)
 }
 
 static int
-process_results(struct bench_results *results)
+process_results(ipc_results_t *results)
 {
     int i;
     for (i = 0; i < ARRAY_SIZE(results->results); i++) {
@@ -664,7 +664,7 @@ process_results(struct bench_results *results)
 
 /* for pasting into a spreadsheet or parsing */
 static void
-print_results_tsv(struct bench_results *results)
+print_results_tsv(ipc_results_t *results)
 {
 
     printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tDummy (prio)?\tLength");
@@ -697,7 +697,7 @@ single_xml_result(int result, ccnt_t value, char *name)
 
 /* for bamboo */
 static void
-print_results_xml(struct bench_results *results)
+print_results_xml(ipc_results_t *results)
 {
     int i;
     printf("<results>\n");
@@ -714,7 +714,7 @@ void
 ipc_benchmarks_new(struct env* env)
 {
     uint32_t i;
-    struct bench_results results;
+    ipc_results_t results;
     ccnt_t start, end;
     measure_overhead(&results);
     if (!check_overhead(&results)) {

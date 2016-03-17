@@ -117,7 +117,7 @@ irq_benchmarks_new(struct env* env) {
     }
 
     ccnt_t *overhead_data = &kernel_log_data[offsets[TRACE_POINT_OVERHEAD] + N_IGNORED];
-    bench_result_t overhead_result = process_result(overhead_data, n_overhead_data, NULL);
+    result_t overhead_result = process_result(overhead_data, n_overhead_data, NULL);
 
     /* The results of the IRQ path benchmark are split over multiple tracepoints.
      * A new buffer is allocated to store the amalgamated results. */
@@ -146,7 +146,7 @@ irq_benchmarks_new(struct env* env) {
     printf("----------------------------------------\n");
     printf("Tracepoint Overhead (%d samples)\n", n_overhead_data);
     printf("----------------------------------------\n");
-    bench_result_t result = process_result(overhead_data, n_overhead_data, NULL);
+    result_t result = process_result(overhead_data, n_overhead_data, NULL);
     print_result_header();
     print_result(&result);
     printf("\n");

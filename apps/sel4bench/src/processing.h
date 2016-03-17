@@ -13,7 +13,7 @@
 
 #include "benchmark.h"
 
-bench_result_t
+result_t
 process_result(ccnt_t *array, int size, const char *error);
 
 int

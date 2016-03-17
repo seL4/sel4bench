@@ -25,10 +25,10 @@ results_stable(ccnt_t *array, int size)
     return 1;
 }
 
-bench_result_t
+result_t
 process_result(ccnt_t *array, int size, const char *error)
 {
-    bench_result_t result;
+    result_t result;
 
     if (error != NULL && !results_stable(array, size)) {
         ZF_LOGW("%s cycles are not stable\n", error);
