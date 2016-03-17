@@ -19,3 +19,21 @@ print_all(ccnt_t *array, int size)
         printf("\t"CCNT_FORMAT"\n", array[i]);
     }
 }
+
+void
+print_result_header(void)
+{
+    printf("min\tmax\tmean\tvariance\tstddev\tstddev %%\n");
+}
+
+void
+print_result(result_t *result)
+{
+    printf(CCNT_FORMAT"\t", result->min);
+    printf(CCNT_FORMAT"\t", result->max);
+    printf("%.2lf\t", result->mean);
+    printf("%.2lf\t", result->variance);
+    printf("%.2lf\t", result->stddev);
+    printf("%.0lf%%\n", result->stddev_pc);
+}
+

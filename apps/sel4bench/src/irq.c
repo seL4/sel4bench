@@ -11,6 +11,7 @@
 #include "benchmark.h"
 #include "processing.h"
 #include "timing.h"
+#include "printing.h"
 
 #include <stdio.h>
 
@@ -35,19 +36,6 @@ static kernel_log_entry_t kernel_log[KERNEL_MAX_NUM_LOG_ENTRIES];
 static ccnt_t kernel_log_data[KERNEL_MAX_NUM_LOG_ENTRIES];
 static unsigned int offsets[CONFIG_MAX_NUM_TRACE_POINTS];
 static unsigned int sizes[CONFIG_MAX_NUM_TRACE_POINTS];
-
-static void
-print_result(bench_result_t *result)
-{
-    printf("min\tmax\tmean\tvariance\tstddev\tstddev %%\n");
-
-    printf(CCNT_FORMAT"\t", result->min);
-    printf(CCNT_FORMAT"\t", result->max);
-    printf("%.2lf\t", result->mean);
-    printf("%.2lf\t", result->variance);
-    printf("%.2lf\t", result->stddev);
-    printf("%.0lf%%\n", result->stddev_pc);
-}
 
 void
 irq_benchmarks_new(struct env* env) {
@@ -159,6 +147,7 @@ irq_benchmarks_new(struct env* env) {
     printf("Tracepoint Overhead (%d samples)\n", n_overhead_data);
     printf("----------------------------------------\n");
     bench_result_t result = process_result(overhead_data, n_overhead_data, NULL);
+    print_result_header();
     print_result(&result);
     printf("\n");
 
@@ -166,6 +155,7 @@ irq_benchmarks_new(struct env* env) {
     printf("IRQ Path Cycle Count (accounting for overhead) (%d samples)\n", n_data);
     printf("----------------------------------------\n");
     result = process_result(data, n_data, NULL);
+    print_result_header();
     print_result(&result);
     printf("\n");
 

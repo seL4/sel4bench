@@ -667,8 +667,8 @@ static void
 print_results_tsv(struct bench_results *results)
 {
 
-    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tDummy (prio)?\tLength\tmin\tmax\t"
-           "mean\tvariance\tstddev\tstddev %%\n");
+    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tDummy (prio)?\tLength");
+    print_result_header();
     for (int i = 0; i < ARRAY_SIZE(results->results); i++) {
         printf("%s\t", benchmark_params[i].name);
         printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
@@ -676,13 +676,7 @@ print_results_tsv(struct bench_results *results)
         printf("%d\t", benchmark_params[i].server_prio);
         printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
         printf("%s (%d)\t", benchmark_params[i].dummy_thread ? "true" : "false", benchmark_params[i].dummy_prio);
-        printf("%d\t", benchmark_params[i].length);
-        printf(CCNT_FORMAT"\t", results->results[i].min);
-        printf(CCNT_FORMAT"\t", results->results[i].max);
-        printf("%.2lf\t", results->results[i].mean);
-        printf("%.2lf\t", results->results[i].variance);
-        printf("%.2lf\t", results->results[i].stddev);
-        printf("%.0lf%%\n", results->results[i].stddev_pc);
+        print_result(&results->results[i]);
     }
 }
 

@@ -11,7 +11,9 @@
 #ifndef __SEL4BENCH_PRINTING_H
 #define __SEL4BENCH_PRINTING_H
 
-void
-print_all(ccnt_t *array, int size);
+void print_all(ccnt_t *array, int size);
+
+void print_result_header(void);
+void print_result(result_t *result);
 
 #endif /* __SEL4BENCH_PRINTING_H */
