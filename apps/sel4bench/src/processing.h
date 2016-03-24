@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, NICTA
+ * Copyright 2016, NICTA
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -13,10 +13,6 @@
 
 #include "benchmark.h"
 
-result_t
-process_result(ccnt_t *array, int size, const char *error);
-
-int
-results_stable(ccnt_t *array, int size);
+result_t process_result(ccnt_t *array, int size, const char *error);
 
 #endif /* __SEL4BENCH_PROCESSING_H */

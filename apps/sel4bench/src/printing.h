@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, NICTA
+ * Copyright 2016, NICTA
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -11,8 +11,14 @@
 #ifndef __SEL4BENCH_PRINTING_H
 #define __SEL4BENCH_PRINTING_H
 
-void print_all(ccnt_t *array, int size);
+#include <sel4bench/sel4bench.h>
 
+typedef enum {
+   XML,
+   TSV
+} format_t;
+
+void print_all(ccnt_t *array, int size);
 void print_result_header(void);
 void print_result(result_t *result);
 

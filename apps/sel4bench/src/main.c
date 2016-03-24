@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, NICTA
+ * Copyright 2016, NICTA
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -22,18 +22,33 @@
 #include <simple-default/simple-default.h>
 #endif
 
+#include <sel4debug/register_dump.h>
 #include <sel4platsupport/platsupport.h>
 #include <sel4utils/stack.h>
 #include <stdio.h>
 #include <string.h>
 #include <utils/util.h>
 #include <vka/object.h>
+#include <vka/capops.h>
+
+#include <cspace.h>
+#include <ipc.h>
 
 #include "benchmark.h"
+#include "printing.h"
+#include "processing.h"
 
 char _cpio_archive[1];
 
-struct env global_env;
+/* Contains information about the benchmark environment. */
+static struct env {
+    /* An initialised vka that may be used by the test. */
+    vka_t vka;
+    simple_t simple;
+    vspace_t vspace;
+} global_env;
+
+typedef struct env env_t;
 
 /* dimensions of virtual memory for the allocator to use */
 #define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 100)
@@ -61,71 +76,165 @@ check_cpu_features(void)
 }
 
 static void
-setup_fault_handler(env_t env)
+setup_fault_handler(env_t *env)
 {
-    UNUSED int error;
+    int error;
     sel4utils_thread_t fault_handler;
     vka_object_t fault_ep = {0};
 
     printf("Setting up global fault handler...");
 
     /* create an endpoint */
-    error = vka_alloc_endpoint(&env->vka, &fault_ep);
-    assert(error == 0);
+    if (vka_alloc_endpoint(&env->vka, &fault_ep) != 0) {
+        ZF_LOGF("Failed to create fault ep\n");
+    }
 
     /* set the fault endpoint for the current thread */
     error = seL4_TCB_SetSpace(simple_get_tcb(&env->simple), fault_ep.cptr,
                               simple_get_cnode(&env->simple), seL4_NilData, simple_get_pd(&env->simple),
                               seL4_NilData);
-    assert(!error);
+    if (error != seL4_NoError) {
+        ZF_LOGF("Failed to set fault ep for benchmark driver\n");
+    }
 
     error = sel4utils_start_fault_handler(fault_ep.cptr,
                                           &env->vka, &env->vspace, seL4_MaxPrio, simple_get_cnode(&env->simple),
                                           seL4_NilData,
                                           "sel4bench-fault-handler", &fault_handler);
-    assert(!error);
+    if (error != 0) {
+        ZF_LOGF("Failed to start fault handler");
+    }
+}
+
+int
+run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *local_results_vaddr) 
+{
+    int error;
+    sel4utils_process_t process;
+    
+    /* configure benchmark process */
+    error = sel4utils_configure_process(&process, &env->vka, &env->vspace, seL4_MaxPrio, benchmark->name);
+    if (error != 0) {
+        ZF_LOGF("Failed to configure process for %s benchmark", benchmark->name);
+    }
+
+   /* copy untyped to process */
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, untyped->cptr, &path); 
+    UNUSED seL4_CPtr slot = sel4utils_copy_cap_to_process(&process, path);
+    assert(slot == UNTYPED_SLOT);
+
+    seL4_Word stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
+    uintptr_t stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
+
+
+    if (config_set(CONFIG_DEBUG_BUILD)) {
+        seL4_DebugNameThread(process.thread.tcb.cptr, benchmark->name);
+    }
+ 
+    /* set up shared memory for results */
+    void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr, 
+                                                  benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
+
+    /* do benchmark specific init */
+    benchmark->init(&env->vka, &env->simple, &process);
+
+    /* set up arguments */
+    /* untyped size */
+    seL4_Word argc = 4;
+    char args[4][WORD_STRING_SIZE];
+    char *argv[argc];
+    sel4utils_create_word_args(args, argv, argc, untyped->size_bits, stack_vaddr, stack_pages, 
+                               (seL4_Word) remote_results_vaddr); 
+    /* start process */
+    error = sel4utils_spawn_process_v(&process, &env->vka, &env->vspace, argc, argv, 1);
+    if (error) {
+        ZF_LOGF("Failed to start benchmark process");
+    }
+
+    /* wait for it to finish */
+    seL4_MessageInfo_t info = seL4_Recv(process.fault_endpoint.cptr, NULL);
+    int result = seL4_GetMR(0);
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault || result != EXIT_SUCCESS) {
+        sel4utils_print_fault_message(info, benchmark->name);
+        sel4debug_dump_registers(process.thread.tcb.cptr);
+        result = EXIT_FAILURE;
+    }
+
+    /* free results in target vspace (they will still be in ours) */
+    vspace_unmap_pages(&process.vspace, remote_results_vaddr, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
+
+    /* clean up */
+    sel4utils_destroy_process(&process, &env->vka);
+
+    return result;
+}
+
+void 
+launch_benchmark(benchmark_t benchmark, env_t *env, vka_object_t *untyped)
+{
+    printf("\n%s Benchmarks\n==============\n\n", benchmark.name);
+
+    /* reserve memory for the results */
+    void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark.results_pages, seL4_PageBits);
+    
+    if (results == NULL) {
+        ZF_LOGF("Failed to allocate pages for results");
+    }
+
+    /* Run benchmark process */
+    int exit_code = run_benchmark(env, &benchmark, untyped, results); 
+
+    /* process & print results */
+    if (exit_code == 0) {
+        benchmark.process(results);
+    }
+
+    /* free results */
+    vspace_unmap_pages(&env->vspace, results, benchmark.results_pages, seL4_PageBits, VSPACE_FREE);
+
+    /* revoke the untyped so it's clean for the next benchmark */
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, untyped->cptr, &path);
+    vka_cnode_revoke(&path);
+}
+
+void
+find_untyped(vka_t *vka, vka_object_t *untyped)
+{
+    int error = 0;
+
+    /* find the largest untyped */
+    for (uint8_t size_bits = seL4_WordBits - 1; size_bits > seL4_PageBits; size_bits--) {
+        error = vka_alloc_untyped(vka, size_bits, untyped);
+        if (error == 0) {
+            break;
+        }
+    }
+
+    if (error != 0) {
+        ZF_LOGF("Failed to find free untyped\n");
+    }
 
 }
 
-void *main_continued(void *arg)
+void *
+main_continued(void *arg)
 {
-    UNUSED int error;
-    printf("done\n");
+    vka_object_t untyped;
 
     setup_fault_handler(&global_env);
 
-    /* create benchmark endpoints */
-    error = vka_alloc_endpoint(&global_env.vka, &global_env.ep);
-    assert(error == 0);
-    vka_cspace_make_path(&global_env.vka, global_env.ep.cptr, &global_env.ep_path);
+    /* find an untyped for the process to use */
+    find_untyped(&global_env.vka, &untyped);
 
-    error = vka_alloc_endpoint(&global_env.vka, &global_env.result_ep);
-    assert(error == 0);
-    vka_cspace_make_path(&global_env.vka, global_env.result_ep.cptr, &global_env.result_ep_path);
+    if (config_set(CONFIG_APP_IPCBENCH)) {
+        launch_benchmark(ipc_benchmark_new(), &global_env, &untyped);
+    }
 
-    extern char __executable_start[];
-    extern char _etext[];
-
-    global_env.region.rights = seL4_AllRights;
-    global_env.region.reservation_vstart = (void *) ROUND_DOWN((seL4_Word) __executable_start, (1 << seL4_PageBits));
-    global_env.region.size = (void *) _etext - global_env.region.reservation_vstart;
-    global_env.region.elf_vstart = global_env.region.reservation_vstart;
-    global_env.region.cacheable = true;
-
-    /* Run the benchmarking */
-    printf("Doing benchmarks...\n\n");
-
-#ifdef CONFIG_IPC_BENCHMARK
-    printf("\nIPC Benchmarks\n"
-           "==============\n\n");
-    ipc_benchmarks_new(&global_env);
-#endif
-    
-#ifdef CONFIG_IRQ_PATH_BENCHMARK
-    printf("\nIRQ Path Benchmarks\n"
-           "===================\n\n");
-    irq_benchmarks_new(&global_env);
-#endif
+    if (config_set(CONFIG_APP_IRQBENCH)) {
+        launch_benchmark(irq_benchmark_new(), &global_env, &untyped);
+    }
 
     printf("All is well in the universe.\n");
     printf("\n\nFin\n");
@@ -135,7 +244,6 @@ void *main_continued(void *arg)
 
 int main(void)
 {
-
     seL4_BootInfo *info;
     allocman_t *allocman;
     UNUSED reservation_t virtual_reservation;

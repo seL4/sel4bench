@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, NICTA
+ * Copyright 2016, NICTA
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -9,21 +9,12 @@
  */
 
 #include <utils/zf_log.h>
+#include <utils/config.h>
+
+#include "ipc.h"
 #include "processing.h"
 #include "math.h"
 #include "printing.h"
-
-int
-results_stable(ccnt_t *array, int size)
-{
-    uint32_t i;
-    for (i = 1; i < size; i++) {
-        if (array[i] != array[i - 1]) {
-            return 0;
-        }
-    }
-    return 1;
-}
 
 result_t
 process_result(ccnt_t *array, int size, const char *error)

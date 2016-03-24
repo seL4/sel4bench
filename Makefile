@@ -16,8 +16,7 @@ SUBLEVEL = 0
 EXTRAVERSION = 0
 
 # The main target we want to generate
-#all: sel4test-image
-all: sel4bench-image
+all: app-images
 
 -include .config
 

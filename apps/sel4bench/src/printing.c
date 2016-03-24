@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, NICTA
+ * Copyright 2016, NICTA
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -9,7 +9,11 @@
  */
 
 #include <stdio.h>
+#include <sel4bench/sel4bench.h>
+
 #include "benchmark.h"
+#include "printing.h"
+#include "ipc.h"
 
 void
 print_all(ccnt_t *array, int size)

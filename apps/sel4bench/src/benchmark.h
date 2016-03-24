@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, NICTA
+ * Copyright 2016, NICTA
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -7,41 +7,29 @@
  *
  * @TAG(NICTA_GPL)
  */
-#ifndef __BENCHMARK_H__
-#define __BENCHMARK_H__
+#ifndef BENCHMARK_H
+#define BENCHMARK_H
 
 #include <sel4bench/sel4bench.h>
-#include <simple/simple.h>
 #include <sel4utils/process.h>
+#include <simple/simple.h>
 #include <vka/vka.h>
-#include <vspace/vspace.h>
 
-/* Contains information about the test environment. */
-struct env {
-    /* An initialised vka that may be used by the test. */
-    vka_t vka;
-    simple_t simple;
-    vspace_t vspace;
+typedef struct benchmark {
+    /* name of the benchmark application */
+    char *name;
+    /* size of data structure required to store results */
+    size_t results_pages;
+    /*
+     * Process and output the results
+     * 
+     */
+    void (*process)(void *results);
+    /* carry out any extra init for this process */
+    void (*init)(vka_t *vka, simple_t *simple, sel4utils_process_t *process);
+} benchmark_t;
 
-    /* ep to run benchmark on */
-    vka_object_t ep;
-    cspacepath_t ep_path;
-
-    /* ep to send results on */
-    vka_object_t result_ep;
-    cspacepath_t result_ep_path;
-
-    /* elf region containing code segment */
-    sel4utils_elf_region_t region;
-
-#ifdef CONFIG_KERNEL_STABLE
-    seL4_CPtr asid_pool;
-#endif /* CONFIG_KERNEL_STABLE */
-};
-
-typedef struct env *env_t;
-typedef seL4_Word (*helper_func_t)(int argc, char *argv[]);
-
+/* generic result type */
 typedef struct result {
     double variance;
     double stddev;
@@ -51,8 +39,7 @@ typedef struct result {
     ccnt_t max;
 } result_t;
 
-void ipc_benchmarks_new(struct env* env);
-void run_benchmarks(void);
-void irq_benchmarks_new(struct env* env);
+benchmark_t ipc_benchmark_new(void);
+benchmark_t irq_benchmark_new(void);
 
-#endif /* __BENCHMARK_H__ */
+#endif /* BENCHMARK_H */
