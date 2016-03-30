@@ -13,6 +13,8 @@
 
 #define ALLOW_UNSTABLE_OVERHEAD
 
+#include <sel4bench/arch/sel4bench.h>
+
 #define DO_CALL(ep, tag, sys) do { \
     uint32_t ep_copy = ep; \
     asm volatile( \
@@ -128,29 +130,8 @@
     ); \
 } while(0)
 
-#define READ_COUNTER(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-        "movl $0, %%eax \n" \
-        "movl $0, %%ecx \n" \
-        "cpuid \n" \
-        "rdtsc \n" \
-        "movl %%edx, %0 \n" \
-        "movl %%eax, %1 \n" \
-        "movl $0, %%eax \n" \
-        "movl $0, %%ecx \n" \
-        "cpuid \n" \
-        : \
-         "=r"(high), \
-         "=r"(low) \
-        : \
-        : "eax", "ebx", "ecx", "edx" \
-    ); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while(0)
-
-#define READ_COUNTER_BEFORE READ_COUNTER
-#define READ_COUNTER_AFTER  READ_COUNTER
+#define READ_COUNTER_BEFORE SEL4BENCH_READ_CCNT
+#define READ_COUNTER_AFTER  SEL4BENCH_READ_CCNT
 
 #define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "sysenter")
 #define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, ".byte 0x66\n.byte 0x90")

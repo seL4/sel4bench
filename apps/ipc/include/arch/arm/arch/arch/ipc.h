@@ -10,10 +10,10 @@
 #ifndef __ARCH_IPC_H
 #define __ARCH_IPC_H
 
-#include <armv/ipc.h>
+#include <sel4bench/armv/sel4bench.h>
 
-#define READ_COUNTER_BEFORE READ_COUNTER
-#define READ_COUNTER_AFTER  READ_COUNTER
+#define READ_COUNTER_BEFORE SEL4BENCH_READ_CCNT
+#define READ_COUNTER_AFTER  SEL4BENCH_READ_CCNT
 
 #define DO_CALL(ep, tag, swi) do { \
     register seL4_Word dest asm("r0") = (seL4_Word)ep; \
