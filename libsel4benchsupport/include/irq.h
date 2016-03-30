@@ -17,11 +17,17 @@
 #include "benchmark.h"
 
 #define N_IGNORED 10
-#define RUNS (100 + N_IGNORED)
+#define N_RUNS (100 + N_IGNORED)
 
 typedef struct irq_results {
     kernel_log_entry_t kernel_log[KERNEL_MAX_NUM_LOG_ENTRIES];
     int n;
 } irq_results_t;
+
+typedef struct irquser_results_t {
+    ccnt_t overheads[N_RUNS];
+    ccnt_t thread_results[N_RUNS];
+    ccnt_t process_results[N_RUNS];
+} irquser_results_t;
 
 #endif /* __SELBENCH_IRQ_H */

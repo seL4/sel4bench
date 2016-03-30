@@ -141,3 +141,45 @@ irq_benchmark_new(void)
     return irq;
 }
 
+static void 
+irquser_process(void *results) {
+    irquser_results_t *raw_results;
+    result_t interas_result;
+    result_t intraas_result;
+    result_t overhead;
+
+    raw_results = (irquser_results_t *) results;
+
+    overhead = process_result(&raw_results->overheads[N_IGNORED], N_RUNS - N_IGNORED, "overhead");
+  
+    /* account for overhead */
+    for (int i = 0; i < N_RUNS; i++) {
+        raw_results->thread_results[i] -= overhead.min;
+        raw_results->process_results[i] -= overhead.min;
+    }
+
+    intraas_result = process_result(&raw_results->thread_results[N_IGNORED], N_RUNS - N_IGNORED, "thread irq");
+    interas_result = process_result(&raw_results->process_results[N_IGNORED], N_RUNS - N_IGNORED, "process irq");
+
+    printf("----------------------------------------\n");
+    printf("IRQ Path Cycle Count (measured from user level) (%d samples)\n", N_RUNS - N_IGNORED);
+    printf("----------------------------------------\n");
+    print_result_header();
+    print_result(&overhead);
+    print_result(&intraas_result);
+    print_result(&interas_result);
+}
+
+benchmark_t
+irquser_benchmark_new(void) 
+{
+    benchmark_t irquser;
+    irquser.name = "irquser";
+    irquser.results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irquser_results_t), seL4_PageBits);
+    irquser.process = irquser_process;
+    irquser.init = init;
+
+    return irquser;
+}
+
+

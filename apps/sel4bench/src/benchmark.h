@@ -41,5 +41,6 @@ typedef struct result {
 
 benchmark_t ipc_benchmark_new(void);
 benchmark_t irq_benchmark_new(void);
+benchmark_t irquser_benchmark_new(void);
 
 #endif /* BENCHMARK_H */

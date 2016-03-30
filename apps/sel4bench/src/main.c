@@ -128,9 +128,9 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
     uintptr_t stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
 
 
-    if (config_set(CONFIG_DEBUG_BUILD)) {
-        seL4_DebugNameThread(process.thread.tcb.cptr, benchmark->name);
-    }
+#ifdef CONFIG_DEBUG_BUILD
+    seL4_DebugNameThread(process.thread.tcb.cptr, benchmark->name);
+#endif
  
     /* set up shared memory for results */
     void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr, 
@@ -234,6 +234,10 @@ main_continued(void *arg)
 
     if (config_set(CONFIG_APP_IRQBENCH)) {
         launch_benchmark(irq_benchmark_new(), &global_env, &untyped);
+    }
+
+    if (config_set(CONFIG_APP_IRQUSERBENCH)) {
+        launch_benchmark(irquser_benchmark_new(), &global_env, &untyped);
     }
 
     printf("All is well in the universe.\n");

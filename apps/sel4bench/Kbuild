@@ -22,6 +22,7 @@ endif
 
 sel4bench-components-$(CONFIG_APP_IPCBENCH) += ipc
 sel4bench-components-$(CONFIG_APP_IRQBENCH) += irq
+sel4bench-components-$(CONFIG_APP_IRQUSERBENCH) += irquser
 
 sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y))
 

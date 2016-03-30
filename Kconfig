@@ -45,6 +45,7 @@ menu "seL4 Applications"
     source "apps/sel4bench/Kconfig"
     source "apps/ipc/Kconfig"
     source "apps/irq/Kconfig"
+    source "apps/irquser/Kconfig"
 endmenu
 
 menu "Tools"
