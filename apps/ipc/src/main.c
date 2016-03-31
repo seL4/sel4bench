@@ -392,7 +392,6 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
 #ifdef CONFIG_DEBUG_BUILD
         seL4_DebugNameThread(dummy.process.thread.tcb.cptr, "dummy");
 #endif
-        }
     }
 
     /* copy endpoint cptrs into a and b's respective cspaces*/
@@ -412,8 +411,8 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
     sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
 
 #ifdef CONFIG_DEBUG_BUILD
-        seL4_DebugNameThread(client.process.thread.tcb.cptr, "client");
-        seL4_DebugNameThread(server.process.thread.tcb.cptr, "server");
+    seL4_DebugNameThread(client.process.thread.tcb.cptr, "client");
+    seL4_DebugNameThread(server.process.thread.tcb.cptr, "server");
 #endif
 
     /* start processes */
