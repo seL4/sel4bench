@@ -39,7 +39,6 @@
 #define OVERHEAD_RETRIES 4
 
 typedef struct helper_thread {
-    sel4utils_process_config_t config;
     sel4utils_process_t process;
     seL4_CPtr ep;
     seL4_CPtr result_ep;
@@ -295,45 +294,6 @@ measure_overhead(ipc_results_t *results)
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
 }
 
-void
-init_config(helper_thread_t *thread, helper_func_t thread_fn, int prio,
-            sel4utils_elf_region_t *region)
-{
-    /* set up a process that runs in its own address space */
-    bzero(&thread->config, sizeof(thread->config));
-    thread->config.is_elf = false;
-    thread->config.create_cspace = true;
-    thread->config.one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
-    thread->config.create_vspace = true;
-    thread->config.reservations = region;
-    thread->config.num_reservations = 1;
-    thread->config.create_fault_endpoint = false;
-    thread->config.fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
-    thread->config.priority = prio;
-    thread->config.entry_point = thread_fn;
-    if (!(config_set(CONFIG_KERNEL_STABLE) || config_set(CONFIG_X86_64))) {
-        thread->config.asid_pool = SEL4UTILS_ASID_POOL_SLOT;
-    }
-}
-
-void
-init_server_config(helper_thread_t *server, helper_func_t server_fn, int prio,
-                   helper_thread_t *client, int same_vspace)
-{
-    /* set up a server process which may share its address space with the client */
-    server->config = client->config;
-    server->config.priority = prio;
-    server->config.entry_point = server_fn;
-
-    if (same_vspace) {
-        server->config.create_cspace = false;
-        server->config.cnode = client->process.cspace;
-        server->config.create_vspace = false;
-        server->config.vspace = &client->process.vspace;
-    }
-
-}
-
 /* this function is never exeucted, it just lives in the scheduler queue */
 static NORETURN seL4_Word
 dummy_fn(int argc, char *argv[])
@@ -347,44 +307,35 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
           ccnt_t *ret1, ccnt_t *ret2)
 {
     helper_thread_t client, server, dummy;
+    int error;
 
     timing_init();
 
-    /* configure processes */
-    init_config(&client, bench_funcs[params->client_fn], params->client_prio, &env->region);
+    error = benchmark_shallow_clone_process(env, &client.process, params->client_prio, 
+                                            bench_funcs[params->client_fn]);
 
-    if (sel4utils_configure_process_custom(&client.process, &env->vka, &env->vspace, client.config)) {
+    if (error) {
         ZF_LOGF("Failed to configure client\n");
     }
 
-    init_server_config(&server, bench_funcs[params->server_fn], params->server_prio, &client, params->same_vspace);
+    if (params->same_vspace) {
+        error = benchmark_configure_thread_in_process(env, &client.process, &server.process, params->server_prio, 
+                                                      bench_funcs[params->server_fn]);
+    } else {
+        error = benchmark_shallow_clone_process(env, &server.process, params->server_prio,
+                                                bench_funcs[params->server_fn]);
+    }
 
-    if (sel4utils_configure_process_custom(&server.process, &env->vka, &env->vspace, server.config)) {
+    if (error) {
         ZF_LOGF("Failed to configure server\n");
     }
 
-    /* clone the text segment into the vspace - note that as we are only cloning the text
-     * segment, you will not be able to use anything that relies on initialisation in benchmark
-     * threads - like printf, (but seL4_Debug_PutChar is ok)
-     */
-    if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &client.process.vspace, env->region.reservation)) {
-        ZF_LOGF("Failed to bootstrap client\n");
-    }
-
-    if (!params->same_vspace) {
-        if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &server.process.vspace, env->region.reservation)) {
-            ZF_LOGF("Failed to bootstrap server\n");
-        }
-    }
-
     if (params->dummy_thread) {
-        init_config(&dummy, dummy_fn, params->dummy_prio, &env->region);
-        if (sel4utils_configure_process_custom(&dummy.process, &env->vka, &env->vspace, dummy.config)) {
+        error = benchmark_shallow_clone_process(env, &dummy.process, params->dummy_prio, dummy_fn);
+        if (error) {
             ZF_LOGF("Failed to configure dummy\n");
         }
-        if (sel4utils_bootstrap_clone_into_vspace(&env->vspace, &dummy.process.vspace, env->region.reservation)) {
-            ZF_LOGF("Failed to bootstrap dummy thread\n");
-        }
+        
         if (sel4utils_spawn_process(&dummy.process, &env->vka, &env->vspace, 0, NULL, 1)) {
             ZF_LOGF("Failed to spawn dummy process\n");
         }

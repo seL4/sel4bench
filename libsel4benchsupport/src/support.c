@@ -166,6 +166,61 @@ get_port(void *data, uint16_t start_port, uint16_t end_port)
     return FRAME_SLOT;
 }
 
+static void
+get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio, void *entry_point) 
+{
+    bzero(config, sizeof(sel4utils_process_config_t));
+    config->is_elf = false;
+    config->create_cspace = true;
+    config->one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
+    config->create_vspace = true;
+    config->reservations = &env->region;
+    config->num_reservations = 1;
+    config->create_fault_endpoint = false;
+    config->fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
+    config->priority = prio;
+    config->entry_point = entry_point;
+    if (!(config_set(CONFIG_KERNEL_STABLE) || config_set(CONFIG_X86_64))) {
+        config->asid_pool = SEL4UTILS_ASID_POOL_SLOT;
+    }
+}
+
+int
+benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point)
+{
+    int error;
+    sel4utils_process_config_t config;
+
+    get_process_config(env, &config, prio, entry_point);
+    error = sel4utils_configure_process_custom(process, &env->vka, &env->vspace, config);
+    
+    if (!error) {
+       /* clone the text segment into the vspace - note that as we are only cloning the text
+        * segment, you will not be able to use anything that relies on initialisation in benchmark
+        * threads - like printf, (but seL4_Debug_PutChar is ok)
+        */
+        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace, 
+                                                      env->region.reservation);
+    }
+
+    return error;
+}
+
+int 
+benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
+                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point)
+{
+    sel4utils_process_config_t config;
+
+    get_process_config(env, &config, prio, entry_point);
+    config.create_cspace = false;
+    config.cnode = process->cspace;
+    config.create_vspace = false;
+    config.vspace = &process->vspace;
+
+    return sel4utils_configure_process_custom(thread, &env->vka, &env->vspace, config);
+}
+
 env_t *
 benchmark_get_env(int argc, char **argv, size_t results_size)
 {
