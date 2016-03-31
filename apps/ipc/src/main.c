@@ -101,7 +101,7 @@ get_result(seL4_CPtr ep)
 
     for (int i = 0; i < length; i++) {
         result = result << shift;
-        result += seL4_GetMR(0);
+        result += seL4_GetMR(i);
     }
 
     return result;
