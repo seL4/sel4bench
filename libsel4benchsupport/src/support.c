@@ -185,8 +185,9 @@ get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio,
     }
 }
 
-int
-benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point)
+void
+benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point, 
+                                char *name)
 {
     int error;
     sel4utils_process_config_t config;
@@ -194,22 +195,31 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
     get_process_config(env, &config, prio, entry_point);
     error = sel4utils_configure_process_custom(process, &env->vka, &env->vspace, config);
     
-    if (!error) {
-       /* clone the text segment into the vspace - note that as we are only cloning the text
-        * segment, you will not be able to use anything that relies on initialisation in benchmark
-        * threads - like printf, (but seL4_Debug_PutChar is ok)
-        */
-        error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace, 
-                                                      env->region.reservation);
+    if (error) {
+        ZF_LOGF("Failed to configure process %s", name);
     }
 
-    return error;
+    /* clone the text segment into the vspace - note that as we are only cloning the text
+     * segment, you will not be able to use anything that relies on initialisation in benchmark
+     * threads - like printf, (but seL4_Debug_PutChar is ok)
+     */
+    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace, 
+                                                  env->region.reservation);
+    if (error) {
+        ZF_LOGF("Failed to bootstrap clone into vspace for %s", name);
+    }
+
+#ifdef CONFIG_DEBUG_BUILD
+        seL4_DebugNameThread(process->thread.tcb.cptr, name);
+#endif
 }
 
-int 
+void
 benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
-                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point)
+                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point, 
+                                      char *name)
 {
+    int error;
     sel4utils_process_config_t config;
 
     get_process_config(env, &config, prio, entry_point);
@@ -218,7 +228,31 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
     config.create_vspace = false;
     config.vspace = &process->vspace;
 
-    return sel4utils_configure_process_custom(thread, &env->vka, &env->vspace, config);
+    error = sel4utils_configure_process_custom(thread, &env->vka, &env->vspace, config);
+    if (error) {
+        ZF_LOGF("Failed to configure process %s", name);
+    }
+
+#ifdef CONFIG_DEBUG_BUILD
+    seL4_DebugNameThread(thread->thread.tcb.cptr, name);
+#endif 
+}
+
+void
+benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread) 
+{
+
+    seL4_CapData_t guard = seL4_CapData_Guard_new(0, seL4_WordBits -
+                                                     CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
+
+    int error = sel4utils_configure_thread(&env->vka, &env->vspace, &env->vspace, fault_ep, prio,
+                                           SEL4UTILS_CNODE_SLOT, guard, thread);
+    if (error) {
+        ZF_LOGF("Failed to configure %s\n", name);
+    }
+#ifdef CONFIG_DEBUG_BUILD
+    seL4_DebugNameThread(thread->tcb.cptr, name);
+#endif
 }
 
 env_t *

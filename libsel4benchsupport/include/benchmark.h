@@ -42,9 +42,13 @@ env_t *benchmark_get_env(int argc, char **argv, size_t results_size);
 NORETURN void benchmark_finished(int exit_code);
 void benchmark_putchar(int c);
 
-int benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, 
-                                    void *entry_point);
-int benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process, 
+void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, 
+                                    void *entry_point, char *name);
+void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process, 
                                           sel4utils_process_t *thread, uint8_t prio, 
-                                          void *entry_point); 
+                                          void *entry_point, char *name); 
+
+void
+benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, 
+                           sel4utils_thread_t *thread);
 #endif /* __BENCHMARK_H__ */

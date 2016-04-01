@@ -307,42 +307,25 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
           ccnt_t *ret1, ccnt_t *ret2)
 {
     helper_thread_t client, server, dummy;
-    int error;
 
     timing_init();
 
-    error = benchmark_shallow_clone_process(env, &client.process, params->client_prio, 
-                                            bench_funcs[params->client_fn]);
-
-    if (error) {
-        ZF_LOGF("Failed to configure client\n");
-    }
+    benchmark_shallow_clone_process(env, &client.process, params->client_prio, 
+                                            bench_funcs[params->client_fn], "client");
 
     if (params->same_vspace) {
-        error = benchmark_configure_thread_in_process(env, &client.process, &server.process, params->server_prio, 
-                                                      bench_funcs[params->server_fn]);
+        benchmark_configure_thread_in_process(env, &client.process, &server.process, params->server_prio, 
+                                              bench_funcs[params->server_fn], "server");
     } else {
-        error = benchmark_shallow_clone_process(env, &server.process, params->server_prio,
-                                                bench_funcs[params->server_fn]);
-    }
-
-    if (error) {
-        ZF_LOGF("Failed to configure server\n");
+        benchmark_shallow_clone_process(env, &server.process, params->server_prio,
+                                        bench_funcs[params->server_fn], "server");
     }
 
     if (params->dummy_thread) {
-        error = benchmark_shallow_clone_process(env, &dummy.process, params->dummy_prio, dummy_fn);
-        if (error) {
-            ZF_LOGF("Failed to configure dummy\n");
-        }
-        
+        benchmark_shallow_clone_process(env, &dummy.process, params->dummy_prio, dummy_fn, "dummy");
         if (sel4utils_spawn_process(&dummy.process, &env->vka, &env->vspace, 0, NULL, 1)) {
             ZF_LOGF("Failed to spawn dummy process\n");
         }
-
-#ifdef CONFIG_DEBUG_BUILD
-        seL4_DebugNameThread(dummy.process.thread.tcb.cptr, "dummy");
-#endif
     }
 
     /* copy endpoint cptrs into a and b's respective cspaces*/
@@ -360,11 +343,6 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
     /* set up args */
     sel4utils_create_word_args(client.argv_strings, client.argv, NUM_ARGS, client.ep, client.result_ep);
     sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
-
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugNameThread(client.process.thread.tcb.cptr, "client");
-    seL4_DebugNameThread(server.process.thread.tcb.cptr, "server");
-#endif
 
     /* start processes */
     if (sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1)) {
