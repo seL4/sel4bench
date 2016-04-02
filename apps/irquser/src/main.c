@@ -149,7 +149,6 @@ main(int argc, char **argv)
     char strings[1][WORD_STRING_SIZE];
     char *spinner_argv[1];
 
-    printf("local current time = %p\n", local_current_time);
     sel4utils_create_word_args(strings, spinner_argv, 1, (seL4_Word) local_current_time);
     error = sel4utils_start_thread(&spinner, spinner_fn, (void *) 1, (void *) spinner_argv, true);
     assert(!error);

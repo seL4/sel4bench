@@ -289,7 +289,7 @@ int main(void)
 
     check_cpu_features();
 
-    /* Switch to a bigger stack with some guard pages! */
+    /* Switch to a bigger stack with a guard page! */
     printf("Switching to a safer, bigger stack... ");
     error = sel4utils_run_on_stack(&global_env.vspace, main_continued, NULL, NULL);
     assert(error == 0);
