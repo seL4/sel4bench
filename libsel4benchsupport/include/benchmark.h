@@ -31,7 +31,7 @@ typedef struct env {
     simple_t simple;
     /* static data to initialise vspace */
     sel4utils_alloc_data_t data;
-    /* code region so this app can 'fork' itself */
+    /* code region so this app can shallow clone itself */
     sel4utils_elf_region_t region;
     /* virtual address to write benchmark results to */
     void *results;
@@ -39,16 +39,56 @@ typedef struct env {
 
 /* initialise the benchmarking environment and return it */
 env_t *benchmark_get_env(int argc, char **argv, size_t results_size);
+/* signal to the benchmark driver process that we are done */
 NORETURN void benchmark_finished(int exit_code);
+/* put char for benchmarks, does not print if kernel is not a debug kernel */
 void benchmark_putchar(int c);
 
+/* Child thread/process helper functions */
+
+/* Create a new process that is a shallow clone of the current process.
+ *
+ * This is *not* fork, and will only copy the text segment
+ * into the new address space. This results in very light weight processes.
+ *
+ * This means you can start your new process at any function in the text segment, 
+ * but those functions cannot rely on any globally initialised data in the heap or the stack
+ * Most significantly, any c library calls that rely on the vsyscall table will not work
+ * (like abort, or printf). 
+ *
+ * @param env environment from benchmark_get_env
+ * @param[out] process the process to create
+ * @param prio the priority to run the process at
+ * @param entry_point a function in the text segment to start the process at
+ * @param name a name for the thread for debugging (this will be passed to seL4_DebugNameThread)
+ * @param fault_ep fault endpoint for the thread
+ */
 void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, 
                                     void *entry_point, char *name);
+
+/*
+ * Create a new thread in a shallow processes address space.
+ *
+ * @param env environment from benchmark_get_env
+ * @param process to create the thread in the address space of
+ * @param[out] thread the thread to create
+ * @param prio the priority to run the process at
+ * @param entry_point a function in the text segment to start the process at
+ * @param name a name for the thread for debugging (this will be passed to seL4_DebugNameThread)
+ */
 void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process, 
                                           sel4utils_process_t *thread, uint8_t prio, 
                                           void *entry_point, char *name); 
 
-void
-benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, 
-                           sel4utils_thread_t *thread);
+/*
+ * Configure a thread in the address space of the current environment.
+ *
+ * @param env environment from benchmark_get_env
+ * @param fault_ep fault endpoint for the thread
+ * @param prio the priority to run the process at
+ * @param name a name for the thread for debugging (this will be passed to seL4_DebugNameThread)
+ * @param[out] thread to create 
+ */
+void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, 
+                                sel4utils_thread_t *thread);
 #endif /* __BENCHMARK_H__ */
