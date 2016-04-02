@@ -153,13 +153,7 @@ main(int argc, char **argv)
     error = sel4utils_start_thread(&spinner, spinner_fn, (void *) 1, (void *) spinner_argv, true);
     assert(!error);
 
-    /* wait for signal that benchmark is finished */
-    seL4_MessageInfo_t tag = seL4_Recv(endpoint.cptr, NULL);
-    if (seL4_MessageInfo_get_label(tag) != seL4_NoFault) {
-        /* failure - one of our threads faulted */
-        sel4utils_print_fault_message(tag, "irq-user-benchmark");
-        abort();
-    }
+    benchmark_wait_children(endpoint.cptr, "child of irq-user", 1);
 
     /* stop spinner thread */
     error = seL4_TCB_Suspend(spinner.tcb.cptr);
@@ -191,13 +185,7 @@ main(int argc, char **argv)
         ZF_LOGF("Failed to start spinner process");
     }
 
-    /* wait for signal that benchmark is finished */
-    tag = seL4_Recv(endpoint.cptr, NULL);
-    if (seL4_MessageInfo_get_label(tag) != seL4_NoFault) {
-        /* failure - one of our threads faulted */
-        sel4utils_print_fault_message(tag, "irq-user-benchmark");
-        abort();
-    }
+    benchmark_wait_children(endpoint.cptr, "child of irq-user", 1);
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);

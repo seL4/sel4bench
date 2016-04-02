@@ -255,6 +255,19 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
 #endif
 }
 
+void
+benchmark_wait_children(seL4_CPtr ep, char *name, int num_children) 
+{
+    for (int i = 0; i < num_children; i++) {
+        seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);
+        if (seL4_MessageInfo_get_label(tag) != seL4_NoFault) {
+            /* failure - a thread we are waiting for faulted */
+            sel4utils_print_fault_message(tag, name);
+            abort();
+        }
+    }
+}
+
 env_t *
 benchmark_get_env(int argc, char **argv, size_t results_size)
 {

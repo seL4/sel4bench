@@ -91,4 +91,20 @@ void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *proc
  */
 void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, 
                                 sel4utils_thread_t *thread);
+
+/* 
+ * Wait for n child threads/processes to terminate successfully.
+ *
+ * The child thread/processes must signal on ep when finished, *and* have ep also 
+ * set as their fault endpoint. This way if a child terminates we will get an IPC.
+ *
+ * If any child terminates with a fault, abort. Otherwise, return when all children are
+ * finished.
+ *
+ * @param ep the endpoint children will signal or fault on when done
+ * @param name a name for the child for debugging output on fault.
+ * @param num_children the number of children to wait for
+ */
+void benchmark_wait_children(seL4_CPtr ep, char *name, int num_children); 
+
 #endif /* __BENCHMARK_H__ */
