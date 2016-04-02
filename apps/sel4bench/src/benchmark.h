@@ -18,6 +18,8 @@
 typedef struct benchmark {
     /* name of the benchmark application */
     char *name;
+    /* should we run this benchmark */
+    bool enabled;
     /* size of data structure required to store results */
     size_t results_pages;
     /*
@@ -39,8 +41,8 @@ typedef struct result {
     ccnt_t max;
 } result_t;
 
-benchmark_t ipc_benchmark_new(void);
-benchmark_t irq_benchmark_new(void);
-benchmark_t irquser_benchmark_new(void);
+benchmark_t *ipc_benchmark_new(void);
+benchmark_t *irq_benchmark_new(void);
+benchmark_t *irquser_benchmark_new(void);
 
 #endif /* BENCHMARK_H */

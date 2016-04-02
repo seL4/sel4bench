@@ -129,16 +129,18 @@ init(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
     }
 }
 
-benchmark_t
+static benchmark_t irq_benchmark = {
+    .name = "irq",
+    .enabled = config_set(CONFIG_APP_IRQBENCH),
+    .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irq_results_t), seL4_PageBits),
+    .process = process,
+    .init = init
+};
+
+benchmark_t *
 irq_benchmark_new(void)
 {
-    benchmark_t irq;
-    irq.name = "irq";
-    irq.results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irq_results_t), seL4_PageBits);
-    irq.process = process;
-    irq.init = init;
-
-    return irq;
+    return &irq_benchmark;
 }
 
 static void 
@@ -170,16 +172,17 @@ irquser_process(void *results) {
     print_result(&interas_result);
 }
 
-benchmark_t
+static benchmark_t irquser_benchmark = {
+    .name = "irquser",
+    .enabled = config_set(CONFIG_APP_IRQUSERBENCH),
+    .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irquser_results_t), seL4_PageBits),
+    .process = irquser_process,
+    .init = init
+};
+
+benchmark_t *
 irquser_benchmark_new(void) 
 {
-    benchmark_t irquser;
-    irquser.name = "irquser";
-    irquser.results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irquser_results_t), seL4_PageBits);
-    irquser.process = irquser_process;
-    irquser.init = init;
-
-    return irquser;
+   return &irquser_benchmark;
 }
-
 

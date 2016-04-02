@@ -129,15 +129,17 @@ init(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
     /* nothing to do */
 }
 
-benchmark_t
+static benchmark_t ipc_benchmark = {
+    .name = "ipc",
+    .enabled = config_set(CONFIG_APP_IPCBENCH),
+    .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(ipc_results_t), seL4_PageBits),
+    .process = process,
+    .init = init
+};
+
+benchmark_t *
 ipc_benchmark_new(void)
 {
-    benchmark_t ipc_benchmark;
-    ipc_benchmark.name = "ipc";
-    ipc_benchmark.results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(ipc_results_t), seL4_PageBits);
-    ipc_benchmark.process = process;
-    ipc_benchmark.init = init;
-
-    return ipc_benchmark;
+   return &ipc_benchmark;
 }
 

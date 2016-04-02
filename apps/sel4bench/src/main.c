@@ -171,27 +171,27 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 }
 
 void 
-launch_benchmark(benchmark_t benchmark, env_t *env, vka_object_t *untyped)
+launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
 {
-    printf("\n%s Benchmarks\n==============\n\n", benchmark.name);
+    printf("\n%s Benchmarks\n==============\n\n", benchmark->name);
 
     /* reserve memory for the results */
-    void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark.results_pages, seL4_PageBits);
+    void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark->results_pages, seL4_PageBits);
     
     if (results == NULL) {
         ZF_LOGF("Failed to allocate pages for results");
     }
 
     /* Run benchmark process */
-    int exit_code = run_benchmark(env, &benchmark, untyped, results); 
+    int exit_code = run_benchmark(env, benchmark, untyped, results);
 
     /* process & print results */
-    if (exit_code == 0) {
-        benchmark.process(results);
+    if (exit_code == EXIT_SUCCESS) {
+        benchmark->process(results);
     }
 
     /* free results */
-    vspace_unmap_pages(&env->vspace, results, benchmark.results_pages, seL4_PageBits, VSPACE_FREE);
+    vspace_unmap_pages(&env->vspace, results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
 
     /* revoke the untyped so it's clean for the next benchmark */
     cspacepath_t path;
@@ -228,16 +228,22 @@ main_continued(void *arg)
     /* find an untyped for the process to use */
     find_untyped(&global_env.vka, &untyped);
 
-    if (config_set(CONFIG_APP_IPCBENCH)) {
-        launch_benchmark(ipc_benchmark_new(), &global_env, &untyped);
-    }
+    /* list of benchmarks */
+    benchmark_t *benchmarks[] = {
+        ipc_benchmark_new(),
+        irq_benchmark_new(),
+        irquser_benchmark_new(),
+        /* add new benchmarks here */
 
-    if (config_set(CONFIG_APP_IRQBENCH)) {
-        launch_benchmark(irq_benchmark_new(), &global_env, &untyped);
-    }
+        /* null terminator */
+        NULL
+    };
 
-    if (config_set(CONFIG_APP_IRQUSERBENCH)) {
-        launch_benchmark(irquser_benchmark_new(), &global_env, &untyped);
+    /* run the benchmarks */
+    for (int i = 0; benchmarks[i] != NULL; i++) {
+        if (benchmarks[i]->enabled) {
+            launch_benchmark(benchmarks[i], &global_env, &untyped);
+        }
     }
 
     printf("All is well in the universe.\n");
