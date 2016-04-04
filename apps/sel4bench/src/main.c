@@ -155,10 +155,13 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
     /* wait for it to finish */
     seL4_MessageInfo_t info = seL4_Recv(process.fault_endpoint.cptr, NULL);
     int result = seL4_GetMR(0);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault || result != EXIT_SUCCESS) {
+    if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
         sel4utils_print_fault_message(info, benchmark->name);
         sel4debug_dump_registers(process.thread.tcb.cptr);
         result = EXIT_FAILURE;
+    } else if (result != EXIT_SUCCESS) {
+        printf("Benchmark failed, result %d\n", result);
+        sel4debug_dump_registers(process.thread.tcb.cptr);
     }
 
     /* free results in target vspace (they will still be in ours) */
