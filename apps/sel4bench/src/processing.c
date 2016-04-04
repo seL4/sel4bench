@@ -22,8 +22,10 @@ process_result(ccnt_t *array, int size, const char *error)
     result_t result;
 
     if (error != NULL && !results_stable(array, size)) {
-        ZF_LOGW("%s cycles are not stable\n", error);
-        print_all(array, size);
+        ZF_LOGW("%s cycles are not stable\n", error); 
+        if (ZF_LOG_LEVEL <= ZF_LOG_VERBOSE) {
+            print_all(array, size);
+        }
     }
 
     result.min = results_min(array, size);
