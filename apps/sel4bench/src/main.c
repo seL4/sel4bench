@@ -166,11 +166,16 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 
     /* free results in target vspace (they will still be in ours) */
     vspace_unmap_pages(&process.vspace, remote_results_vaddr, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
+     /* clean up */
 
-    /* clean up */
+    /* revoke the untyped so it's clean for the next benchmark */
+    vka_cspace_make_path(&env->vka, untyped->cptr, &path);
+    vka_cnode_revoke(&path);
+
+    /* destroy the process */
     sel4utils_destroy_process(&process, &env->vka);
-
-    return result;
+    
+   return result;
 }
 
 void 
@@ -196,10 +201,6 @@ launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
     /* free results */
     vspace_unmap_pages(&env->vspace, results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
 
-    /* revoke the untyped so it's clean for the next benchmark */
-    cspacepath_t path;
-    vka_cspace_make_path(&env->vka, untyped->cptr, &path);
-    vka_cnode_revoke(&path);
 }
 
 void
