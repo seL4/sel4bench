@@ -22,7 +22,7 @@
 #include <benchmark.h>
 #include <irq.h>
 
-#define INTERRUPT_PERIOD_NS (100 * NS_IN_MS)
+#define INTERRUPT_PERIOD_NS (10 * NS_IN_MS)
 
 void
 abort(void)
