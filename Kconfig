@@ -46,6 +46,7 @@ menu "seL4 Applications"
     source "apps/ipc/Kconfig"
     source "apps/irq/Kconfig"
     source "apps/irquser/Kconfig"
+    source "apps/scheduler/Kconfig"
 endmenu
 
 menu "Tools"

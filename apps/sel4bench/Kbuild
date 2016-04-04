@@ -20,9 +20,11 @@ else
 sel4bench-$(CONFIG_LIB_SEL4_SIMPLE_DEFAULT) += libsel4simple-default
 endif
 
+# benchmarking apps that this app depends on 
 sel4bench-components-$(CONFIG_APP_IPCBENCH) += ipc
 sel4bench-components-$(CONFIG_APP_IRQBENCH) += irq
 sel4bench-components-$(CONFIG_APP_IRQUSERBENCH) += irquser
+sel4bench-components-$(CONFIG_APP_SCHEDULERBENCH) += scheduler
 
 sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y))
 

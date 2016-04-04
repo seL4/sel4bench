@@ -237,6 +237,7 @@ main_continued(void *arg)
         ipc_benchmark_new(),
         irq_benchmark_new(),
         irquser_benchmark_new(),
+        scheduler_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */
