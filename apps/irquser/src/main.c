@@ -174,7 +174,7 @@ main(int argc, char **argv)
 
     /* share the current time variable with the spinner process */
     void *current_time_remote = vspace_share_mem(&env->vspace, &spinner_process.vspace,
-                                                 (void *) local_current_time, 2, seL4_PageBits, 
+                                                 (void *) local_current_time, 1, seL4_PageBits,
                                                  seL4_AllRights, true);
     assert(current_time_remote != NULL);
 
