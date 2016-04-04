@@ -15,6 +15,14 @@
 #include "printing.h"
 #include "ipc.h"
 
+void 
+print_banner(char *name, int samples)
+{
+    printf("----------------------------------------\n");
+    printf("%s (%d samples)\n", name, samples);
+    printf("----------------------------------------\n");
+}
+
 void
 print_all(ccnt_t *array, int size)
 {

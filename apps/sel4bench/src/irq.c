@@ -77,19 +77,14 @@ process(void *results) {
         data[i] = starts[i] + ends[i] - (overhead_result.mean * 2);
     }
 
-    printf("Ignoring first %d records.\n\n", N_IGNORED);
-
-    printf("----------------------------------------\n");
-    printf("Tracepoint Overhead (%d samples)\n", n_overhead_data);
-    printf("----------------------------------------\n");
+    print_banner("Tracepoint Overhead", n_overhead_data);
     result_t result = process_result(overhead_data, n_overhead_data, NULL);
     print_result_header();
     print_result(&result);
     printf("\n");
 
-    printf("----------------------------------------\n");
-    printf("IRQ Path Cycle Count (accounting for overhead) (%d samples)\n", n_data);
-    printf("----------------------------------------\n");
+    print_banner("IRQ Path Cycle Count (accounting for overhead)", n_data);
+    
     result = process_result(data, n_data, NULL);
     print_result_header();
     print_result(&result);
@@ -163,12 +158,14 @@ irquser_process(void *results) {
     intraas_result = process_result(&raw_results->thread_results[N_IGNORED], N_RUNS - N_IGNORED, "thread irq");
     interas_result = process_result(&raw_results->process_results[N_IGNORED], N_RUNS - N_IGNORED, "process irq");
 
-    printf("----------------------------------------\n");
-    printf("IRQ Path Cycle Count (measured from user level) (%d samples)\n", N_RUNS - N_IGNORED);
-    printf("----------------------------------------\n");
+    print_banner("IRQ Path Cycle Count (measured from user level)", N_RUNS - N_IGNORED);
+    printf("Type\t");
     print_result_header();
+    printf("Measurement overhead\t");
     print_result(&overhead);
+    printf("Without context switch\t");
     print_result(&intraas_result);
+    printf("With context switch\t");
     print_result(&interas_result);
 }
 
