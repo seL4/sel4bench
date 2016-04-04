@@ -126,7 +126,7 @@ init(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
 
 static benchmark_t irq_benchmark = {
     .name = "irq",
-    .enabled = config_set(CONFIG_APP_IRQBENCH),
+    .enabled = config_set(CONFIG_APP_IRQBENCH) && CONFIG_MAX_NUM_TRACE_POINTS == 3,
     .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irq_results_t), seL4_PageBits),
     .process = process,
     .init = init
