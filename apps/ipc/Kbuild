@@ -1,0 +1,15 @@
+#
+# Copyright 2016, NICTA
+#
+# This software may be distributed and modified according to the terms of
+# the BSD 2-Clause license. Note that NO WARRANTY is provided.
+# See "LICENSE_BSD2.txt" for details.
+#
+# @TAG(NICTA_BSD)
+#
+
+components-$(CONFIG_APP_IPCBENCH) += ipc
+ipc: common libsel4 $(libc) libcpio libsel4vka libsel4vspace libsel4allocman \
+           libsel4utils libsel4muslcsys libsel4bench libelf libsel4simple libsel4benchsupport
+
+

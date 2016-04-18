@@ -37,10 +37,16 @@ menu "seL4 Libraries"
     source "libs/libsel4simple-stable/Kconfig"
     source "libs/libplatsupport/Kconfig"
     source "libs/libutils/Kconfig"
+    source "libs/libsel4debug/Kconfig"
+    source "libs/libsel4benchsupport/Kconfig"
 endmenu
 
 menu "seL4 Applications"
     source "apps/sel4bench/Kconfig"
+    source "apps/ipc/Kconfig"
+    source "apps/irq/Kconfig"
+    source "apps/irquser/Kconfig"
+    source "apps/scheduler/Kconfig"
 endmenu
 
 menu "Tools"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, NICTA
+ * Copyright 2016, NICTA
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -9,7 +9,19 @@
  */
 
 #include <stdio.h>
+#include <sel4bench/sel4bench.h>
+
 #include "benchmark.h"
+#include "printing.h"
+#include "ipc.h"
+
+void 
+print_banner(char *name, int samples)
+{
+    printf("----------------------------------------\n");
+    printf("%s (%d samples)\n", name, samples);
+    printf("----------------------------------------\n");
+}
 
 void
 print_all(ccnt_t *array, int size)
@@ -19,3 +31,21 @@ print_all(ccnt_t *array, int size)
         printf("\t"CCNT_FORMAT"\n", array[i]);
     }
 }
+
+void
+print_result_header(void)
+{
+    printf("min\tmax\tmean\tvariance\tstddev\tstddev %%\n");
+}
+
+void
+print_result(result_t *result)
+{
+    printf(CCNT_FORMAT"\t", result->min);
+    printf(CCNT_FORMAT"\t", result->max);
+    printf("%.2lf\t", result->mean);
+    printf("%.2lf\t", result->variance);
+    printf("%.2lf\t", result->stddev);
+    printf("%.0lf%%\n", result->stddev_pc);
+}
+

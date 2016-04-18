@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD
  * Copyright 2014, NICTA
+=======
+ * Copyright 2016, NICTA
+>>>>>>> 30e60c29d05d4a14ba30ad8bb640fe73efd69176
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -9,30 +13,23 @@
  */
 
 #include <utils/zf_log.h>
+#include <utils/config.h>
+
+#include "ipc.h"
 #include "processing.h"
 #include "math.h"
 #include "printing.h"
 
-int
-results_stable(ccnt_t *array, int size)
-{
-    uint32_t i;
-    for (i = 1; i < size; i++) {
-        if (array[i] != array[i - 1]) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-bench_result_t
+result_t
 process_result(ccnt_t *array, int size, const char *error)
 {
-    bench_result_t result;
+    result_t result;
 
     if (error != NULL && !results_stable(array, size)) {
-        ZF_LOGW("%s cycles are not stable\n", error);
-        print_all(array, size);
+        ZF_LOGW("%s cycles are not stable\n", error); 
+        if (ZF_LOG_LEVEL <= ZF_LOG_VERBOSE) {
+            print_all(array, size);
+        }
     }
 
     result.min = results_min(array, size);

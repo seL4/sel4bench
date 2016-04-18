@@ -11,7 +11,8 @@
 apps-$(CONFIG_APP_SEL4BENCH) += sel4bench
 
 sel4bench-y = common libsel4 $(libc) libsel4vka libsel4allocman \
-           libsel4utils libsel4platsupport libsel4muslcsys libsel4bench libplatsupport libelf libcpio
+           libsel4utils libsel4platsupport libsel4muslcsys libsel4bench libplatsupport libelf libcpio libsel4debug \
+           libsel4benchsupport
 
 ifdef CONFIG_KERNEL_STABLE
 sel4bench-$(CONFIG_LIB_SEL4_SIMPLE_STABLE) += libsel4simple-stable
@@ -19,4 +20,14 @@ else
 sel4bench-$(CONFIG_LIB_SEL4_SIMPLE_DEFAULT) += libsel4simple-default
 endif
 
-sel4bench: kernel_elf $(sel4bench-y)
+# benchmarking apps that this app depends on 
+sel4bench-components-$(CONFIG_APP_IPCBENCH) += ipc
+sel4bench-components-$(CONFIG_APP_IRQBENCH) += irq
+sel4bench-components-$(CONFIG_APP_IRQUSERBENCH) += irquser
+sel4bench-components-$(CONFIG_APP_SCHEDULERBENCH) += scheduler
+
+sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y))
+
+sel4bench: export COMPONENTS=${sel4bench-components}
+sel4bench: ${sel4bench-components-y} kernel_elf $(sel4bench-y) 
+
