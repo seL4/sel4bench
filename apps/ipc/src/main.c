@@ -216,6 +216,7 @@ ipc_recv_func(int argc, char *argv[])
     ccnt_t start UNUSED, end UNUSED;
     seL4_CPtr ep = atoi(argv[0]);
     seL4_CPtr result_ep = atoi(argv[1]);
+    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
     SEL4BENCH_FENCE();
     for (i = 0; i < WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
