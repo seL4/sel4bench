@@ -238,6 +238,7 @@ main_continued(void *arg)
         irq_benchmark_new(),
         irquser_benchmark_new(),
         scheduler_benchmark_new(),
+        signal_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */
