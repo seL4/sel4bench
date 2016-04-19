@@ -23,6 +23,4 @@ LIBS := sel4 c elf cpio utils sel4utils sel4allocman sel4vspace sel4simple \
 	    platsupport sel4platsupport sel4bench sel4vka sel4benchsupport \
 		sel4muslcsys 
 
-HDRFILES := $(wildcard ${SOURCE_DIR}/include/arch/${ARCH}/*)
-
 include $(SEL4_COMMON)/common.mk
