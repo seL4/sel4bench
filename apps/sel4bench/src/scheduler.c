@@ -14,12 +14,6 @@
 #include <scheduler.h>
 #include <stdio.h>
 
-static void 
-scheduler_init(UNUSED vka_t *vka, UNUSED simple_t *simple, UNUSED sel4utils_process_t *process) 
-{
-    /* nothing to do */
-}
-
 static void
 print_prio_result(result_t *result)
 {
@@ -98,7 +92,7 @@ static benchmark_t sched_benchmark = {
     .enabled = config_set(CONFIG_APP_SCHEDULERBENCH),
     .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(scheduler_results_t), seL4_PageBits),
     .process = scheduler_process,
-    .init = scheduler_init
+    .init = blank_init
 };
 
 benchmark_t *
