@@ -180,7 +180,7 @@ get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio,
     config->fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
     config->priority = prio;
     config->entry_point = entry_point;
-    if (!(config_set(CONFIG_KERNEL_STABLE) || config_set(CONFIG_X86_64))) {
+    if (!config_set(CONFIG_X86_64)) {
         config->asid_pool = SEL4UTILS_ASID_POOL_SLOT;
     }
 }
@@ -290,8 +290,8 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     parse_code_region(&env.region);
 
     env.simple.frame_cap = get_frame_cap;
-    env.simple.irq = get_irq;
-    env.simple.IOPort_cap = get_port;
+    env.simple.arch_simple.irq = get_irq;
+    env.simple.arch_simple.IOPort_cap = get_port;
 
     return &env;
 }
