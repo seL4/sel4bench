@@ -64,7 +64,7 @@ check_cpu_features(void)
     int edx = 0;
     asm volatile("cpuid":"=d"(edx):"a"(0x80000001):"ecx");
     if ((edx & (1 << 27)) == 0) {
-        printf("CPU does not support rdtscp instruction, halting\n");
+        ZF_LOGF("CPU does not support rdtscp instruction, halting\n");
         assert(0);
     }
 #endif
@@ -78,7 +78,7 @@ setup_fault_handler(env_t *env)
     sel4utils_thread_t fault_handler;
     vka_object_t fault_ep = {0};
 
-    printf("Setting up global fault handler...");
+    ZF_LOGV("Setting up global fault handler...");
 
     /* create an endpoint */
     if (vka_alloc_endpoint(&env->vka, &fault_ep) != 0) {
@@ -161,7 +161,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
         sel4debug_dump_registers(process.thread.tcb.cptr);
         result = EXIT_FAILURE;
     } else if (result != EXIT_SUCCESS) {
-        printf("Benchmark failed, result %d\n", result);
+        ZF_LOGF("Benchmark failed, result %d\n", result);
         sel4debug_dump_registers(process.thread.tcb.cptr);
     }
 
@@ -182,7 +182,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 void 
 launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
 {
-    printf("\n%s Benchmarks\n==============\n\n", benchmark->name);
+    ZF_LOGV("\n%s Benchmarks\n==============\n\n", benchmark->name);
 
     /* reserve memory for the results */
     void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark->results_pages, seL4_PageBits);
@@ -298,7 +298,7 @@ int main(void)
     check_cpu_features();
 
     /* Switch to a bigger stack with a guard page! */
-    printf("Switching to a safer, bigger stack... ");
+    ZF_LOGV("Switching to a safer, bigger stack... ");
     error = sel4utils_run_on_stack(&global_env.vspace, main_continued, NULL, NULL);
     assert(error == 0);
 

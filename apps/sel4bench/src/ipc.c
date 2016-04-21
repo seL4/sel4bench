@@ -82,11 +82,11 @@ print_ipc_xml_results(result_t *results, int n)
 static void
 print_ipc_tsv_results(result_t *results, int n)
 {   
-    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tSC donation?\tLength\t");
+    printf("Function\tClient Prio\tServer Prio\tSame vspace?\tSC donation?\tLength\t");
     print_result_header(); 
     for (int i = 0; i < n; i++) {
         printf("%s\t", benchmark_params[i].name);
-        printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
+       // printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
         printf("%d\t", benchmark_params[i].client_prio);
         printf("%d\t", benchmark_params[i].server_prio);
         printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
@@ -121,7 +121,7 @@ process(void *results)
     result_t processed_results[num_results];
 
     if (process_ipc_results(raw_results, processed_results, num_results)) {
-        print_ipc_results(processed_results, XML, num_results);
+        //print_ipc_results(processed_results, XML, num_results);
         print_ipc_results(processed_results, TSV, num_results); 
     }
 }

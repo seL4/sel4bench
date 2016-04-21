@@ -12,6 +12,8 @@
  * @TAG(NICTA_GPL)
  */
 
+#define ZF_LOG_LEVEL ZF_LOG_ERROR
+
 #include <utils/zf_log.h>
 #include <utils/config.h>
 
