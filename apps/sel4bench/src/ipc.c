@@ -80,7 +80,7 @@ print_ipc_xml_results(result_t *results, int n)
 static void
 print_ipc_tsv_results(result_t *results, int n)
 {   
-    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tDummy (prio)?\tLength\t");
+    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tLength\t");
     print_result_header(); 
     for (int i = 0; i < n; i++) {
         printf("%s\t", benchmark_params[i].name);
@@ -88,8 +88,7 @@ print_ipc_tsv_results(result_t *results, int n)
         printf("%d\t", benchmark_params[i].client_prio);
         printf("%d\t", benchmark_params[i].server_prio);
         printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
-        printf("%s (%d)\t", benchmark_params[i].dummy_thread ? "true" : "false", benchmark_params[i].dummy_prio);
-        printf("length %d\t", benchmark_params[i].length);
+        printf("%d\t", benchmark_params[i].length);
         print_result(&results[i]);
     }
 }

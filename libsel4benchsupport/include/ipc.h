@@ -133,6 +133,7 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = CALL_REPLY_RECV_OVERHEAD
     },
+#if 0
     /* Call fastpath, low prio client to high prio server in different address space */
     {
         .name        = "seL4_Call",
@@ -211,6 +212,7 @@ static const benchmark_params_t benchmark_params[] = {
         .dummy_thread = true,
         .dummy_prio = seL4_MinPrio,
     },
+#endif
     /* Send slowpath (no fastpath for send) same prio client-server, different address space */
     {
         .name        = "seL4_Send",
