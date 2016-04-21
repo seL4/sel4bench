@@ -25,6 +25,8 @@
 
 #include <utils/util.h>
 
+#include "support.h"
+
 /* benchmarking environment */
 static env_t env;
 
@@ -161,12 +163,6 @@ get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 }
 
 static seL4_CPtr
-get_port(void *data, uint16_t start_port, uint16_t end_port)
-{
-    return FRAME_SLOT;
-}
-
-static seL4_CPtr
 init_cap(void *data, seL4_CPtr cap)
 {
     if (cap == seL4_CapSchedControl) {
@@ -195,7 +191,7 @@ get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio,
     config->create_sc = true;
     config->custom_budget = 1000 * US_IN_MS;
     config->custom_period = 1000 * US_IN_MS;
-    if (!(config_set(CONFIG_KERNEL_STABLE) || config_set(CONFIG_X86_64))) {
+    if (!config_set(CONFIG_X86_64)) {
         config->asid_pool = SEL4UTILS_ASID_POOL_SLOT;
     }
 }
@@ -305,9 +301,9 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     parse_code_region(&env.region);
 
     env.simple.frame_cap = get_frame_cap;
-    env.simple.irq = get_irq;
-    env.simple.IOPort_cap = get_port;
     env.simple.init_cap = init_cap;
+    env.simple.arch_simple.irq = get_irq;
+    benchmark_arch_get_simple(&env.simple.arch_simple);
 
     return &env;
 }

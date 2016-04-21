@@ -16,11 +16,7 @@
 #include <assert.h>
 
 #include <simple/simple.h>
-#ifdef CONFIG_KERNEL_STABLE
-#include <simple-stable/simple-stable.h>
-#else
 #include <simple-default/simple-default.h>
-#endif
 
 #include <sel4debug/register_dump.h>
 #include <sel4platsupport/platsupport.h>
@@ -272,12 +268,7 @@ int main(void)
     void *vaddr;
 
     info  = seL4_GetBootInfo();
-
-#ifdef CONFIG_KERNEL_STABLE
-    simple_stable_init_bootinfo(&global_env.simple, seL4_GetBootInfo());
-#else
     simple_default_init_bootinfo(&global_env.simple, seL4_GetBootInfo());
-#endif
 
     /* create allocator */
     allocman = bootstrap_use_current_simple(&global_env.simple, ALLOCATOR_STATIC_POOL_SIZE, allocator_mem_pool);
