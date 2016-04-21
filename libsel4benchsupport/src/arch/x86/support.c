@@ -23,7 +23,8 @@ get_msi(UNUSED void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
         UNUSED seL4_Word pci_bus, UNUSED seL4_Word pci_dev, UNUSED seL4_Word pci_func,
         UNUSED seL4_Word handle, seL4_Word vector) 
 {
-    assert(vector == DEFAULT_TIMER_INTERRUPT);
+    assert(vector == (DEFAULT_TIMER_INTERRUPT + IRQ_OFFSET));
+    
     UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
                                               SEL4UTILS_CNODE_SLOT, IRQ_SLOT, seL4_WordBits);
     assert(error == seL4_NoError);
