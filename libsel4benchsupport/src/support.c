@@ -25,6 +25,8 @@
 
 #include <utils/util.h>
 
+#include "support.h"
+
 /* benchmarking environment */
 static env_t env;
 
@@ -160,12 +162,6 @@ get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
     return seL4_NoError;
 }
 
-static seL4_CPtr
-get_port(void *data, uint16_t start_port, uint16_t end_port)
-{
-    return FRAME_SLOT;
-}
-
 static void
 get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio, void *entry_point) 
 {
@@ -291,7 +287,7 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
 
     env.simple.frame_cap = get_frame_cap;
     env.simple.arch_simple.irq = get_irq;
-    env.simple.arch_simple.IOPort_cap = get_port;
+    benchmark_arch_get_simple(&env.simple.arch_simple);
 
     return &env;
 }
