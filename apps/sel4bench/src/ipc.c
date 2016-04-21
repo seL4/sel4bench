@@ -92,7 +92,7 @@ print_ipc_tsv_results(result_t *results, int n)
         printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
         printf("%s (%d)\t", benchmark_params[i].dummy_thread ? "true" : "false", benchmark_params[i].dummy_prio);
         printf("%s\t", benchmark_params[i].same_sc ? "true" : "false");
-        printf("%d\t", benchmark_params[i].length);
+        printf("length %d\t", benchmark_params[i].length);
         print_result(&results[i]);
     }
 }
