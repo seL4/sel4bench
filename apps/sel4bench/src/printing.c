@@ -35,7 +35,9 @@ print_all(ccnt_t *array, int size)
 void
 print_result_header(void)
 {
-    printf("min\tmax\tmean\tstddev %%\tvariance\tstddev\tstddev\n");
+    printf("min\tmax\tmean\tstddev %%\n");
+            
+            //variance\tstddev\tstddev\n");
 }
 
 void
@@ -45,7 +47,8 @@ print_result(result_t *result)
     printf(CCNT_FORMAT"\t", result->max);
     printf("%.2lf\t", result->mean);
     printf("%.0lf%%\t", result->stddev_pc);
-    printf("%.2lf\t", result->variance);
-    printf("%.2lf\n", result->stddev);
+    printf("%.0lf%%\n", result->stddev_pc);
+ //   printf("%.2lf\t", result->variance);
+ //   printf("%.2lf\n", result->stddev);
 }
 
