@@ -118,7 +118,7 @@ process(void *results)
     result_t processed_results[num_results];
 
     if (process_ipc_results(raw_results, processed_results, num_results)) {
-        //print_ipc_results(processed_results, XML, num_results);
+        print_ipc_results(processed_results, XML, num_results);
         print_ipc_results(processed_results, TSV, num_results); 
     }
 }
