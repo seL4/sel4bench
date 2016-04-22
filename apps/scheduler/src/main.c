@@ -85,7 +85,7 @@ low_fn(int argc, char **argv)
 
 static void 
 yield_fn(int argc, char **argv) {
-   UNUSED int error;
+   UNUSED seL4_SchedContext_YieldTo_t ret;
    assert(argc == N_YIELD_ARGS);
 
    seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
@@ -94,8 +94,9 @@ yield_fn(int argc, char **argv) {
 
    for (int i = 0; i < N_RUNS; i++) {
        SEL4BENCH_READ_CCNT(*end);
-       error = seL4_SchedContext_Yield(sc);
-       assert(error == seL4_NoError);
+       ret = seL4_SchedContext_YieldTo(sc);
+       assert(ret.error == seL4_NoError);
+       assert(ret.consumed > 0);
    }
 
    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
@@ -104,16 +105,18 @@ yield_fn(int argc, char **argv) {
 }
 
 static void 
-benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
+benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end, seL4_CPtr sc)
 {
     ccnt_t start;
-    UNUSED int error;
+    UNUSED seL4_SchedContext_YieldTo_t ret;
 
     /* run the benchmark */
     for (int i = 0; i < N_RUNS; i++) {
         SEL4BENCH_READ_CCNT(start);
-        error = seL4_SchedContext_Yield(SEL4UTILS_SCHED_CONTEXT_SLOT);
-        assert(error == seL4_NoError);
+        ret = seL4_SchedContext_YieldTo(sc);
+        assert(ret.error == seL4_NoError);
+        assert(ret.consumed > 0);
+        assert(*end > start);
         results[i] = (*end - start);
     }
 
@@ -132,24 +135,11 @@ benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
     
     benchmark_configure_thread(env, ep, seL4_MaxPrio, "yielder", &thread);
     
-    /* set params short as yield on the RT kernel abandons the rest of a threads budget
-     * and the thread cannot run again until the period passes */
-    seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env->simple);
-    error = seL4_SchedControl_Configure(sched_ctrl, SEL4UTILS_SCHED_CONTEXT_SLOT, 2000, 2000, 0);
-    assert(error == seL4_NoError);
-    error = seL4_SchedControl_Configure(sched_ctrl, thread.sched_context.cptr, 2000, 2000, 0);
-    assert(error == seL4_NoError);
-    
     sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, ep, (seL4_Word) &end,
-                               thread.sched_context.cptr);
+                               SEL4UTILS_SCHED_CONTEXT_SLOT);
     sel4utils_start_thread(&thread, yield_fn, (void *) N_YIELD_ARGS, (void *) argv, 1);
 
-    benchmark_yield(ep, results, &end);
-
-    /* reset runners sc */
-    error = seL4_SchedControl_Configure(sched_ctrl, SEL4UTILS_SCHED_CONTEXT_SLOT, CONFIG_SEL4UTILS_TIMESLICE_US, 
-                                        CONFIG_SEL4UTILS_TIMESLICE_US, 0);
-    assert(error == seL4_NoError);
+    benchmark_yield(ep, results, &end, thread.sched_context.cptr);
 
     sel4utils_clean_up_thread(&env->vka, &env->vspace, &thread);
 }
@@ -160,7 +150,7 @@ benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
     sel4utils_process_t process;
     void *start;
     void *remote_start;
-    seL4_CPtr remote_ep;
+    seL4_CPtr remote_ep, remote_sc;
     char args_strings[N_YIELD_ARGS][WORD_STRING_SIZE];
     char *argv[N_YIELD_ARGS];
     UNUSED int error;
@@ -182,26 +172,17 @@ benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
     remote_ep = sel4utils_copy_cap_to_process(&process, path);
     assert(remote_ep != seL4_CapNull);
  
+    vka_cspace_make_path(&env->vka, SEL4UTILS_SCHED_CONTEXT_SLOT, &path);
+    remote_sc = sel4utils_copy_cap_to_process(&process, path);
+    assert(remote_sc != seL4_CapNull);
+
     sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, remote_ep, (seL4_Word) remote_start,
-                               SEL4UTILS_SCHED_CONTEXT_SLOT);
+                               remote_sc);
     
     error = sel4utils_spawn_process(&process, &env->vka, &env->vspace, N_YIELD_ARGS, argv, 1);
     assert(error == seL4_NoError);
 
-    /* set params short as yield on the RT kernel abandons the rest of a threads budget
-     * and the thread cannot run again until the period passes */
-    seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env->simple);
-    error = seL4_SchedControl_Configure(sched_ctrl, SEL4UTILS_SCHED_CONTEXT_SLOT, 2000, 2000, 0);
-    assert(error == seL4_NoError);
-    error = seL4_SchedControl_Configure(sched_ctrl, process.thread.sched_context.cptr, 2000, 2000, 0);
-    assert(error == seL4_NoError);
-
-    benchmark_yield(ep, results, (volatile ccnt_t *) start);
-
-    error = seL4_SchedControl_Configure(sched_ctrl, SEL4UTILS_SCHED_CONTEXT_SLOT, CONFIG_SEL4UTILS_TIMESLICE_US, 
-                                        CONFIG_SEL4UTILS_TIMESLICE_US, 0);
-    assert(error == seL4_NoError);
-
+    benchmark_yield(ep, results, (volatile ccnt_t *) start, process.thread.sched_context.cptr);
 
     sel4utils_destroy_process(&process, &env->vka);
 }     
