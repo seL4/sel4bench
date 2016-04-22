@@ -16,7 +16,8 @@
 #define N_RUNS (100 + N_IGNORED)
 
 typedef struct signal_results {
-    ccnt_t results[N_RUNS];
+    ccnt_t lo_prio_results[N_RUNS];
+    ccnt_t hi_prio_results[N_RUNS];
     ccnt_t overhead[N_RUNS];
 } signal_results_t;
 

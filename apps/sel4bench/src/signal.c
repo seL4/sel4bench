@@ -17,7 +17,7 @@
 static void 
 signal_process(void *results) {
     signal_results_t *raw_results;
-    result_t result;
+    result_t hi_result, lo_result;
     result_t overhead;
 
     raw_results = (signal_results_t *) results;
@@ -26,17 +26,24 @@ signal_process(void *results) {
  
     /* account for overhead */
     for (int j = 0; j < N_RUNS; j++) {
-        raw_results->results[j] -= overhead.min;
+        raw_results->lo_prio_results[j] -= overhead.min;
+        raw_results->hi_prio_results[j] -= overhead.min;
     }
 
-    result = process_result(&raw_results->results[N_IGNORED], N_RUNS - N_IGNORED, "signal");
+    lo_result = process_result(&raw_results->lo_prio_results[N_IGNORED], N_RUNS - N_IGNORED, "signal (deliver)");
+    hi_result = process_result(&raw_results->hi_prio_results[N_IGNORED], N_RUNS - N_IGNORED, "signal (return)");
 
     print_banner("Signal overhead", N_RUNS - N_IGNORED);
     print_result_header();
     print_result(&overhead);
     
-    print_banner("Signal between threads (without invoking scheduler)", N_RUNS - N_IGNORED);
-    print_result(&result);
+    print_banner("Signal to high prio thread", N_RUNS - N_IGNORED);
+    print_result_header();
+    print_result(&lo_result);
+    
+    print_banner("Signal to low prio thread", N_RUNS - N_IGNORED);
+    print_result_header();
+    print_result(&hi_result);
     
 }
 
