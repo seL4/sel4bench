@@ -7,8 +7,8 @@
  *
  * @TAG(NICTA_BSD)
  */
-#ifndef __ARCH_IPC_H
-#define __ARCH_IPC_H
+#ifndef __SEL4_ARCH_IPC_H
+#define __SEL4_ARCH_IPC_H
 
 #define ALLOW_UNSTABLE_OVERHEAD
 
@@ -23,7 +23,7 @@
             "+S" (tag), \
             "+b" (ep_copy) \
             : \
-            "a" (seL4_SysCall) \
+            "a" ((seL4_Word)seL4_SysCall) \
             : \
             "rcx", "rdx"\
             ); \
@@ -57,7 +57,7 @@
             "+r" (mr4), "+r" (mr5), "+r" (mr6), "+r" (mr7), \
             "+r" (mr8), "+r" (mr9)          \
             :                               \
-            "a" (seL4_SysCall)              \
+            "a" ((seL4_Word)seL4_SysCall)              \
             :                               \
             "rdx"                           \
             );                              \
@@ -75,7 +75,7 @@
             "+S" (tag_copy), \
             "+b" (ep_copy) \
             : \
-            "a" (seL4_SysSend) \
+            "a" ((seL4_Word)seL4_SysSend) \
             : \
             "rcx", "rdx" \
             ); \
@@ -92,7 +92,7 @@
             "+S" (tag), \
             "+b" (ep_copy) \
             : \
-            "a"(seL4_SysReplyRecv) \
+            "a"((seL4_Word)seL4_SysReplyRecv) \
             : \
             "rcx", "rdx" \
             ); \
@@ -127,7 +127,7 @@
             "+r" (mr6), "+r" (mr7), "+r" (mr8), \
             "+r" (mr9)                          \
             :                                   \
-            "a" (seL4_SysReplyRecv)             \
+            "a" ((seL4_Word)seL4_SysReplyRecv)             \
             :                                   \
             "rdx"                               \
             );                                  \
@@ -145,7 +145,7 @@
             "+S" (tag) ,\
             "+b" (ep_copy) \
             : \
-            "a" (seL4_SysRecv) \
+            "a" ((seL4_Word)seL4_SysRecv) \
             :  "rcx", "rdx" \
             ); \
 } while (0)
@@ -177,16 +177,17 @@
 } while (0)
 
 #define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "sysenter")
-#define DO_NOP_CALL(ep, tg) DO_CALL(ep, tag, ".byte 0x90")
+#define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, "sysenter")
-#define DO_NOP_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, ".byte 0x90")
+#define DO_NOP_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_CALL_10(ep, tag) DO_CALL_10(ep, tag, "sysenter")
-#define DO_NOP_CALL_10(ep, tag) DO_CALL_10(ep, tag, ".byte 0x90")
+#define DO_NOP_CALL_10(ep, tag) DO_CALL_10(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, "sysenter")
-#define DO_NOP_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, ".byte 0x90")
+#define DO_NOP_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_SEND(ep, tag) DO_SEND(ep, tag, "sysenter")
-#define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, ".byte 0x90")
+#define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_RECV(ep) DO_RECV(ep, "sysenter")
-#define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x90")
+#define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
 
-#endif /* __ARCH_IPC_H */
+
+#endif /* __SEL4_ARCH_IPC_H */

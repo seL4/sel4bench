@@ -40,7 +40,7 @@ size_t morecore_size;
 static char app_morecore_area[MORE_CORE_SIZE];
 
 /* allocator */
-#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 10)
+#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 20)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 void
