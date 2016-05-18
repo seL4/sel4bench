@@ -92,11 +92,11 @@ yield_fn(int argc, char **argv) {
    volatile ccnt_t *end = (volatile ccnt_t *) atol(argv[1]);
    seL4_CPtr sc = (seL4_CPtr) atol(argv[2]);
 
+   SEL4BENCH_READ_CCNT(*end);
    for (int i = 0; i < N_RUNS; i++) {
-       SEL4BENCH_READ_CCNT(*end);
        ret = seL4_SchedContext_YieldTo(sc);
+       SEL4BENCH_READ_CCNT(*end);
        assert(ret.error == seL4_NoError);
-       assert(ret.consumed > 0);
    }
 
    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
@@ -115,7 +115,6 @@ benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end, seL4_CPtr s
         SEL4BENCH_READ_CCNT(start);
         ret = seL4_SchedContext_YieldTo(sc);
         assert(ret.error == seL4_NoError);
-        assert(ret.consumed > 0);
         assert(*end > start);
         results[i] = (*end - start);
     }
