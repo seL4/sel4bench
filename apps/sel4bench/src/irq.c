@@ -147,7 +147,7 @@ irquser_process(void *results) {
 
     raw_results = (irquser_results_t *) results;
 
-    overhead = process_result(&raw_results->overheads[N_IGNORED], N_RUNS - N_IGNORED, "overhead");
+    overhead = process_result_ignored(raw_results->overheads, N_RUNS, N_IGNORED, "overhead");
   
     /* account for overhead */
     for (int i = 0; i < N_RUNS; i++) {
@@ -155,8 +155,8 @@ irquser_process(void *results) {
         raw_results->process_results[i] -= overhead.min;
     }
 
-    intraas_result = process_result(&raw_results->thread_results[N_IGNORED], N_RUNS - N_IGNORED, "thread irq");
-    interas_result = process_result(&raw_results->process_results[N_IGNORED], N_RUNS - N_IGNORED, "process irq");
+    intraas_result = process_result_ignored(raw_results->thread_results, N_RUNS, N_IGNORED, "thread irq");
+    interas_result = process_result_ignored(raw_results->process_results, N_RUNS, N_IGNORED, "process irq");
 
     print_banner("IRQ Path Cycle Count (measured from user level)", N_RUNS - N_IGNORED);
     printf("Type\t");
