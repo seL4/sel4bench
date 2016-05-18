@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
- * Copyright 2014, NICTA
-=======
  * Copyright 2016, NICTA
->>>>>>> 30e60c29d05d4a14ba30ad8bb640fe73efd69176
  *
  * This software may be distributed and modified according to the terms of
  * the GNU General Public License version 2. Note that NO WARRANTY is provided.
