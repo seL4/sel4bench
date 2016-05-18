@@ -14,5 +14,6 @@
 #include "benchmark.h"
 
 result_t process_result(ccnt_t *array, int size, const char *error);
+result_t process_result_ignored(ccnt_t *array, int size, int ignored, const char *error);
 
 #endif /* __SEL4BENCH_PROCESSING_H */

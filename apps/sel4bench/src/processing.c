@@ -40,3 +40,10 @@ process_result(ccnt_t *array, int size, const char *error)
     return result;
 }
 
+result_t
+process_result_ignored(ccnt_t *array, int size, int ignored, const char *error)
+{
+    /* update for ignored values (e.g cold cache numbers) */
+    return process_result(&array[ignored], size - ignored, error);
+}
+
