@@ -22,7 +22,7 @@ signal_process(void *results) {
 
     raw_results = (signal_results_t *) results;
 
-    overhead = process_result(&raw_results->overhead[N_IGNORED], N_RUNS - N_IGNORED, "signal overhead");
+    overhead = process_result_ignored(raw_results->overhead, N_RUNS, N_IGNORED, "signal overhead");
  
     /* account for overhead */
     for (int j = 0; j < N_RUNS; j++) {
@@ -30,8 +30,8 @@ signal_process(void *results) {
         raw_results->hi_prio_results[j] -= overhead.min;
     }
 
-    lo_result = process_result(&raw_results->lo_prio_results[N_IGNORED], N_RUNS - N_IGNORED, "signal (deliver)");
-    hi_result = process_result(&raw_results->hi_prio_results[N_IGNORED], N_RUNS - N_IGNORED, "signal (return)");
+    lo_result = process_result_ignored(raw_results->lo_prio_results, N_RUNS, N_IGNORED, "signal (deliver)");
+    hi_result = process_result_ignored(raw_results->hi_prio_results, N_RUNS, N_IGNORED, "signal (return)");
 
     print_banner("Signal overhead", N_RUNS - N_IGNORED);
     print_result_header();

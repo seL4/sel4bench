@@ -39,8 +39,8 @@ scheduler_process(void *results) {
 
     raw_results = (scheduler_results_t *) results;
 
-    signal_overhead = process_result(&raw_results->overhead_signal[N_IGNORED], N_RUNS - N_IGNORED, "signal overhead");
-    yield_overhead = process_result(&raw_results->overhead_yield[N_IGNORED], N_RUNS - N_IGNORED, "yield overhead");
+    signal_overhead = process_result_ignored(raw_results->overhead_signal, N_RUNS, N_IGNORED, "signal overhead");
+    yield_overhead = process_result_ignored(raw_results->overhead_yield, N_RUNS, N_IGNORED, "yield overhead");
   
     /* account for overhead */
     for (int i = 0; i < N_PRIOS; i++) {
@@ -53,15 +53,15 @@ scheduler_process(void *results) {
     }
 
     for (int i = 0; i < N_PRIOS; i++) {
-        intra_as[i] = process_result(&raw_results->thread_results[i][N_IGNORED],
-                                     N_RUNS - N_IGNORED, "thread switch");
-        inter_as[i] = process_result(&raw_results->process_results[i][N_IGNORED],
-                                     N_RUNS - N_IGNORED, "process switch");
+        intra_as[i] = process_result_ignored(raw_results->thread_results[i],
+                                             N_RUNS, N_IGNORED, "thread switch");
+        inter_as[i] = process_result_ignored(raw_results->process_results[i],
+                                     N_RUNS, N_IGNORED, "process switch");
     }
 
-    thread_yield = process_result(&raw_results->thread_yield[N_IGNORED], N_RUNS - N_IGNORED, 
+    thread_yield = process_result_ignored(raw_results->thread_yield, N_RUNS, N_IGNORED,
                                   "thread yield");
-    process_yield = process_result(&raw_results->process_yield[N_IGNORED], N_RUNS - N_IGNORED, 
+    process_yield = process_result_ignored(raw_results->process_yield, N_RUNS, N_IGNORED,
                                   "process yield");
 
     print_banner("Signal overhead", N_RUNS - N_IGNORED);
