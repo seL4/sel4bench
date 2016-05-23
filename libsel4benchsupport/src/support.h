@@ -14,5 +14,6 @@
 
 void benchmark_arch_get_simple(arch_simple_t *simple);
 void benchmark_arch_get_timers(env_t *env);
+void benchmark_mach_get_clock_timer(env_t *env);
 
 #endif /* __BENCHMARK_SUPPORT_H */

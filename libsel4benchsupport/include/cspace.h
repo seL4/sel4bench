@@ -17,6 +17,8 @@ typedef enum {
     SCHED_CTRL_SLOT,
     TIMEOUT_TIMER_IRQ_SLOT,
     TIMEOUT_TIMER_FRAME_SLOT,
+    CLOCK_FRAME_SLOT,
+    CLOCK_IRQ_SLOT,
     /* define new slots here */
     FREE_SLOT /* first free slot in a benchmark's cspace */
 } benchmark_cspace_t;

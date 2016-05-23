@@ -109,11 +109,16 @@ init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
 {
     cspacepath_t path;
     UNUSED seL4_CPtr cap;
+    UNUSED int error;
 
-    /* irq */
-    if (sel4platsupport_copy_irq_cap(vka, simple, DEFAULT_TIMER_INTERRUPT, &path) != seL4_NoError) {
-        ZF_LOGF("Failed to get timer interrupt");
-    }
+#ifdef CONFIG_ARCH_X86
+        /* it's the hpet, use MSIs */
+        ZF_LOGF_IFERR(sel4platsupport_copy_msi_cap(vka, simple, MSI_MIN, &path),
+                      "Failed to copy msi cap");
+#else
+        ZF_LOGF_IFERR(sel4platsupport_copy_irq_cap(vka, simple, DEFAULT_TIMER_INTERRUPT, &path),
+                      "Failed to get timer interrupt");
+#endif
     
     cap = sel4utils_move_cap_to_process(process, path, vka);
     assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
@@ -121,14 +126,44 @@ init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
     /* frame */
     if (DEFAULT_TIMER_PADDR != 0) {
         sel4platsupport_copy_frame_cap(vka, simple, (void *) DEFAULT_TIMER_PADDR, seL4_PageBits, &path);
-        cap = sel4utils_copy_cap_to_process(process, path);
+        sel4utils_copy_cap_to_process(process, path);
     } else {
-        /* no frame - this can only be pit - use io port cap */
-        vka_cspace_make_path(vka, seL4_CapIOPort, &path);
-        cap = sel4utils_copy_cap_to_process(process, path);
+        process->cspace_next_free++;
     }
- 
-    assert(cap == TIMEOUT_TIMER_FRAME_SLOT);
+
+    assert(process->cspace_next_free == TIMEOUT_TIMER_FRAME_SLOT + 1);
+
+    seL4_Word clock_timer_paddr = 0;
+#ifdef  CLOCK_TIMER_PADDR
+    /* this ifdef be removed once all platforms define CLOCK_TIMER_PADDR */
+    clock_timer_paddr = CLOCK_TIMER_PADDR;
+#endif /* CLOCK_TIMER_PADDR */
+
+    /* some platforms don't have a physical frame for their clock timer impl */
+    if (clock_timer_paddr) {
+        error = sel4platsupport_copy_frame_cap(vka, simple, (void *) clock_timer_paddr,
+                                             seL4_PageBits, &path);
+        ZF_LOGF_IF(error != 0, "Failed to copy timer cap");
+        sel4utils_move_cap_to_process(process, path, vka);
+    } else {
+        process->cspace_next_free++;
+    }
+    assert(process->cspace_next_free - 1 == CLOCK_FRAME_SLOT);
+
+    seL4_Word clock_timer_irq = 0;
+#ifdef CLOCK_TIMER_INTERRUPT
+    clock_timer_irq = CLOCK_TIMER_INTERRUPT;
+#endif /* CLOCK_TIMER_INTERRUPT */
+
+    if (clock_timer_irq != 0) {
+        error = sel4platsupport_copy_irq_cap(vka, simple, clock_timer_irq, &path);
+        ZF_LOGF_IF(error != 0, "Failed to copy irq cap");
+        sel4utils_move_cap_to_process(process, path, vka);
+    } else {
+        process->cspace_next_free++;
+    }
+
+    assert(process->cspace_next_free == FREE_SLOT);
 }
 
 int

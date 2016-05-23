@@ -36,6 +36,10 @@ typedef struct env {
     sel4utils_elf_region_t region;
     /* virtual address to write benchmark results to */
     void *results;
+    /* clock timer that can be used to get a 64 bit upcounter. Depending
+     * on the timer this may overflow at 32 bits if no interrupt handles
+     * the timeout */
+    seL4_timer_t *clock_timer;
     /* timeout timer that can be used to set timeouts */
     seL4_timer_t *timeout_timer;
     /* notification that is bound to both timer irq handlers */

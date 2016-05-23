@@ -27,6 +27,14 @@
 
 #include "support.h"
 
+#ifndef CLOCK_TIMER_PADDR
+#define CLOCK_TIMER_PADDR (DEFAULT_TIMER_PADDR + 1)
+#endif
+
+#ifndef CLOCK_TIMER_INTERRUPT
+#define CLOCK_TIMER_INTERRUPT (DEFAULT_TIMER_INTERRUPT + 1)
+#endif
+
 /* benchmarking environment */
 static env_t env;
 
@@ -143,23 +151,42 @@ init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
 static seL4_Error
 get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
 {
-    assert(paddr == (void *) DEFAULT_TIMER_PADDR);
     path->root = SEL4UTILS_CNODE_SLOT;
     path->capDepth = seL4_WordBits;
-    path->capPtr = TIMEOUT_TIMER_FRAME_SLOT;
-
-    return seL4_NoError;
+   
+    switch ((uintptr_t) paddr) {
+    case DEFAULT_TIMER_PADDR:
+        path->capPtr = TIMEOUT_TIMER_FRAME_SLOT;
+        break;
+    case CLOCK_TIMER_PADDR:
+        path->capPtr = CLOCK_FRAME_SLOT;
+        break;
+    default:
+        path->capPtr = 0;
+        break;
+    }
+    return path->capPtr == 0 ? seL4_InvalidArgument : seL4_NoError;
 }
 
 static seL4_Error
 get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
-    assert(irq == DEFAULT_TIMER_INTERRUPT);
-    UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
-                                              SEL4UTILS_CNODE_SLOT, TIMEOUT_TIMER_IRQ_SLOT, seL4_WordBits);
-    assert(error == seL4_NoError);
+    seL4_CPtr slot;
 
-    return seL4_NoError;
+    switch (irq) {
+    case DEFAULT_TIMER_INTERRUPT:
+        slot = TIMEOUT_TIMER_IRQ_SLOT;
+        break;
+    case CLOCK_TIMER_INTERRUPT:
+        slot = CLOCK_IRQ_SLOT;
+        break;
+    default:
+        slot = seL4_CapNull;
+        break;
+    }
+
+    return seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
+                           SEL4UTILS_CNODE_SLOT, slot, seL4_WordBits);
 }
 
 static seL4_CPtr
