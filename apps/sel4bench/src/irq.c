@@ -93,43 +93,13 @@ process(void *results) {
     free(data);
 }
 
-static void 
-init(vka_t *vka, simple_t *simple, sel4utils_process_t *process) 
-{
-    cspacepath_t path;
-    seL4_CPtr cap;
-
-    /* irq */
-    if (sel4platsupport_copy_irq_cap(vka, simple, DEFAULT_TIMER_INTERRUPT, &path) != seL4_NoError) {
-        ZF_LOGF("Failed to get timer interrupt");
-    }
-    
-    cap = sel4utils_move_cap_to_process(process, path, vka);
-    if (cap != IRQ_SLOT) {
-        ZF_LOGF("Cspace layout is incorrect!");
-    }
-
-    /* frame */
-    if (DEFAULT_TIMER_PADDR != 0) {
-        sel4platsupport_copy_frame_cap(vka, simple, (void *) DEFAULT_TIMER_PADDR, seL4_PageBits, &path);
-        cap = sel4utils_copy_cap_to_process(process, path);
-    } else {
-        /* no frame - this can only be pit - use io port cap */
-        vka_cspace_make_path(vka, seL4_CapIOPort, &path);
-        cap = sel4utils_copy_cap_to_process(process, path);
-    }
-
-    if (cap != FRAME_SLOT) {
-        ZF_LOGF("Cspace layout is incorrect");
-    }
-}
 
 static benchmark_t irq_benchmark = {
     .name = "irq",
     .enabled = config_set(CONFIG_APP_IRQBENCH) && CONFIG_MAX_NUM_TRACE_POINTS == 3,
     .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irq_results_t), seL4_PageBits),
     .process = process,
-    .init = init
+    .init = blank_init
 };
 
 benchmark_t *
@@ -174,7 +144,7 @@ static benchmark_t irquser_benchmark = {
     .enabled = config_set(CONFIG_APP_IRQUSERBENCH),
     .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(irquser_results_t), seL4_PageBits),
     .process = irquser_process,
-    .init = init
+    .init = blank_init
 };
 
 benchmark_t *

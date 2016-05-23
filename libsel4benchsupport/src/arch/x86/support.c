@@ -17,6 +17,13 @@
 
 #include "../../support.h"
 
+void
+benchmark_arch_get_timers(env_t *env)
+{
+    env->timeout_timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace, &env->simple,
+                                                           env->ntfn.cptr);
+    ZF_LOGF_IF(env->timeout_timer == NULL, "Failed to create timeout timer");
+}
 
 static seL4_Error
 get_msi(UNUSED void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
@@ -26,7 +33,7 @@ get_msi(UNUSED void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
     assert(vector == (DEFAULT_TIMER_INTERRUPT + IRQ_OFFSET));
     
     UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
-                                              SEL4UTILS_CNODE_SLOT, IRQ_SLOT, seL4_WordBits);
+                                              SEL4UTILS_CNODE_SLOT, TIMEOUT_TIMER_IRQ_SLOT, seL4_WordBits);
     assert(error == seL4_NoError);
 
     return seL4_NoError;
@@ -35,7 +42,7 @@ get_msi(UNUSED void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
 static seL4_CPtr
 get_port(void *data, uint16_t start_port, uint16_t end_port)
 {
-    return FRAME_SLOT;
+    return TIMEOUT_TIMER_FRAME_SLOT;
 }
 
 void

@@ -40,7 +40,7 @@ size_t morecore_size;
 static char app_morecore_area[MORE_CORE_SIZE];
 
 /* allocator */
-#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 10)
+#define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 20)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 void
@@ -146,7 +146,7 @@ get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
     assert(paddr == (void *) DEFAULT_TIMER_PADDR);
     path->root = SEL4UTILS_CNODE_SLOT;
     path->capDepth = seL4_WordBits;
-    path->capPtr = FRAME_SLOT;
+    path->capPtr = TIMEOUT_TIMER_FRAME_SLOT;
 
     return seL4_NoError;
 }
@@ -156,7 +156,7 @@ get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
     assert(irq == DEFAULT_TIMER_INTERRUPT);
     UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
-                                              SEL4UTILS_CNODE_SLOT, IRQ_SLOT, seL4_WordBits);
+                                              SEL4UTILS_CNODE_SLOT, TIMEOUT_TIMER_IRQ_SLOT, seL4_WordBits);
     assert(error == seL4_NoError);
 
     return seL4_NoError;
@@ -304,6 +304,11 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     env.simple.init_cap = init_cap;
     env.simple.arch_simple.irq = get_irq;
     benchmark_arch_get_simple(&env.simple.arch_simple);
+
+    /* allocate a notification for timers */
+    ZF_LOGF_IFERR(vka_alloc_notification(&env.vka, &env.ntfn), "Failed to allocate ntfn");
+    /* get the timers */
+    benchmark_arch_get_timers(&env);
 
     return &env;
 }
