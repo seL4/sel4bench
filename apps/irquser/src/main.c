@@ -95,8 +95,10 @@ main(int argc, char **argv)
     if (vka_alloc_endpoint(&env->vka, &endpoint) != 0) {
         ZF_LOGF("Failed to allocate endpoint\n");
     }
+    
+    /* set globals */
     done_ep = endpoint.cptr;
-
+    timer = env->timeout_timer;
     timer_signal = env->ntfn.cptr;
 
     if (timer_start(env->timeout_timer->timer) != 0) {
