@@ -12,6 +12,7 @@
 
 #include <allocman/vka.h>
 #include <sel4bench/sel4bench.h>
+#include <sel4platsupport/plat/timer.h>
 #include <sel4utils/process.h>
 #include <simple/simple.h>
 #include <vka/vka.h>
@@ -35,6 +36,10 @@ typedef struct env {
     sel4utils_elf_region_t region;
     /* virtual address to write benchmark results to */
     void *results;
+    /* timeout timer that can be used to set timeouts */
+    seL4_timer_t *timeout_timer;
+    /* notification that is bound to both timer irq handlers */
+    vka_object_t ntfn;
 } env_t;
 
 /* initialise the benchmarking environment and return it */

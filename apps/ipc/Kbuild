@@ -10,6 +10,7 @@
 
 components-$(CONFIG_APP_IPCBENCH) += ipc
 ipc: common libsel4 $(libc) libcpio libsel4vka libsel4vspace libsel4allocman \
-           libsel4utils libsel4muslcsys libsel4bench libelf libsel4simple libsel4benchsupport
+           libsel4utils libsel4muslcsys libsel4bench libelf libsel4simple libsel4benchsupport \
+           libsel4debug libplatsupport libsel4platsupport
 
 

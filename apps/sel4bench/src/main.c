@@ -19,7 +19,9 @@
 #include <simple-default/simple-default.h>
 
 #include <sel4debug/register_dump.h>
+#include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
+#include <sel4platsupport/plat/timer.h>
 #include <sel4utils/stack.h>
 #include <stdio.h>
 #include <string.h>
@@ -102,6 +104,33 @@ setup_fault_handler(env_t *env)
     }
 }
 
+static void
+init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
+{
+    cspacepath_t path;
+    UNUSED seL4_CPtr cap;
+
+    /* irq */
+    if (sel4platsupport_copy_irq_cap(vka, simple, DEFAULT_TIMER_INTERRUPT, &path) != seL4_NoError) {
+        ZF_LOGF("Failed to get timer interrupt");
+    }
+    
+    cap = sel4utils_move_cap_to_process(process, path, vka);
+    assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
+
+    /* frame */
+    if (DEFAULT_TIMER_PADDR != 0) {
+        sel4platsupport_copy_frame_cap(vka, simple, (void *) DEFAULT_TIMER_PADDR, seL4_PageBits, &path);
+        cap = sel4utils_copy_cap_to_process(process, path);
+    } else {
+        /* no frame - this can only be pit - use io port cap */
+        vka_cspace_make_path(vka, seL4_CapIOPort, &path);
+        cap = sel4utils_copy_cap_to_process(process, path);
+    }
+ 
+    assert(cap == TIMEOUT_TIMER_FRAME_SLOT);
+}
+
 int
 run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *local_results_vaddr) 
 {
@@ -131,6 +160,9 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
     /* set up shared memory for results */
     void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr, 
                                                   benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
+
+    /* initialise timers for benchmark environment */
+    init_timers(&env->vka, &env->simple, &process);
 
     /* do benchmark specific init */
     benchmark->init(&env->vka, &env->simple, &process);

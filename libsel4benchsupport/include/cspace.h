@@ -12,9 +12,12 @@
 
 #include <sel4utils/process.h>
 
-#define UNTYPED_SLOT   (SEL4UTILS_FIRST_FREE)
-#define IRQ_SLOT       (UNTYPED_SLOT + 1u)
-#define FRAME_SLOT     (IRQ_SLOT + 1u)
-#define FREE_SLOT      (FRAME_SLOT + 1u)
+typedef enum {
+    UNTYPED_SLOT = SEL4UTILS_FIRST_FREE,
+    TIMEOUT_TIMER_IRQ_SLOT,
+    TIMEOUT_TIMER_FRAME_SLOT,
+    /* define new slots here */
+    FREE_SLOT /* first free slot in a benchmark's cspace */
+} benchmark_cspace_t;
 
 #endif /* __CSPACE_H__ */

@@ -87,7 +87,6 @@ main(int argc, char **argv)
     env_t *env;
     int error;
     irquser_results_t *results;
-    vka_object_t notification = {0};
     vka_object_t endpoint = {0};
 
     env = benchmark_get_env(argc, argv, sizeof(irquser_results_t));
@@ -98,23 +97,13 @@ main(int argc, char **argv)
     }
     done_ep = endpoint.cptr;
 
-    /* Set up timer as a source of interrupts */
-    if (vka_alloc_notification(&env->vka, &notification) != 0) {
-        ZF_LOGF("Failed to allocate notification\n");
-    }
-    timer_signal = notification.cptr;
+    timer_signal = env->ntfn.cptr;
 
-    timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace, &env->simple,
-                                              notification.cptr);
-    if (timer == NULL) {
-        ZF_LOGF("Failed to access timer driver\n");
-    }
-
-    if (timer_start(timer->timer) != 0) {
+    if (timer_start(env->timeout_timer->timer) != 0) {
         ZF_LOGF("Failed to start timer\n");
     }
 
-    if (timer_periodic(timer->timer, INTERRUPT_PERIOD_NS) != 0) {
+    if (timer_periodic(env->timeout_timer->timer, INTERRUPT_PERIOD_NS) != 0) {
         ZF_LOGF("Failed to configure timer\n");
     }
 
