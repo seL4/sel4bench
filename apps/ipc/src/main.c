@@ -190,7 +190,7 @@ uint32_t name(int argc, char *argv[]) { \
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
     seL4_CPtr ep = atoi(argv[0]);\
     seL4_CPtr result_ep = atoi(argv[1]);\
-    seL4_NBSendRecv(ep, tag, ep, NULL);\
+    seL4_SignalRecv(ep, ep, NULL);\
     SEL4BENCH_FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
         READ_COUNTER_BEFORE(start); \
