@@ -15,121 +15,81 @@
 #define DO_CALL(ep, tag, sys) do { \
     uint64_t ep_copy = ep; \
     asm volatile(\
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
+            "movq   %%rsp, %%rbx \n" \
+            sys " \n" \
+            "movq  %%rbx, %%rsp \n" \
             : \
             "+S" (tag), \
-            "+b" (ep_copy) \
+            "+D" (ep_copy) \
             : \
-            "a" ((seL4_Word)seL4_SysCall) \
+            "d" ((seL4_Word)seL4_SysCall) \
             : \
-            "rcx", "rdx"\
+            "rcx", "rbx", "r11"\
             ); \
 } while (0)
 
 #define DO_CALL_10(ep, tag, sys) do {\
     uint64_t ep_copy = ep; \
-    seL4_Word mr0 = 0; \
-    seL4_Word mr1 = 1; \
-    register seL4_Word mr2 asm ("r8") = 2;  \
-    register seL4_Word mr3 asm ("r9") = 3;  \
-    register seL4_Word mr4 asm ("r10") = 4; \
-    register seL4_Word mr5 asm ("r11") = 5; \
-    register seL4_Word mr6 asm ("r12") = 6; \
-    register seL4_Word mr7 asm ("r13") = 7; \
-    register seL4_Word mr8 asm ("r14") = 8; \
-    register seL4_Word mr9 asm ("r15") = 9; \
     asm volatile(                           \
-            "push   %%rbp \n"               \
-            "movq   %%rcx, %%rbp \n"        \
-            "movq   %%rsp, %%rcx \n"        \
-            "leaq   1f, %%rdx \n"           \
-            "1: \n"                         \
-            sys" \n"                        \
-            "movq   %%rbp, %%rcx \n"        \
-            "pop    %%rbp \n"               \
+            "movq   %%rsp, %%rbx \n"        \
+            sys " \n"                        \
+            "movq   %%rbx, %%rsp \n"        \
             :                               \
             "+S" (tag),                     \
-            "+b" (ep_copy),                 \
-            "+D" (mr0), "+c" (mr1), "+r" (mr2), "+r" (mr3), \
-            "+r" (mr4), "+r" (mr5), "+r" (mr6), "+r" (mr7), \
-            "+r" (mr8), "+r" (mr9)          \
+            "+D" (ep_copy)                 \
             :                               \
-            "a" ((seL4_Word)seL4_SysCall)              \
+            "d" ((seL4_Word)seL4_SysCall)              \
             :                               \
-            "rdx"                           \
+            "rcx","rbx","r11","r10","r8"    \
             );                              \
 } while (0)
 
 #define DO_SEND(ep, tag, sys) do { \
     uint64_t ep_copy = ep; \
-    uint32_t tag_copy = tag.words[0]; \
+    uint64_t tag_copy = tag.words[0]; \
     asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
+            "movq   %%rsp, %%rbx \n" \
+            sys "\n" \
+            "movq   %%rbx, %%rsp \n" \
             : \
             "+S" (tag_copy), \
-            "+b" (ep_copy) \
+            "+D" (ep_copy) \
             : \
-            "a" ((seL4_Word)seL4_SysSend) \
+            "d" ((seL4_Word)seL4_SysSend) \
             : \
-            "rcx", "rdx" \
+            "rcx", "rbx","r11" \
             ); \
 } while (0)
 
 #define DO_REPLY_RECV(ep, tag, sys) do { \
     uint64_t ep_copy = ep; \
     asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
-            sys" \n" \
+            "movq   %%rsp, %%rbx \n" \
+            sys "\n" \
+            "movq  %%rbx, %%rsp \n" \
             : \
             "+S" (tag), \
-            "+b" (ep_copy) \
+            "+D" (ep_copy) \
             : \
-            "a"((seL4_Word)seL4_SysReplyRecv) \
+            "d"((seL4_Word)seL4_SysReplyRecv) \
             : \
-            "rcx", "rdx" \
+            "rcx", "rbx","r11" \
             ); \
 } while (0)
 
 #define DO_REPLY_RECV_10(ep, tag, sys) do { \
     uint64_t ep_copy = ep;                      \
-    seL4_Word mr0 = 0;                          \
-    seL4_Word mr1 = -1;                         \
-    register seL4_Word mr2 asm ("r8") = -2;     \
-    register seL4_Word mr3 asm ("r9") = -3;     \
-    register seL4_Word mr4 asm ("r10") = -4;    \
-    register seL4_Word mr5 asm ("r11") = -5;    \
-    register seL4_Word mr6 asm ("r12") = -6;    \
-    register seL4_Word mr7 asm ("r13") = -7;    \
-    register seL4_Word mr8 asm ("r14") = -8;    \
-    register seL4_Word mr9 asm ("r15") = -9;    \
     asm volatile(                               \
-            "push   %%rbp \n"                   \
-            "movq   %%rcx, %%rbp \n"            \
-            "movq   %%rsp, %%rcx \n"            \
-            "leaq   1f, %%rdx \n"               \
-            "1: \n"                             \
+            "movq   %%rsp, %%rbx \n"            \
             sys" \n"                            \
-            "movq   %%rbp, %%rcx \n"            \
-            "pop    %%rbp \n"                   \
+            "movq   %%rbx, %%rsp \n"            \
             :                                   \
             "+S" (tag),                         \
-            "+b" (ep_copy),                     \
-            "+D" (mr0), "+c" (mr1), "+r" (mr2), \
-            "+r" (mr3), "+r" (mr4), "+r" (mr5), \
-            "+r" (mr6), "+r" (mr7), "+r" (mr8), \
-            "+r" (mr9)                          \
+            "+D" (ep_copy)                     \
             :                                   \
-            "a" ((seL4_Word)seL4_SysReplyRecv)             \
+            "d" ((seL4_Word)seL4_SysReplyRecv)             \
             :                                   \
-            "rdx"                               \
+            "rcx","rbx","r11","r10","r8"        \
             );                                  \
 } while (0)
 
@@ -137,16 +97,15 @@
     uint64_t ep_copy = ep; \
     uint64_t tag = 0; \
     asm volatile( \
-            "movq   %%rsp, %%rcx \n" \
-            "leaq   1f, %%rdx \n" \
-            "1: \n" \
+            "movq   %%rsp, %%rbx \n" \
             sys" \n" \
+            "movq   %%rbx, %%rsp \n" \
             : \
             "+S" (tag) ,\
-            "+b" (ep_copy) \
+            "+D" (ep_copy) \
             : \
-            "a" ((seL4_Word)seL4_SysRecv) \
-            :  "rcx", "rdx" \
+            "d" ((seL4_Word)seL4_SysRecv) \
+            :  "rcx", "rbx","r11" \
             ); \
 } while (0)
 
@@ -176,17 +135,17 @@
     (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
 } while (0)
 
-#define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "sysenter")
+#define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "syscall")
 #define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, "sysenter")
+#define DO_REAL_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, "syscall")
 #define DO_NOP_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_CALL_10(ep, tag) DO_CALL_10(ep, tag, "sysenter")
+#define DO_REAL_CALL_10(ep, tag) DO_CALL_10(ep, tag, "syscall")
 #define DO_NOP_CALL_10(ep, tag) DO_CALL_10(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, "sysenter")
+#define DO_REAL_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, "syscall")
 #define DO_NOP_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_SEND(ep, tag) DO_SEND(ep, tag, "sysenter")
+#define DO_REAL_SEND(ep, tag) DO_SEND(ep, tag, "syscall")
 #define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_RECV(ep) DO_RECV(ep, "sysenter")
+#define DO_REAL_RECV(ep) DO_RECV(ep, "syscall")
 #define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
 
 
