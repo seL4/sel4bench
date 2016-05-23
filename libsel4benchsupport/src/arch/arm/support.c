@@ -18,6 +18,14 @@
 #include "../../support.h"
 
 void
+benchmark_arch_get_timers(env_t *env)
+{
+    env->timeout_timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace, &env->simple,
+                                                           env->ntfn.cptr);
+    ZF_LOGF_IF(env->timeout_timer == NULL, "Failed to create timeout timer");
+}
+
+void
 benchmark_arch_get_simple(arch_simple_t *simple)
 {
     /* nothing to do */

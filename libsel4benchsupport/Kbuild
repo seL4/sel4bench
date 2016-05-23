@@ -9,4 +9,5 @@
 #
 
 libs-$(CONFIG_LIB_SEL4_BENCHSUPPORT) += libsel4benchsupport
-libsel4benchsupport: libsel4vka libsel4vspace libsel4allocman libsel4 common $(libc) libutils
+libsel4benchsupport: libsel4vka libsel4vspace libsel4allocman libsel4 common $(libc) libutils libsel4debug \
+                     libplatsupport libsel4platsupport

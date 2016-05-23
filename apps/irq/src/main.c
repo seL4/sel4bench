@@ -40,30 +40,14 @@ main(int argc, char **argv)
 {
     env_t *env;
     irq_results_t *results;
-    vka_object_t ntfn = {0};
-    seL4_timer_t *timer;
 
     env = benchmark_get_env(argc, argv, sizeof(irq_results_t));
     results = (irq_results_t *) env->results;
 
-    /* Set up timer as a source of interrupts */
-    if (vka_alloc_notification(&env->vka, &ntfn) != 0) {
-        ZF_LOGF("Failed to allocate async endpoint\n");
-    }
+    ZF_LOGF_IF(timer_periodic(env->timeout_timer->timer, INTERRUPT_PERIOD_NS) != 0,
+               "Failed to configure timer\n");
 
-    timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace, &env->simple,
-                                              ntfn.cptr);
-    if (timer == NULL) {
-        ZF_LOGF("Failed to access timer driver\n");
-    }
-
-    if (timer_periodic(timer->timer, INTERRUPT_PERIOD_NS) != 0) {
-        ZF_LOGF("Failed to configure timer\n");
-    }
-
-    if (timer_start(timer->timer) != 0) {
-        ZF_LOGF("Failed to start timer\n");
-    }
+    ZF_LOGF_IF(timer_start(env->timeout_timer->timer) != 0, "Failed to start timer\n");
 
     sel4bench_init();
 
@@ -89,9 +73,7 @@ main(int argc, char **argv)
 
     sel4bench_destroy();
 
-    if (timer_stop(timer->timer) != 0) {
-        ZF_LOGF("Failed to stop timer\n");
-    }
+    ZF_LOGF_IF(timer_stop(env->timeout_timer->timer) != 0, "Failed to stop timer\n");
 
     /* Extract data from kernel */
     results->n = kernel_logging_sync_log(results->kernel_log, KERNEL_MAX_NUM_LOG_ENTRIES);
