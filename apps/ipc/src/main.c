@@ -311,11 +311,11 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
 
     timing_init();
 
-    benchmark_shallow_clone_process(env, &client.process, params->client_prio, 
+    benchmark_shallow_clone_process(env, &client.process, params->client_prio,
                                             bench_funcs[params->client_fn], "client");
 
     if (params->same_vspace) {
-        benchmark_configure_thread_in_process(env, &client.process, &server.process, params->server_prio, 
+        benchmark_configure_thread_in_process(env, &client.process, &server.process, params->server_prio,
                                               bench_funcs[params->server_fn], "server");
     } else {
         benchmark_shallow_clone_process(env, &server.process, params->server_prio,
@@ -373,10 +373,10 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
 
     /* recv client result */
     *ret1 = get_result(result_ep_path.capPtr);
-   
+
     if (params->same_sc) {
         /* give the server back its scheduling context to it can reply to us */
-        if (seL4_SchedContext_Bind(server.process.thread.sched_context.cptr, 
+        if (seL4_SchedContext_Bind(server.process.thread.sched_context.cptr,
                                    server.process.thread.tcb.cptr)) {
             ZF_LOGF("Failed to set sched context for server\n");
         }

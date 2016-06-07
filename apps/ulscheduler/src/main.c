@@ -50,7 +50,7 @@ typedef struct task {
 
 static task_t tasks[CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS];
 
-bool 
+bool
 sched_finished(void *cookie)
 {
     size_t *count = (size_t *) cookie;
@@ -58,7 +58,7 @@ sched_finished(void *cookie)
     return (*count > N_RUNS + 1);
 }
 
-void 
+void
 coop_fn(int argc, char **argv)
 {
     assert(argc == NUM_ARGS);
@@ -71,7 +71,7 @@ coop_fn(int argc, char **argv)
     }
 }
 
-void 
+void
 preempt_fn(UNUSED int argc, UNUSED char **argv)
 {
     while (true);
@@ -129,7 +129,7 @@ teardown_thread(vka_t *vka, vspace_t *vspace, task_t *task)
 }
 
 static void
-run_edf_benchmark(env_t *env, sched_t *sched, int num_tasks, void *edf_fn, pstimer_t *clock_timer, 
+run_edf_benchmark(env_t *env, sched_t *sched, int num_tasks, void *edf_fn, pstimer_t *clock_timer,
                   ccnt_t *results)
 {
     size_t count = 0;
@@ -144,7 +144,7 @@ run_edf_benchmark(env_t *env, sched_t *sched, int num_tasks, void *edf_fn, pstim
     assert(flog != NULL);
 
     sched_run(sched, sched_finished, &count, (void *) flog);
-        
+
     for (int t = 0; t < num_tasks; t++) {
         teardown_thread(&env->vka, &env->vspace, &tasks[t]);
     }
@@ -197,7 +197,7 @@ main(int argc, char **argv)
     /* cfs shared sc coop benchmark */
 
     /* cfs preemptive non-shared sc */
-    
+
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);

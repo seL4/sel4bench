@@ -72,7 +72,7 @@ static benchmark_t ulsched_benchmark = {
 };
 
 benchmark_t *
-ulscheduler_benchmark_new(void) 
+ulscheduler_benchmark_new(void)
 {
     return &ulsched_benchmark;
 }
