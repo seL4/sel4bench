@@ -30,6 +30,7 @@
 
 typedef struct ulscheduler_results_t {
     ccnt_t edf_coop[CONFIG_NUM_TASK_SETS][N_RUNS];
+    ccnt_t edf_preempt[CONFIG_NUM_TASK_SETS][N_RUNS];
     ccnt_t overhead[N_RUNS];
 } ulscheduler_results_t;
 

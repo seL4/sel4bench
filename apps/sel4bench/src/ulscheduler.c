@@ -30,29 +30,37 @@ print_task_results(result_t *results)
     }
 }
 
-static void 
-ulscheduler_process(void *results) {
-    ulscheduler_results_t *raw_results;
-    result_t overhead;
-    result_t edf_coop[CONFIG_NUM_TASK_SETS];
-
-    raw_results = (ulscheduler_results_t *) results;
-
-    overhead = process_result_ignored(raw_results->overhead, N_RUNS, N_IGNORED, "EDF overhead");
+static void
+process_result_set(char *name, result_t overhead, ccnt_t raw_results[CONFIG_NUM_TASK_SETS][N_RUNS])
+{
+    result_t results[CONFIG_NUM_TASK_SETS];
 
     /* account for overhead */
     for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
         for (int j = 0; j < N_RUNS; j++) {
-            raw_results->edf_coop[i][j] -= overhead.min;
+            raw_results[i][j] -= overhead.min;
         }
-        edf_coop[i] = process_result_ignored(raw_results->edf_coop[i], 
-                                              N_RUNS, N_IGNORED, "EDF coop");
+        results[i] = process_result_ignored(raw_results[i], N_RUNS, N_IGNORED, name);
     }
 
-    print_banner("EDF measurement overhead", N_RUNS - N_IGNORED);
+    print_banner(name, N_RUNS - N_IGNORED);
+    print_task_results(results);
+}
+
+
+static void
+ulscheduler_process(void *results) {
+    ulscheduler_results_t *raw_results;
+    result_t overhead;
+
+    raw_results = (ulscheduler_results_t *) results;
+
+    overhead = process_result_ignored(raw_results->overhead, N_RUNS, N_IGNORED, "EDF overhead");
+    process_result_set("EDF (clients call when done)", overhead, raw_results->edf_coop);
+    process_result_set("EDF (preempt)", overhead, raw_results->edf_preempt);
+
+    print_banner("ulscheduler measurement overhead", N_RUNS - N_IGNORED);
     print_result(&overhead);
-    print_banner("EDF (clients call when done)", N_RUNS - N_IGNORED);
-    print_task_results(edf_coop);
 }
 
 static benchmark_t ulsched_benchmark = {

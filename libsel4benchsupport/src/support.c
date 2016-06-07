@@ -196,9 +196,7 @@ init_cap(void *data, seL4_CPtr cap)
         return SCHED_CTRL_SLOT;
     }
 
-    ZF_LOGE("init_cap not implemented for %d\n", cap);
-
-    return 0;
+    return sel4utils_process_init_cap(cap);
 }
 
 static void

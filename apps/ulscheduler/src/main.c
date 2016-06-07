@@ -7,7 +7,6 @@
  *
  * @TAG(NICTA_BSD)
  */
-#define ZF_LOG_LEVEL ZF_LOG_DEBUG
 #include <autoconf.h>
 #include <stdio.h>
 
@@ -97,10 +96,22 @@ create_edf_thread(sched_t *sched, env_t *env, task_t *task, int num_tasks, void 
         .slot = task->endpoint_path
     };
 
-    if (sched_add_tcb(sched, task->thread.sched_context.cptr, (void *) &edf_args) == NULL) {
-        ZF_LOGF("Failed to add tcb to scheduler");
-    }
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple),
+                                        task->thread.sched_context.cptr,
+                                        edf_args.budget / NS_IN_US,
+                                        edf_args.period / NS_IN_US, 0);
+    ZF_LOGF_IFERR(error, "Failed to configure sched context");
 
+    error = (int) sched_add_tcb(sched, task->thread.sched_context.cptr, (void *) &edf_args);
+    ZF_LOGF_IF(error == 0, "Failed to add tcb to scheduler");
+
+    /* set the tfep */
+    seL4_CapData_t guard = seL4_CapData_Guard_new(0, seL4_WordBits -
+                                                  CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
+    error = seL4_TCB_SetSpace(task->thread.tcb.cptr, seL4_CapNull,
+                              task->endpoint_path.capPtr, simple_get_cnode(&env->simple),
+                              guard, simple_get_pd(&env->simple), seL4_NilData);
+    ZF_LOGF_IFERR(error, "Failed to set space for tcb");
     /* create args */
     sel4utils_create_word_args(task->args, task->argv, NUM_ARGS, task->id, task->endpoint_path.capPtr);
     /* spawn thread */
@@ -172,11 +183,16 @@ main(int argc, char **argv)
     /* edf, threads yield immediately */
     sched = sched_new_edf(env->clock_timer, env->timeout_timer, &env->vka, SEL4UTILS_TCB_SLOT, env->ntfn.cptr);
     for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
-        ZF_LOGD("EDF coop benchmark %d/%d", i + CONFIG_MIN_TASKS, CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS);
+        ZF_LOGD("EDF coop benchmark %d/%d", i + CONFIG_MIN_TASKS, CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS - 1);
         run_edf_benchmark(env, sched, i + CONFIG_MIN_TASKS, coop_fn, env->clock_timer->timer, results->edf_coop[i]);
     }
 
     /* edf, threads rate limited, do not yield */
+    for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
+        ZF_LOGD("EDF preempt benchmark %d/%d", i + CONFIG_MIN_TASKS, CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS - 1);
+        run_edf_benchmark(env, sched, i + CONFIG_MIN_TASKS, preempt_fn, env->clock_timer->timer,
+                          results->edf_preempt[i]);
+    }
 
     /* cfs shared sc coop benchmark */
 
