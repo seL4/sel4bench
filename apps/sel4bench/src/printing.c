@@ -35,7 +35,7 @@ print_all(ccnt_t *array, int size)
 void
 print_result_header(void)
 {
-    printf("min\tmax\tmean\tstddev %%\tvariance\tstddev\tstddev\n");
+    printf("min\tmax\tmean\tstddev %%\tvariance\tstddev\n");
 }
 
 void
