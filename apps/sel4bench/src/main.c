@@ -36,8 +36,6 @@
 #include "printing.h"
 #include "processing.h"
 
-char _cpio_archive[1];
-
 /* Contains information about the benchmark environment. */
 static struct env {
     /* An initialised vka that may be used by the test. */
