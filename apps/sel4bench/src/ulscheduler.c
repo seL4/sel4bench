@@ -58,6 +58,8 @@ ulscheduler_process(void *results) {
     overhead = process_result_ignored(raw_results->overhead, N_RUNS, N_IGNORED, "EDF overhead");
     process_result_set("EDF (clients call when done)", overhead, raw_results->edf_coop);
     process_result_set("EDF (preempt)", overhead, raw_results->edf_preempt);
+    process_result_set("CFS (clients call when done)", overhead, raw_results->cfs_coop);
+    process_result_set("CFS (preempt + YieldTo)", overhead, raw_results->cfs_preempt);
 
     print_banner("ulscheduler measurement overhead", N_RUNS - N_IGNORED);
     print_result(&overhead);

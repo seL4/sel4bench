@@ -48,6 +48,8 @@ typedef struct task {
     char *argv[NUM_ARGS];
 } task_t;
 
+typedef void (*create_fn_t)(sched_t *, env_t *, task_t *, int, void *, int);
+
 static task_t tasks[CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS];
 
 bool
@@ -66,7 +68,6 @@ coop_fn(int argc, char **argv)
     seL4_CPtr ep = (seL4_CPtr) atol(argv[1]);
 
     while (1) {
-        ZF_LOGD("%d: call\n", id);
         seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
     }
 }
@@ -78,7 +79,7 @@ preempt_fn(UNUSED int argc, UNUSED char **argv)
 }
 
 static void
-create_edf_thread(sched_t *sched, env_t *env, task_t *task, int num_tasks, void *fn)
+create_edf_thread(sched_t *sched, env_t *env, task_t *task, int num_tasks, void *fn, int prio)
 {
     UNUSED int error;
     benchmark_configure_thread(env, seL4_CapNull, seL4_MaxPrio - 1, "edf thread", &task->thread);
@@ -120,6 +121,41 @@ create_edf_thread(sched_t *sched, env_t *env, task_t *task, int num_tasks, void 
 }
 
 static void
+create_cfs_thread(sched_t *sched, env_t *env, task_t *task, int num_tasks, void *fn, int prio)
+{
+    UNUSED int error;
+    benchmark_configure_thread(env, seL4_CapNull, prio, "cfs thread", &task->thread);
+
+    /* allocate a cslot for the minted ep for this process */
+    if (vka_cspace_alloc_path(&env->vka, &task->endpoint_path) != 0) {
+        ZF_LOGF("Failed to allocate cspace path");
+    }
+
+    if (fn == preempt_fn) {
+        error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple),
+                                        task->thread.sched_context.cptr,
+                                        NS_IN_MS / num_tasks / NS_IN_US,
+                                        NS_IN_MS / NS_IN_US, 0);
+        ZF_LOGF_IFERR(error, "Failed to configure sched context");
+    }
+
+    /* add the thread to the scheduler */
+    struct cfs_sched_add_tcb_args cfs_args = {
+        .slot = task->endpoint_path
+    };
+
+    /* create args */
+    sel4utils_create_word_args(task->args, task->argv, NUM_ARGS, task->id, task->endpoint_path.capPtr);
+    /* spawn thread */
+    error = sel4utils_start_thread(&task->thread, fn, (void *) NUM_ARGS, (void *) task->argv, true);
+    ZF_LOGF_IFERR(error, "Failed to start thread");
+
+    error = (int) sched_add_tcb(sched, task->thread.sched_context.cptr, (void *) &cfs_args);
+    ZF_LOGF_IF(error == 0, "Failed to add tcb to scheduler");
+}
+
+
+static void
 teardown_thread(vka_t *vka, vspace_t *vspace, task_t *task)
 {
     seL4_TCB_Suspend(task->thread.tcb.cptr);
@@ -129,14 +165,14 @@ teardown_thread(vka_t *vka, vspace_t *vspace, task_t *task)
 }
 
 static void
-run_edf_benchmark(env_t *env, sched_t *sched, int num_tasks, void *edf_fn, pstimer_t *clock_timer,
-                  ccnt_t *results)
+run_benchmark(env_t *env, sched_t *sched, int num_tasks, void *client_fn, create_fn_t create_fn,
+              pstimer_t *clock_timer, ccnt_t *results, int prio)
 {
     size_t count = 0;
 
     for (int t = 0; t < num_tasks; t++) {
         tasks[t].id = t;
-        create_edf_thread(sched, env, &tasks[t], num_tasks, edf_fn);
+        create_fn(sched, env, &tasks[t], num_tasks, client_fn, prio);
     }
 
     timer_start(clock_timer);
@@ -184,20 +220,35 @@ main(int argc, char **argv)
     sched = sched_new_edf(env->clock_timer, env->timeout_timer, &env->vka, SEL4UTILS_TCB_SLOT, env->ntfn.cptr);
     for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
         ZF_LOGD("EDF coop benchmark %d/%d", i + CONFIG_MIN_TASKS, CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS - 1);
-        run_edf_benchmark(env, sched, i + CONFIG_MIN_TASKS, coop_fn, env->clock_timer->timer, results->edf_coop[i]);
+        run_benchmark(env, sched, i + CONFIG_MIN_TASKS, coop_fn, create_edf_thread, env->clock_timer->timer,
+                      results->edf_coop[i], seL4_MaxPrio - 1);
     }
 
     /* edf, threads rate limited, do not yield */
     for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
         ZF_LOGD("EDF preempt benchmark %d/%d", i + CONFIG_MIN_TASKS, CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS - 1);
-        run_edf_benchmark(env, sched, i + CONFIG_MIN_TASKS, preempt_fn, env->clock_timer->timer,
-                          results->edf_preempt[i]);
+        run_benchmark(env, sched, i + CONFIG_MIN_TASKS, preempt_fn, create_edf_thread, env->clock_timer->timer,
+                      results->edf_preempt[i], seL4_MaxPrio - 1);
     }
+    sched_destroy_scheduler(sched);
 
     /* cfs shared sc coop benchmark */
+    sched = sched_new_cooperative_cfs(&env->vka, SEL4UTILS_SCHED_CONTEXT_SLOT);
+    for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
+        ZF_LOGD("CFS coop benchmark %d/%d", i + CONFIG_MIN_TASKS, CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS - 1);
+        run_benchmark(env, sched, i + CONFIG_MIN_TASKS, coop_fn, create_cfs_thread,
+                      env->clock_timer->timer, results->cfs_coop[i], seL4_MaxPrio - 1);
+    }
+    sched_destroy_scheduler(sched);
 
     /* cfs preemptive non-shared sc */
-
+    sched = sched_new_preemptive_cfs();
+    for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
+        ZF_LOGD("CFS coop benchmark %d/%d", i + CONFIG_MIN_TASKS, CONFIG_NUM_TASK_SETS + CONFIG_MIN_TASKS - 1);
+        run_benchmark(env, sched, i + CONFIG_MIN_TASKS, preempt_fn, create_cfs_thread,
+                      env->clock_timer->timer, results->cfs_preempt[i], seL4_MaxPrio);
+    }
+    sched_destroy_scheduler(sched);
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);
