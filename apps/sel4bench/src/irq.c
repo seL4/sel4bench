@@ -7,6 +7,8 @@
  *
  * @TAG(NICTA_GPL)
  */
+#include <autoconf.h>
+
 #include "benchmark.h"
 #include "processing.h"
 #include "printing.h"
@@ -21,6 +23,10 @@
 #define TRACE_POINT_OVERHEAD 0
 #define TRACE_POINT_IRQ_PATH_START 1
 #define TRACE_POINT_IRQ_PATH_END 2
+
+#ifndef CONFIG_MAX_NUM_TRACE_POINTS
+#define CONFIG_MAX_NUM_TRACE_POINTS 0
+#endif
 
 static ccnt_t kernel_log_data[KERNEL_MAX_NUM_LOG_ENTRIES];
 static unsigned int offsets[CONFIG_MAX_NUM_TRACE_POINTS];
