@@ -12,6 +12,7 @@
 
 #include <allocman/vka.h>
 #include <sel4bench/sel4bench.h>
+#include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4utils/process.h>
 #include <simple/simple.h>
