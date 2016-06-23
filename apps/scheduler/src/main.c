@@ -316,7 +316,7 @@ main(int argc, char **argv)
      * priority, we only test each wordBits prio.
      */
     for (int i = 0; i < N_PRIOS; i++) {
-        uint8_t prio = seL4_MinPrio + 1 + (i * seL4_WordBits);
+        uint8_t prio = gen_next_prio(i);
         benchmark_prio_threads(env, done_ep.cptr, produce.cptr, consume.cptr, prio,
                                results->thread_results[i]);
         benchmark_prio_processes(env, done_ep.cptr, produce.cptr, consume.cptr, prio,

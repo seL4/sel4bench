@@ -8,20 +8,11 @@
  * @TAG(NICTA_GPL)
  */
 
-#include <stdio.h>
-#include <sel4bench/sel4bench.h>
-#include <jansson.h>
+#pragma once
 
 #include "benchmark.h"
-#include "printing.h"
-#include "ipc.h"
+#include <jansson.h>
+#include <sel4bench/sel4bench.h>
 
-void
-print_all(ccnt_t *array, int size)
-{
-    uint32_t i;
-    for (i = 0; i < size; i++) {
-        printf("\t"CCNT_FORMAT"\n", array[i]);
-    }
-}
+json_t *result_set_to_json(result_set_t set);
 

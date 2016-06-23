@@ -17,16 +17,25 @@
 #include "printing.h"
 
 result_t
-process_result(ccnt_t *array, int size, const char *error)
+process_result(size_t n, ccnt_t array[n], result_desc_t desc)
 {
     result_t result;
 
-    if (error != NULL && !results_stable(array, size)) {
-        ZF_LOGW("%s cycles are not stable\n", error); 
+    array = &array[desc.ignored];
+    int size = n - desc.ignored;
+
+    if (desc.stable && !results_stable(array, size)) {
+        ZF_LOGW("%s cycles are not stable\n", desc.name == NULL ? "unknown" : desc.name);
         if (ZF_LOG_LEVEL <= ZF_LOG_VERBOSE) {
             print_all(array, size);
         }
+        return (result_t) {0};
     }
+
+    for (int i = 0; i < size; i++) {
+        array[i] -= desc.overhead;
+    }
+
 
     result.min = results_min(array, size);
     result.max = results_max(array, size);
@@ -38,10 +47,12 @@ process_result(ccnt_t *array, int size, const char *error)
     return result;
 }
 
-result_t
-process_result_ignored(ccnt_t *array, int size, int ignored, const char *error)
+void
+process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
+                result_t results[ncols])
 {
-    /* update for ignored values (e.g cold cache numbers) */
-    return process_result(&array[ignored], size - ignored, error);
+    for (int i = 0; i < ncols; i++) {
+        results[i] = process_result(nrows, array[i], desc);
+    }
 }
 

@@ -9,117 +9,127 @@
  */
 #include <autoconf.h>
 #include <ipc.h>
+#include <jansson.h>
 #include <sel4bench/sel4bench.h>
 #include <utils/util.h>
 
 #include "benchmark.h"
+#include "json.h"
 #include "math.h"
 #include "printing.h"
 #include "processing.h"
 
-static bool
-process_ipc_results(ipc_results_t *raw_results, result_t *processed_results, int n)
+static json_t *
+process_ipc_results(void *r)
 {
+    ipc_results_t *raw_results = r;
+
     /* check overheads */
     for (int i = 0; i < NUM_OVERHEAD_BENCHMARKS; i++) {
         if (!results_stable(raw_results->overhead_benchmarks[i], RUNS)) {
-            if (config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
+            if (!config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
                 printf("Benchmarking overhead of a %s is not stable! Cannot continue\n",
                         overhead_benchmark_params[i].name);
                 print_all(raw_results->overhead_benchmarks[i], RUNS);
-                return false;
+                return NULL;
             }
         }
     }
 
-    /* now calculate the results (overheads taken into account during benchmark) */
+    int n = ARRAY_SIZE(benchmark_params);
+    char *functions[n];
+    char *directions[n];
+    json_int_t client_prios[n];
+    json_int_t server_prios[n];
+    bool same_vspace[n];
+    bool dummy_thread[n];
+    json_int_t dummy_thread_prio[n];
+    json_int_t length[n];
+
+    column_t extra_cols[] = {
+        {
+            .header = "Function",
+            .type = JSON_STRING,
+            .string_array = &functions[0]
+        },
+        {
+            .header = "Direction",
+            .type = JSON_STRING,
+            .string_array = &directions[0],
+        },
+        {
+            .header = "Client Prio",
+            .type = JSON_INTEGER,
+            .integer_array = &client_prios[0]
+        },
+        {
+            .header = "Server Prio",
+            .type = JSON_INTEGER,
+            .integer_array = &server_prios[0]
+        },
+        {
+            .header = "Same vspace?",
+            .type = JSON_TRUE,
+            .bool_array = &same_vspace[0]
+        },
+        {
+            .header = "Dummy thread?",
+            .type = JSON_TRUE,
+            .bool_array = &dummy_thread[0]
+        },
+        {
+            .header = "Dummy prio",
+            .type = JSON_INTEGER,
+            .integer_array = &dummy_thread_prio[0]
+        },
+        {
+            .header = "IPC length",
+            .type = JSON_INTEGER,
+            .integer_array = &length[0]
+        }
+    };
+
+    result_t results[n];
+
+    result_set_t result_set = {
+        .name = "One way IPC microbenchmarks",
+        .extra_cols = extra_cols,
+        .n_extra_cols = ARRAY_SIZE(extra_cols),
+        .results = results,
+        .n_results = n,
+        .samples = RUNS
+    };
+
+    /* now calculate the results (overheads already taken into account) */
     for (int i = 0; i < n; i++) {
-        processed_results[i] = process_result(raw_results->benchmarks[i], RUNS,
-                                              benchmark_params[i].name);
+        result_desc_t desc = {
+            .name = benchmark_params[i].name,
+            .stable = true,
+        };
+
+        functions[i] = (char *) benchmark_params[i].name,
+        directions[i] = benchmark_params[i].direction == DIR_TO ? "client->server" :
+                                                                  "server->client";
+        client_prios[i] = benchmark_params[i].client_prio;
+        server_prios[i] = benchmark_params[i].server_prio;
+        same_vspace[i] = benchmark_params[i].same_vspace;
+        dummy_thread[i] = benchmark_params[i].dummy_thread;
+        dummy_thread_prio[i] = benchmark_params[i].dummy_prio;
+        length[i] = benchmark_params[i].length;
+
+        results[i] = process_result(RUNS, raw_results->benchmarks[i], desc);
     }
-    return true;
-}
 
-static void
-print_single_ipc_xml_result(int result, ccnt_t value, char *name)
-{
-
-    printf("\t<result name=\"");
-    printf("%sAS", benchmark_params[result].same_vspace ? "Intra" : "Inter");
-    printf("-%s", benchmark_params[result].name);
-    printf("(%d %s %d, size %d)\" ", benchmark_params[result].client_prio,
-           benchmark_params[result].direction == DIR_TO ? "--&gt;" : "&lt;--",
-           benchmark_params[result].server_prio, benchmark_params[result].length);
-    printf("type=\"%s\">"CCNT_FORMAT"</result>\n", name, value);
-
-}
-
-static void
-print_ipc_xml_results(result_t *results, int n)
-{   
-    printf("<results>\n");
-    for (int i = 0; i < n; i++) {
-        print_single_ipc_xml_result(i, results[i].min, "min");
-        print_single_ipc_xml_result(i, results[i].max, "max");
-        print_single_ipc_xml_result(i, (ccnt_t) results[i].mean, "mean");
-        print_single_ipc_xml_result(i, (ccnt_t) results[i].stddev, "stdev");
-    }
-    printf("</results>\n");
-}
-
-/* for pasting into a spreadsheet or parsing */
-static void
-print_ipc_tsv_results(result_t *results, int n)
-{   
-    printf("Function\tDirection\tClient Prio\tServer Prio\tSame vspace?\tDummy (prio)?\tLength\t");
-    print_result_header(); 
-    for (int i = 0; i < n; i++) {
-        printf("%s\t", benchmark_params[i].name);
-        printf("%s\t", benchmark_params[i].direction == DIR_TO ? "client -> server" : "server -> client");
-        printf("%d\t", benchmark_params[i].client_prio);
-        printf("%d\t", benchmark_params[i].server_prio);
-        printf("%s\t", benchmark_params[i].same_vspace ? "true" : "false");
-        printf("%s (%d)\t", benchmark_params[i].dummy_thread ? "true" : "false", benchmark_params[i].dummy_prio);
-        printf("%d\t", benchmark_params[i].length);
-        print_result(&results[i]);
-    }
-}
-
-static void
-print_ipc_results(result_t *results, format_t format, int n)
-{
-    switch (format) {
-    case XML:
-        print_ipc_xml_results(results, n);
-        break;
-    case TSV:
-        print_ipc_tsv_results(results, n);
-        break;
-    default:
-        ZF_LOGE("Unknown format");
-        break;
-    }
-}
-
-static void
-process(void *results)
-{
-    /* Calculated results to print out */
-    ipc_results_t *raw_results = (ipc_results_t *) results;
-    int num_results = ARRAY_SIZE(benchmark_params);
-    result_t processed_results[num_results];
-
-    if (process_ipc_results(raw_results, processed_results, num_results)) {
-        print_ipc_results(processed_results, XML, num_results);
-        print_ipc_results(processed_results, TSV, num_results); 
-    }
+    json_t *array = json_array();
+    json_array_append_new(array, result_set_to_json(result_set));
+    return array;
 }
 
 static benchmark_t ipc_benchmark = {
     .name = "ipc",
     .enabled = config_set(CONFIG_APP_IPCBENCH),
     .results_pages = BYTES_TO_SIZE_BITS_PAGES(sizeof(ipc_results_t), seL4_PageBits),
-    .process = process,
+    .process = process_ipc_results,
     .init = blank_init
 };
 

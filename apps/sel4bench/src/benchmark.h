@@ -9,6 +9,7 @@
  */
 #pragma once
 
+#include <jansson.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
 #include <simple/simple.h>
@@ -22,16 +23,16 @@ typedef struct benchmark {
     /* size of data structure required to store results */
     size_t results_pages;
     /*
-     * Process and output the results
-     * 
+     * Process and return the results
+     *
      */
-    void (*process)(void *results);
+    json_t *(*process)(void *results);
     /* carry out any extra init for this process */
     void (*init)(vka_t *vka, simple_t *simple, sel4utils_process_t *process);
 } benchmark_t;
 
 /* generic result type */
-typedef struct result {
+typedef struct {
     double variance;
     double stddev;
     double stddev_pc;
@@ -39,6 +40,50 @@ typedef struct result {
     ccnt_t min;
     ccnt_t max;
 } result_t;
+
+typedef struct {
+    /* header to print at top of column */
+    char *header;
+    /* pointer to first element in array of column values - length must match n_results in the
+     * result_set_t that this column is used with. */
+    union {
+        char **string_array;
+        json_int_t *integer_array;
+        double *real_array;
+        bool *bool_array;
+    };
+    /* type of the column */
+    json_type type;
+} column_t;
+
+/* describes result output */
+typedef struct {
+    /* name of the result set */
+    char *name;
+    /* columns to prepend to result output */
+    column_t *extra_cols;
+    /* number of extra columns */
+    int n_extra_cols;
+    /* array of results */
+    result_t *results;
+    /* number of results in this set */
+    int n_results;
+    /* number of samples that produced this result */
+    int samples;
+} result_set_t;
+
+/* description of how to process a result */
+typedef struct {
+    /* error if result should be stable */
+    bool stable;
+    /* name of result */
+    const char *name;
+    /* overhead to subtract from each result before calculations */
+    ccnt_t overhead;
+    /* number of samples to ignore (for cold cache values). */
+    int ignored;
+} result_desc_t;
+
 
 benchmark_t *ipc_benchmark_new(void);
 benchmark_t *irq_benchmark_new(void);

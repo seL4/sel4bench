@@ -204,7 +204,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
    return result;
 }
 
-void 
+json_t *
 launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
 {
     printf("\n%s Benchmarks\n==============\n\n", benchmark->name);
@@ -220,13 +220,15 @@ launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
     int exit_code = run_benchmark(env, benchmark, untyped, results);
 
     /* process & print results */
+    json_t *json = NULL;
     if (exit_code == EXIT_SUCCESS) {
-        benchmark->process(results);
+        json = benchmark->process(results);
     }
 
     /* free results */
     vspace_unmap_pages(&env->vspace, results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
 
+    return json;
 }
 
 void
@@ -271,13 +273,28 @@ main_continued(void *arg)
         NULL
     };
 
+    json_t *output = json_array();
+    assert(output != NULL);
+
     /* run the benchmarks */
     for (int i = 0; benchmarks[i] != NULL; i++) {
         if (benchmarks[i]->enabled) {
-            launch_benchmark(benchmarks[i], &global_env, &untyped);
+            json_t *result = launch_benchmark(benchmarks[i], &global_env, &untyped);
+            if (result == NULL) {
+                ZF_LOGF("Failed to run benchmark %s", benchmarks[i]->name);
+            }
+            UNUSED int error = json_array_extend(output, result);
+            assert(error == 0);
+
         }
     }
 
+    printf("JSON OUTPUT\n");
+    int error = json_dumpf(output, stdout, JSON_PRESERVE_ORDER);
+    if (error) {
+        ZF_LOGF("Failed to dump output");
+    }
+    printf("END JSON OUTPUT\n");
     printf("All is well in the universe.\n");
     printf("\n\nFin\n");
 
