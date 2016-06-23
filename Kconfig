@@ -38,6 +38,7 @@ menu "seL4 Libraries"
     source "libs/libutils/Kconfig"
     source "libs/libsel4debug/Kconfig"
     source "libs/libsel4benchsupport/Kconfig"
+    source "libs/libjansson/Kconfig"
 endmenu
 
 menu "seL4 Applications"
