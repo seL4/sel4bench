@@ -7,8 +7,7 @@
  *
  * @TAG(NICTA_GPL)
  */
-#ifndef BENCHMARK_H
-#define BENCHMARK_H
+#pragma once
 
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
@@ -53,4 +52,3 @@ blank_init(UNUSED vka_t *vka, UNUSED simple_t *simple, UNUSED sel4utils_process_
     /* for benchmarks with no specific init */
 }
 
-#endif /* BENCHMARK_H */
