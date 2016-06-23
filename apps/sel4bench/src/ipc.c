@@ -19,29 +19,20 @@
 
 static bool
 process_ipc_results(ipc_results_t *raw_results, result_t *processed_results, int n)
-{   
-    /* calculate the overheads */
-    ccnt_t overhead[NUM_OVERHEAD_BENCHMARKS];
+{
+    /* check overheads */
     for (int i = 0; i < NUM_OVERHEAD_BENCHMARKS; i++) {
         if (!results_stable(raw_results->overhead_benchmarks[i], RUNS)) {
-            printf("Benchmarking overhead of a %s is not stable! Cannot continue\n",
-                    overhead_benchmark_params[i].name);
-            print_all(raw_results->overhead_benchmarks[i], RUNS);
             if (config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
+                printf("Benchmarking overhead of a %s is not stable! Cannot continue\n",
+                        overhead_benchmark_params[i].name);
+                print_all(raw_results->overhead_benchmarks[i], RUNS);
                 return false;
             }
         }
-        overhead[i] = results_min(raw_results->overhead_benchmarks[i], RUNS);
     }
-      /* Take the smallest overhead to be our benchmarking overhead */
-    raw_results->overheads[CALL_REPLY_RECV_OVERHEAD] = MIN(overhead[CALL_OVERHEAD],
-                                                        overhead[REPLY_RECV_OVERHEAD]);
-    raw_results->overheads[SEND_RECV_OVERHEAD] = MIN(overhead[SEND_OVERHEAD],
-                                                   overhead[RECV_OVERHEAD]);
-    raw_results->overheads[CALL_REPLY_RECV_10_OVERHEAD] = MIN(overhead[CALL_10_OVERHEAD],
-                                                            overhead[REPLY_RECV_10_OVERHEAD]);
 
-    /* now calculate the results (taking overheads into account */
+    /* now calculate the results (overheads taken into account during benchmark) */
     for (int i = 0; i < n; i++) {
         processed_results[i] = process_result(raw_results->benchmarks[i], RUNS,
                                               benchmark_params[i].name);
