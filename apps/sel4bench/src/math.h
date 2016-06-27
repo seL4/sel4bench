@@ -13,11 +13,6 @@
 
 #include "benchmark.h"
 
-/* these functions adapted from libgsl -- require code to be GPL */
-double results_mean(ccnt_t *array, int n);
-double results_variance(ccnt_t *array, ccnt_t mean, int n);
-double results_stddev(ccnt_t *array, long double variance, int n);
-ccnt_t results_max(ccnt_t *array, int n);
-ccnt_t results_min(ccnt_t *array, int n);
+result_t calculate_results(const size_t n, ccnt_t data[n]);
 
 #endif /* __SEL4BENCH_MATH_H */

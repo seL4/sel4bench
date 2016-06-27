@@ -19,8 +19,6 @@
 result_t
 process_result(size_t n, ccnt_t array[n], result_desc_t desc)
 {
-    result_t result;
-
     array = &array[desc.ignored];
     int size = n - desc.ignored;
 
@@ -36,15 +34,7 @@ process_result(size_t n, ccnt_t array[n], result_desc_t desc)
         array[i] -= desc.overhead;
     }
 
-
-    result.min = results_min(array, size);
-    result.max = results_max(array, size);
-    result.mean = results_mean(array, size);
-    result.variance = results_variance(array, result.mean, size);
-    result.stddev = results_stddev(array, result.variance, size);
-    result.stddev_pc = (double) result.stddev / (double) result.mean * 100;
-
-    return result;
+    return calculate_results(size, array);
 }
 
 void

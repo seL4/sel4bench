@@ -12,12 +12,45 @@
 static void
 result_to_json(result_t result, json_t *j)
 {
-   json_object_set_new(j, "Min", json_integer(result.min));
-   json_object_set_new(j, "Max", json_integer(result.max));
-   json_object_set_new(j, "Mean", json_real(result.mean));
-   json_object_set_new(j, "Stddev (%)", json_real(result.stddev_pc));
-   json_object_set_new(j, "Stddev", json_real(result.stddev));
-   json_object_set_new(j, "Variance", json_real(result.variance));
+   UNUSED int error = json_object_set_new(j, "Min", json_integer(result.min));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "Max", json_integer(result.max));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "Mean", json_real(result.mean));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "Stddev", json_real(result.stddev));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "Variance", json_real(result.variance));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "Mode", json_real(result.mode));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "Median", json_real(result.median));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "1st quantile", json_real(result.first_quantile));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "3rd quantile", json_real(result.third_quantile));
+   assert(error == 0);
+
+   error = json_object_set_new(j, "Samples", json_integer(result.samples));
+   assert(error == 0);
+
+   json_t *raw_results = json_array();
+   assert(raw_results != NULL);
+
+   for (size_t i = 0; i < result.samples; i++) {
+       error = json_array_append_new(raw_results, json_integer(result.raw_data[i]));
+       assert(error == 0);
+   }
+   json_object_set_new(j, "Raw results", raw_results);
+   assert(error == 0);
 }
 
 static json_t *
@@ -49,12 +82,8 @@ result_set_to_json(result_set_t set)
    error = json_object_set_new(object, "Benchmark", json_string(set.name));
    assert(error == 0);
 
-   error = json_object_set_new(object, "Samples", json_integer(set.samples));
-   assert(error == 0);
-
    json_t *rows = json_array();
    assert(rows != NULL);
-
 
    error = json_object_set_new(object, "Results", rows);
    assert(error == 0);

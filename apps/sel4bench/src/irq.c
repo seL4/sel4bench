@@ -80,7 +80,6 @@ process(void *results) {
         .name = "Tracepoint overhead",
         .n_results = 1,
         .results = &result,
-        .samples = n_overhead_data
     };
 
     json_array_append_new(array, result_set_to_json(set));
@@ -96,7 +95,6 @@ process(void *results) {
     }
 
     set.name = "IRQ Path Cycle Count (accounting for overhead)";
-    set.samples = n_data;
 
     result = process_result(n_data, data, desc);
     json_array_append_new(array, result_set_to_json(set));
@@ -149,7 +147,6 @@ irquser_process(void *r) {
 
     result_set_t set = {
         .name = "IRQ path cycle count (measured from user level)",
-        .samples = N_RUNS - N_IGNORED,
         .n_results = 3,
         .results = results,
         .n_extra_cols = 1,

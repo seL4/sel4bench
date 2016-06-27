@@ -34,7 +34,6 @@ scheduler_process(void *results) {
         .n_extra_cols = 0,
         .results = &result,
         .n_results = 1,
-        .samples = N_RUNS - N_IGNORED
     };
     json_array_append_new(array, result_set_to_json(set));
 
@@ -62,7 +61,6 @@ scheduler_process(void *results) {
     set.n_extra_cols = 1,
     set.results = per_prio_result,
     set.n_results = N_PRIOS,
-    set.samples = N_RUNS - N_IGNORED;
 
     json_array_append_new(array, result_set_to_json(set));
 

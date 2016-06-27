@@ -28,7 +28,6 @@ signal_process(void *results) {
 
     result_set_t set = {
         .name = "Signal overhead",
-        .samples = N_RUNS - N_IGNORED,
         .n_results = 1,
         .n_extra_cols = 0,
         .results = &result

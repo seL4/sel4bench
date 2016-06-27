@@ -97,7 +97,6 @@ process_ipc_results(void *r)
         .n_extra_cols = ARRAY_SIZE(extra_cols),
         .results = results,
         .n_results = n,
-        .samples = RUNS
     };
 
     /* now calculate the results (overheads already taken into account) */

@@ -35,10 +35,15 @@ typedef struct benchmark {
 typedef struct {
     double variance;
     double stddev;
-    double stddev_pc;
     double mean;
     ccnt_t min;
     ccnt_t max;
+    ccnt_t mode;
+    double median;
+    double first_quantile;
+    double third_quantile;
+    size_t samples;
+    ccnt_t *raw_data;
 } result_t;
 
 typedef struct {
@@ -68,8 +73,6 @@ typedef struct {
     result_t *results;
     /* number of results in this set */
     int n_results;
-    /* number of samples that produced this result */
-    int samples;
 } result_set_t;
 
 /* description of how to process a result */
