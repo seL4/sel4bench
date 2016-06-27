@@ -102,8 +102,7 @@ process_ipc_results(void *r)
     /* now calculate the results (overheads already taken into account) */
     for (int i = 0; i < n; i++) {
         result_desc_t desc = {
-            .name = benchmark_params[i].name,
-            .stable = true,
+            .name = benchmark_params[i].name
         };
 
         functions[i] = (char *) benchmark_params[i].name,
