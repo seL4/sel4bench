@@ -16,3 +16,10 @@ config APP_SEL4BENCH
     help
         seL4 Benchmark application.
 
+config ALLOW_UNSTABLE_OVERHEAD
+    depends on APP_SEL4BENCH
+    bool "Allow unstable overhead"
+    default n
+    help
+        Do not fail when stable values are not stable.
+

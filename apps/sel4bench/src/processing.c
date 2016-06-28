@@ -27,7 +27,9 @@ process_result(size_t n, ccnt_t array[n], result_desc_t desc)
         if (ZF_LOG_LEVEL <= ZF_LOG_VERBOSE) {
             print_all(array, size);
         }
-        return (result_t) {0};
+        if (!config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
+            return (result_t) {0};
+        }
     }
 
     for (int i = 0; i < size; i++) {
