@@ -290,7 +290,7 @@ main_continued(void *arg)
     }
 
     printf("JSON OUTPUT\n");
-    int error = json_dumpf(output, stdout, JSON_PRESERVE_ORDER);
+    int error = json_dumpf(output, stdout, JSON_PRESERVE_ORDER | JSON_INDENT(CONFIG_JSON_INDENT));
     if (error) {
         ZF_LOGF("Failed to dump output");
     }

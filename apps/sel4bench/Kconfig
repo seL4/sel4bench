@@ -9,12 +9,14 @@
 #
 
 config APP_SEL4BENCH
-    bool "seL4 Benchmark"
+    bool "seL4bench"
     default y
     depends on LIB_SEL4_ALLOCMAN && LIB_SEL4 && HAVE_LIBC && LIB_UTILS && LIB_SEL4_UTILS && LIB_SEL4_PLAT_SUPPORT && LIB_SEL4_BENCH && LIB_PLATSUPPORT && LIB_SEL4_DEBUG && LIB_SEL4_BENCHSUPPORT && LIB_JANSSON
     depends on DANGEROUS_CODE_INJECTION || EXPORT_PMU_USER
     help
         seL4 Benchmark application.
+
+menu "seL4bench settings"
 
 config ALLOW_UNSTABLE_OVERHEAD
     depends on APP_SEL4BENCH
@@ -23,3 +25,21 @@ config ALLOW_UNSTABLE_OVERHEAD
     help
         Do not fail when stable values are not stable.
 
+config OUTPUT_RAW_RESULTS
+    depends on APP_SEL4BENCH
+    bool "Output raw results"
+    default y
+    help
+        As well as outputting statistics, dump raw results in JSON format.
+
+config JSON_INDENT
+    depends on APP_SEL4BENCH
+    int "JSON indent"
+    default 0
+    range 0 31
+    help
+        Set the indent for JSON. By default it is 0, which is very fast to output,
+        however setting the indent higher allows for more human readable output.
+
+
+endmenu

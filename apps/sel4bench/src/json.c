@@ -7,6 +7,7 @@
 *
 * @TAG(NICTA_GPL)
 */
+#include <autoconf.h>
 #include "json.h"
 
 static void
@@ -45,12 +46,14 @@ result_to_json(result_t result, json_t *j)
    json_t *raw_results = json_array();
    assert(raw_results != NULL);
 
-   for (size_t i = 0; i < result.samples; i++) {
-       error = json_array_append_new(raw_results, json_integer(result.raw_data[i]));
-       assert(error == 0);
+   if (config_set(CONFIG_OUTPUT_RAW_RESULTS)) {
+      for (size_t i = 0; i < result.samples; i++) {
+         error = json_array_append_new(raw_results, json_integer(result.raw_data[i]));
+         assert(error == 0);
+      }
+      json_object_set_new(j, "Raw results", raw_results);
+      assert(error == 0);
    }
-   json_object_set_new(j, "Raw results", raw_results);
-   assert(error == 0);
 }
 
 static json_t *
