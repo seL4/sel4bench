@@ -124,7 +124,10 @@ results_mode(const size_t n, const ccnt_t sorted_data[n])
         }
     }
 
-    assert(mode_freq > 0);
+    if (mode_freq == 0) {
+        mode_freq = current_freq;
+    }
+
     return mode;
 }
 

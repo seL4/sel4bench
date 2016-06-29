@@ -267,6 +267,7 @@ main_continued(void *arg)
         irquser_benchmark_new(),
         scheduler_benchmark_new(),
         signal_benchmark_new(),
+        fault_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */
