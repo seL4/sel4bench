@@ -25,7 +25,7 @@ process_result(size_t n, ccnt_t array[n], result_desc_t desc)
     if (desc.stable && !results_stable(array, size)) {
         ZF_LOGW("%s cycles are not stable\n", desc.name == NULL ? "unknown" : desc.name);
         if (ZF_LOG_LEVEL <= ZF_LOG_VERBOSE) {
-            print_all(array, size);
+            print_all(size, array);
         }
         if (!config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
             return (result_t) {0};
