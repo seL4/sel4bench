@@ -29,7 +29,6 @@
 #include <ipc.h>
 
 /* arch/ipc.h requires these defines */
-#define __SWINUM(x) ((x) & 0x00ffffff)
 #define NOPS ""
 
 #include <arch/ipc.h>

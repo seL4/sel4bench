@@ -18,7 +18,6 @@
 #include <scheduler.h>
 
 #define NOPS ""
-#define __SWINUM(x) ((x) & 0x00ffffff)
 
 #include <arch/signal.h>
 #define N_LOW_ARGS 5

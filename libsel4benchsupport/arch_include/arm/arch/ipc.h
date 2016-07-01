@@ -21,7 +21,7 @@
     register seL4_Word scno asm("r7") = seL4_SysCall; \
     asm volatile(NOPS swi NOPS \
         : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysCall), "r"(scno) \
+        : [swi_num] "i" __SEL4_SWINUM(seL4_SysCall), "r"(scno) \
     ); \
 } while(0)
 
@@ -31,7 +31,7 @@
     register seL4_Word scno asm("r7") = seL4_SysCall; \
     asm volatile(NOPS swi NOPS \
         : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysCall), "r"(scno) \
+        : [swi_num] "i" __SEL4_SWINUM(seL4_SysCall), "r"(scno) \
         : "r2", "r3", "r4", "r5" \
     ); \
 } while(0)
@@ -42,7 +42,7 @@
     register seL4_Word scno asm("r7") = seL4_SysSend; \
     asm volatile(NOPS swi NOPS \
         : "+r"(dest), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysSend), "r"(scno) \
+        : [swi_num] "i" __SEL4_SWINUM(seL4_SysSend), "r"(scno) \
     ); \
 } while(0)
 
@@ -52,7 +52,7 @@
     register seL4_Word scno asm("r7") = seL4_SysReplyRecv; \
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyRecv), "r"(scno) \
+        : [swi_num] "i" __SEL4_SWINUM(seL4_SysReplyRecv), "r"(scno) \
         : "r2", "r3", "r4", "r5" \
     ); \
 } while(0)
@@ -63,7 +63,7 @@
     register seL4_Word scno asm("r7") = seL4_SysReplyRecv; \
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "+r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysReplyRecv), "r"(scno) \
+        : [swi_num] "i" __SEL4_SWINUM(seL4_SysReplyRecv), "r"(scno) \
     ); \
 } while(0)
 
@@ -73,7 +73,7 @@
     register seL4_Word scno asm("r7") = seL4_SysRecv; \
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "=r"(info) \
-        : [swi_num] "i" __SWINUM(seL4_SysRecv), "r"(scno) \
+        : [swi_num] "i" __SEL4_SWINUM(seL4_SysRecv), "r"(scno) \
     ); \
 } while(0)
 
