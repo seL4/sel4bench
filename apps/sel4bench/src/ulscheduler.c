@@ -9,7 +9,7 @@
  */
 #include "benchmark.h"
 #include "processing.h"
-#include "printing.h"
+#include "json.h"
 
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/timer.h>
@@ -19,50 +19,66 @@
 #include <stdio.h>
 #include <ulscheduler.h>
 
-static void
-print_task_results(result_t *results)
-{
-    printf("Tasks\t");
-    print_result_header();
-    for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
-        printf("%zu\t", i + CONFIG_MIN_TASKS);
-        print_result(&results[i]);
-    }
-}
-
-static void
-process_result_set(char *name, result_t overhead, ccnt_t raw_results[CONFIG_NUM_TASK_SETS][N_RUNS])
-{
-    result_t results[CONFIG_NUM_TASK_SETS];
-
-    /* account for overhead */
-    for (int i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
-        for (int j = 0; j < N_RUNS; j++) {
-            raw_results[i][j] -= overhead.min;
-        }
-        results[i] = process_result_ignored(raw_results[i], N_RUNS, N_IGNORED, name);
-    }
-
-    print_banner(name, N_RUNS - N_IGNORED);
-    print_task_results(results);
-}
-
-
-static void
+static json_t *
 ulscheduler_process(void *results) {
-    ulscheduler_results_t *raw_results;
-    result_t overhead;
+    ulscheduler_results_t *raw_results = results;
 
-    raw_results = (ulscheduler_results_t *) results;
+    json_t *array = json_array();
 
-    overhead = process_result_ignored(raw_results->overhead, N_RUNS, N_IGNORED, "EDF overhead");
-    process_result_set("EDF (clients call when done)", overhead, raw_results->edf_coop);
-    process_result_set("EDF (preempt)", overhead, raw_results->edf_preempt);
-    process_result_set("CFS (clients call when done)", overhead, raw_results->cfs_coop);
-    process_result_set("CFS (preempt + YieldTo)", overhead, raw_results->cfs_preempt);
+    /* process overhead */
+    result_desc_t desc = {
+        .stable = true,
+        .name = "ulscheduler measurement overhead",
+        .ignored = N_IGNORED,
+    };
 
-    print_banner("ulscheduler measurement overhead", N_RUNS - N_IGNORED);
-    print_result(&overhead);
+    result_t result = process_result(N_RUNS, raw_results->overhead, desc);
+    result_set_t set = {
+        .name = "Ulscheduler measurement overhead",
+        .n_extra_cols = 0,
+        .results = &result,
+        .n_results = 1,
+    };
+    json_array_append_new(array, result_set_to_json(set));
+
+    /* set up num task column */
+    json_int_t column_values[CONFIG_NUM_TASK_SETS];
+    for (json_int_t i = 0; i < CONFIG_NUM_TASK_SETS; i++) {
+        column_values[i] = i + CONFIG_MIN_TASKS;
+    }
+
+    /* describe extra column */
+    column_t extra = {
+        .header = "Tasks",
+        .type = JSON_INTEGER,
+        .integer_array = &column_values[0],
+    };
+
+    /* describe result sets for ulscheduler results */
+    result_t per_task_results[CONFIG_NUM_TASK_SETS];
+    set.name = "EDF (clients call when done)";
+    set.extra_cols = &extra;
+    set.n_extra_cols = 1;
+    set.results = per_task_results;
+    set.n_results = CONFIG_NUM_TASK_SETS;
+
+    /* results won't be stable */
+    desc.stable = false;
+    /* set min overhead calculated above */
+    desc.overhead = result.min;
+
+    process_results(CONFIG_NUM_TASK_SETS, N_RUNS, raw_results->edf_coop, desc, per_task_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "EDF (preempt)";
+    process_results(CONFIG_NUM_TASK_SETS, N_RUNS, raw_results->edf_preempt, desc, per_task_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "CFS (clients call when done)";
+    process_results(CONFIG_NUM_TASK_SETS, N_RUNS, raw_results->cfs_coop, desc, per_task_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    return array;
 }
 
 static benchmark_t ulsched_benchmark = {

@@ -15,7 +15,7 @@
     register seL4_Word scno asm("r7") = syscall; \
     asm volatile (NOPS swi NOPS \
         : /* no outputs */ \
-        : "r" (dest), [swi_num] "i" __SWINUM(syscall), "r"(scno) \
+        : "r" (dest), [swi_num] "i" __SEL4_SWINUM(syscall), "r"(scno) \
         : /* no clobber */ \
     ); \
 } while (0);

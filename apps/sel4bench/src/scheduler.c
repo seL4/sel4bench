@@ -9,82 +9,89 @@
  */
 #include "benchmark.h"
 #include "processing.h"
-#include "printing.h"
+#include "json.h"
 
 #include <scheduler.h>
 #include <stdio.h>
 
-static void
-print_prio_result(result_t *result)
-{
-    printf("Prio\t");
-    print_result_header();
-    int prio = seL4_MinPrio + 1;
-    for (int i = 0; i < N_PRIOS; i++) {
-        printf("%d\t", prio);
-        prio += seL4_WordBits;
-        print_result(&result[i]);
-    }
-}
-
-static void 
+static json_t *
 scheduler_process(void *results) {
-    scheduler_results_t *raw_results;
-    result_t inter_as[N_PRIOS];
-    result_t intra_as[N_PRIOS];
-    result_t thread_yield;
-    result_t process_yield;
-    result_t signal_overhead;
-    result_t yield_overhead;
+    scheduler_results_t *raw_results = results;
 
-    raw_results = (scheduler_results_t *) results;
+    result_desc_t desc = {
+        .stable = true,
+        .name = "Signal overhead",
+        .ignored = N_IGNORED
+    };
 
-    signal_overhead = process_result_ignored(raw_results->overhead_signal, N_RUNS, N_IGNORED, "signal overhead");
-    yield_overhead = process_result_ignored(raw_results->overhead_yield, N_RUNS, N_IGNORED, "yield overhead");
-  
-    /* account for overhead */
-    for (int i = 0; i < N_PRIOS; i++) {
-        for (int j = 0; j < N_RUNS; j++) {
-            raw_results->thread_results[i][j] -= signal_overhead.min;
-            raw_results->process_results[i][j] -= signal_overhead.min;
-        }
-        raw_results->thread_yield[i] -= yield_overhead.min;
-        raw_results->process_yield[i] -= yield_overhead.min;
+    result_t result = process_result(N_RUNS, raw_results->overhead_signal, desc);
+    result_t per_prio_result[N_PRIOS];
+
+    /* signal overhead */
+    json_t *array = json_array();
+    result_set_t set = {
+        .name = "Signal overhead",
+        .n_extra_cols = 0,
+        .results = &result,
+        .n_results = 1,
+    };
+    json_array_append_new(array, result_set_to_json(set));
+
+    /* thread switch overhead */
+    desc.stable = false;
+    desc.overhead = result.min;
+
+    process_results(N_PRIOS, N_RUNS, raw_results->thread_results, desc, per_prio_result);
+
+    /* construct prio column */
+    json_int_t column_values[N_PRIOS];
+    for (json_int_t i = 0; i < N_PRIOS; i++) {
+        /* generate the prios corresponding to the benchmarked prio values */
+        column_values[i] = gen_next_prio(i);
     }
 
-    for (int i = 0; i < N_PRIOS; i++) {
-        intra_as[i] = process_result_ignored(raw_results->thread_results[i],
-                                             N_RUNS, N_IGNORED, "thread switch");
-        inter_as[i] = process_result_ignored(raw_results->process_results[i],
-                                     N_RUNS, N_IGNORED, "process switch");
-    }
+    column_t extra = {
+        .header = "Prio",
+        .type = JSON_INTEGER,
+        .integer_array = &column_values[0]
+    };
 
-    thread_yield = process_result_ignored(raw_results->thread_yield, N_RUNS, N_IGNORED,
-                                  "thread yield");
-    process_yield = process_result_ignored(raw_results->process_yield, N_RUNS, N_IGNORED,
-                                  "process yield");
+    set.name = "Signal to thread of higher prio";
+    set.extra_cols = &extra,
+    set.n_extra_cols = 1,
+    set.results = per_prio_result,
+    set.n_results = N_PRIOS,
 
-    print_banner("Signal overhead", N_RUNS - N_IGNORED);
-    print_result_header();
-    print_result(&signal_overhead);
-    
-    print_banner("Yield overhead", N_RUNS - N_IGNORED);
-    print_result_header();
-    print_result(&yield_overhead);
-    
-    print_banner("Signal to thread of higher prio", N_RUNS - N_IGNORED);
-    print_prio_result(intra_as);
-    
-    print_banner("Signal to process of higher prio", N_RUNS - N_IGNORED);
-    print_prio_result(inter_as);
-    
-    print_banner("Thread yield", N_RUNS - N_IGNORED);
-    print_result_header();
-    print_result(&thread_yield);
-    
-    print_banner("Process yield", N_RUNS - N_IGNORED);
-    print_result_header();
-    print_result(&process_yield);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Signal to process of higher prio";
+    process_results(N_PRIOS, N_RUNS, raw_results->process_results, desc, per_prio_result);
+    json_array_append_new(array, result_set_to_json(set));
+
+    desc.name = "Yield overhead";
+    desc.stable = true;
+
+    result = process_result(N_RUNS, raw_results->overhead_yield, desc);
+
+    set.name = "Yield overhead",
+    set.n_extra_cols = 0,
+    set.results = &result,
+    set.n_results = 1,
+
+    json_array_append_new(array, result_set_to_json(set));
+
+    desc.stable = false;
+    desc.overhead = result.min;
+
+    result = process_result(N_RUNS, raw_results->thread_yield, desc);
+    set.name = "Thread yield";
+    json_array_append_new(array, result_set_to_json(set));
+
+    result = process_result(N_RUNS, raw_results->process_yield, desc);
+    set.name = "Process yield";
+    json_array_append_new(array, result_set_to_json(set));
+
+    return array;
 }
 
 static benchmark_t sched_benchmark = {

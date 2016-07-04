@@ -26,4 +26,20 @@ typedef struct scheduler_results_t {
     ccnt_t overhead_yield[N_RUNS];
 } scheduler_results_t;
 
+static inline uint8_t
+gen_next_prio(int i)
+{
+    /* for the master seL4 kernel, the only thing that effects the length of a
+     * schedule call is how far apart the two prios are that we are switching between.
+     *
+     * So for this benchmark we record the amount of time taken for a
+     * seL4_Signal to take place, causing a higher priority thread to run.
+     *
+     * Since the scheduler hits a different word in the 2nd level bitmap every wordBits
+     * priority, we only test each wordBits prio.
+     */
+    return seL4_MinPrio + 1 + (i * seL4_WordBits);
+}
+
+
 #endif /* __SELBENCH_SCHEDULER_H */

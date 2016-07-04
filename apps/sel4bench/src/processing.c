@@ -19,31 +19,34 @@
 #include "printing.h"
 
 result_t
-process_result(ccnt_t *array, int size, const char *error)
+process_result(size_t n, ccnt_t array[n], result_desc_t desc)
 {
-    result_t result;
+    array = &array[desc.ignored];
+    int size = n - desc.ignored;
 
-    if (error != NULL && !results_stable(array, size)) {
-        ZF_LOGW("%s cycles are not stable\n", error); 
+    if (desc.stable && !results_stable(array, size)) {
+        ZF_LOGW("%s cycles are not stable\n", desc.name == NULL ? "unknown" : desc.name);
         if (ZF_LOG_LEVEL <= ZF_LOG_VERBOSE) {
-            print_all(array, size);
+            print_all(size, array);
+        }
+        if (!config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
+            return (result_t) {0};
         }
     }
 
-    result.min = results_min(array, size);
-    result.max = results_max(array, size);
-    result.mean = results_mean(array, size);
-    result.variance = results_variance(array, result.mean, size);
-    result.stddev = results_stddev(array, result.variance, size);
-    result.stddev_pc = (double) result.stddev / (double) result.mean * 100;
+    for (int i = 0; i < size; i++) {
+        array[i] -= desc.overhead;
+    }
 
-    return result;
+    return calculate_results(size, array);
 }
 
-result_t
-process_result_ignored(ccnt_t *array, int size, int ignored, const char *error)
+void
+process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
+                result_t results[ncols])
 {
-    /* update for ignored values (e.g cold cache numbers) */
-    return process_result(&array[ignored], size - ignored, error);
+    for (int i = 0; i < ncols; i++) {
+        results[i] = process_result(nrows, array[i], desc);
+    }
 }
 

@@ -47,14 +47,14 @@ main(int argc, char **argv)
     ZF_LOGF_IF(timer_periodic(env->timeout_timer->timer, INTERRUPT_PERIOD_NS) != 0,
                "Failed to configure timer\n");
 
-    ZF_LOGF_IF(timer_start(env->timeout_timer->timer) != 0, ("Failed to start timer\n"));
+    ZF_LOGF_IF(timer_start(env->timeout_timer->timer) != 0, "Failed to start timer\n");
 
     sel4bench_init();
 
     /* Record tracepoints for irq path */
     kernel_logging_reset_log();
     for (int i = 0; i < N_INTERRUPTS; ++i) {
-        seL4_Recv(ntfn.cptr, NULL);
+        seL4_Recv(env->ntfn.cptr, NULL);
         /* Each time an interrupt is processed by the kernel,
          * several tracepoints are invoked in the kernel which record
          * cycle counts between pairs of points.
@@ -67,7 +67,7 @@ main(int argc, char **argv)
          * mode). Multiple tracepoints are used to record cycle counts
          * only when a specific path between these two points is followed.
          */
-        sel4_timer_handle_single_irq(timer);
+        sel4_timer_handle_single_irq(env->timeout_timer);
     }
     kernel_logging_finalize_log();
 

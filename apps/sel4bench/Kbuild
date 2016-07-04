@@ -12,20 +12,21 @@ apps-$(CONFIG_APP_SEL4BENCH) += sel4bench
 
 sel4bench-y = common libsel4 $(libc) libsel4vka libsel4allocman \
            libsel4utils libsel4platsupport libsel4muslcsys libsel4bench libplatsupport libelf libcpio libsel4debug \
-           libsel4benchsupport libsel4debug
+           libsel4benchsupport libsel4debug libjansson
 
 sel4bench-$(CONFIG_LIB_SEL4_SIMPLE_DEFAULT) += libsel4simple-default
 
-# benchmarking apps that this app depends on 
+# benchmarking apps that this app depends on
 sel4bench-components-$(CONFIG_APP_IPCBENCH) += ipc
 sel4bench-components-$(CONFIG_APP_IRQBENCH) += irq
 sel4bench-components-$(CONFIG_APP_IRQUSERBENCH) += irquser
 sel4bench-components-$(CONFIG_APP_SCHEDULERBENCH) += scheduler
 sel4bench-components-$(CONFIG_APP_ULSCHEDULERBENCH) += ulscheduler
 sel4bench-components-$(CONFIG_APP_SIGNALBENCH) += signal
+sel4bench-components-$(CONFIG_APP_FAULTBENCH) += fault
 
 sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y))
 
 sel4bench: export COMPONENTS=${sel4bench-components}
-sel4bench: ${sel4bench-components-y} kernel_elf $(sel4bench-y) 
+sel4bench: ${sel4bench-components-y} kernel_elf $(sel4bench-y)
 

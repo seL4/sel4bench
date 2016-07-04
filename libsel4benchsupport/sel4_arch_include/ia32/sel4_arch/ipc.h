@@ -11,8 +11,6 @@
 #ifndef __SEL4_ARCH_IPC_H
 #define __SEL4_ARCH_IPC_H
 
-#define ALLOW_UNSTABLE_OVERHEAD
-
 #include <sel4bench/arch/sel4bench.h>
 
 #define DO_CALL(ep, tag, sys) do { \

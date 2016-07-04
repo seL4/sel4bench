@@ -23,7 +23,7 @@ benchmark_arch_get_timers(env_t *env)
     env->timeout_timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace, &env->simple,
                                                            env->ntfn.cptr);
     ZF_LOGF_IF(env->timeout_timer == NULL, "Failed to create timeout timer");
-    
+
     uint64_t tsc_freq = tsc_calculate_frequency(env->timeout_timer->timer) / US_IN_S;
     env->clock_timer = sel4platsupport_get_tsc_timer_freq(tsc_freq);
     ZF_LOGF_IF(env->clock_timer == NULL, "Failed to start clock timer");
@@ -32,10 +32,10 @@ benchmark_arch_get_timers(env_t *env)
 static seL4_Error
 get_msi(UNUSED void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
         UNUSED seL4_Word pci_bus, UNUSED seL4_Word pci_dev, UNUSED seL4_Word pci_func,
-        UNUSED seL4_Word handle, seL4_Word vector) 
+        UNUSED seL4_Word handle, seL4_Word vector)
 {
     assert(vector == (DEFAULT_TIMER_INTERRUPT + IRQ_OFFSET));
-    
+
     UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
                                               SEL4UTILS_CNODE_SLOT, TIMEOUT_TIMER_IRQ_SLOT, seL4_WordBits);
     assert(error == seL4_NoError);

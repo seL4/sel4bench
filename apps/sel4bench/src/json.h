@@ -8,11 +8,11 @@
  * @TAG(NICTA_GPL)
  */
 
-#ifndef __SEL4BENCH_MATH_H
-#define __SEL4BENCH_MATH_H
+#pragma once
 
 #include "benchmark.h"
+#include <jansson.h>
+#include <sel4bench/sel4bench.h>
 
-result_t calculate_results(const size_t n, ccnt_t data[n]);
+json_t *result_set_to_json(result_set_t set);
 
-#endif /* __SEL4BENCH_MATH_H */

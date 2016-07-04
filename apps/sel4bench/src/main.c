@@ -36,8 +36,6 @@
 #include "printing.h"
 #include "processing.h"
 
-char _cpio_archive[1];
-
 /* Contains information about the benchmark environment. */
 static struct env {
     /* An initialised vka that may be used by the test. */
@@ -119,7 +117,7 @@ init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
         ZF_LOGF_IFERR(sel4platsupport_copy_irq_cap(vka, simple, DEFAULT_TIMER_INTERRUPT, &path),
                       "Failed to get timer interrupt");
 #endif
-    
+
     cap = sel4utils_move_cap_to_process(process, path, vka);
     assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
 
@@ -167,11 +165,11 @@ init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
 }
 
 int
-run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *local_results_vaddr) 
+run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *local_results_vaddr)
 {
     int error;
     sel4utils_process_t process;
-    
+
     /* configure benchmark process */
     error = sel4utils_configure_process(&process, &env->simple, &env->vka, &env->vspace, seL4_MaxPrio, benchmark->name);
     if (error != 0) {
@@ -180,7 +178,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 
     /* copy untyped to process */
     cspacepath_t path;
-    vka_cspace_make_path(&env->vka, untyped->cptr, &path); 
+    vka_cspace_make_path(&env->vka, untyped->cptr, &path);
     UNUSED seL4_CPtr slot = sel4utils_copy_cap_to_process(&process, path);
     assert(slot == UNTYPED_SLOT);
 
@@ -196,9 +194,9 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 #ifdef CONFIG_DEBUG_BUILD
     seL4_DebugNameThread(process.thread.tcb.cptr, benchmark->name);
 #endif
- 
+
     /* set up shared memory for results */
-    void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr, 
+    void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr,
                                                   benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
 
     /* initialise timers for benchmark environment */
@@ -212,8 +210,8 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
     seL4_Word argc = 4;
     char args[4][WORD_STRING_SIZE];
     char *argv[argc];
-    sel4utils_create_word_args(args, argv, argc, untyped->size_bits, stack_vaddr, stack_pages, 
-                               (seL4_Word) remote_results_vaddr); 
+    sel4utils_create_word_args(args, argv, argc, untyped->size_bits, stack_vaddr, stack_pages,
+                               (seL4_Word) remote_results_vaddr);
     /* start process */
     error = sel4utils_spawn_process_v(&process, &env->vka, &env->vspace, argc, argv, 1);
     if (error) {
@@ -242,18 +240,18 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 
     /* destroy the process */
     sel4utils_destroy_process(&process, &env->vka);
-    
+
    return result;
 }
 
-void 
+json_t *
 launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
 {
     ZF_LOGV("\n%s Benchmarks\n==============\n\n", benchmark->name);
 
     /* reserve memory for the results */
     void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark->results_pages, seL4_PageBits);
-    
+
     if (results == NULL) {
         ZF_LOGF("Failed to allocate pages for results");
     }
@@ -262,13 +260,15 @@ launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
     int exit_code = run_benchmark(env, benchmark, untyped, results);
 
     /* process & print results */
+    json_t *json = NULL;
     if (exit_code == EXIT_SUCCESS) {
-        benchmark->process(results);
+        json = benchmark->process(results);
     }
 
     /* free results */
     vspace_unmap_pages(&env->vspace, results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
 
+    return json;
 }
 
 void
@@ -308,19 +308,35 @@ main_continued(void *arg)
         scheduler_benchmark_new(),
         signal_benchmark_new(),
         ulscheduler_benchmark_new(),
+        fault_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */
         NULL
     };
 
+    json_t *output = json_array();
+    assert(output != NULL);
+
     /* run the benchmarks */
     for (int i = 0; benchmarks[i] != NULL; i++) {
         if (benchmarks[i]->enabled) {
-            launch_benchmark(benchmarks[i], &global_env, &untyped);
+            json_t *result = launch_benchmark(benchmarks[i], &global_env, &untyped);
+            if (result == NULL) {
+                ZF_LOGF("Failed to run benchmark %s", benchmarks[i]->name);
+            }
+            UNUSED int error = json_array_extend(output, result);
+            assert(error == 0);
+
         }
     }
 
+    printf("JSON OUTPUT\n");
+    int error = json_dumpf(output, stdout, JSON_PRESERVE_ORDER | JSON_INDENT(CONFIG_JSON_INDENT));
+    if (error) {
+        ZF_LOGF("Failed to dump output");
+    }
+    printf("END JSON OUTPUT\n");
     printf("All is well in the universe.\n");
     printf("\n\nFin\n");
 

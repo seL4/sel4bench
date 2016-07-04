@@ -127,7 +127,7 @@ init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits)
 
 static void
 init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
-            size_t stack_pages, uintptr_t stack_vaddr, uintptr_t results_addr, 
+            size_t stack_pages, uintptr_t stack_vaddr, uintptr_t results_addr,
             size_t results_bytes)
 {
     int index;
@@ -153,7 +153,7 @@ get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
 {
     path->root = SEL4UTILS_CNODE_SLOT;
     path->capDepth = seL4_WordBits;
-   
+
     switch ((uintptr_t) paddr) {
     case DEFAULT_TIMER_PADDR:
         path->capPtr = TIMEOUT_TIMER_FRAME_SLOT;
@@ -200,7 +200,7 @@ init_cap(void *data, seL4_CPtr cap)
 }
 
 static void
-get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio, void *entry_point) 
+get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio, void *entry_point)
 {
     bzero(config, sizeof(sel4utils_process_config_t));
     config->is_elf = false;
@@ -222,7 +222,7 @@ get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio,
 }
 
 void
-benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point, 
+benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point,
                                 char *name)
 {
     int error;
@@ -230,7 +230,7 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
 
     get_process_config(env, &config, prio, entry_point);
     error = sel4utils_configure_process_custom(process, &env->simple, &env->vka, &env->vspace, config);
-    
+
     if (error) {
         ZF_LOGF("Failed to configure process %s", name);
     }
@@ -239,7 +239,7 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
      * segment, you will not be able to use anything that relies on initialisation in benchmark
      * threads - like printf, (but seL4_Debug_PutChar is ok)
      */
-    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace, 
+    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace,
                                                   env->region.reservation);
     if (error) {
         ZF_LOGF("Failed to bootstrap clone into vspace for %s", name);
@@ -252,7 +252,7 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
 
 void
 benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
-                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point, 
+                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point,
                                       char *name)
 {
     int error;
@@ -271,11 +271,11 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
 
 #ifdef CONFIG_DEBUG_BUILD
     seL4_DebugNameThread(thread->thread.tcb.cptr, name);
-#endif 
+#endif
 }
 
 void
-benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread) 
+benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread)
 {
 
     seL4_CapData_t guard = seL4_CapData_Guard_new(0, seL4_WordBits -
@@ -292,7 +292,7 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
 }
 
 void
-benchmark_wait_children(seL4_CPtr ep, char *name, int num_children) 
+benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
 {
     for (int i = 0; i < num_children; i++) {
         seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);

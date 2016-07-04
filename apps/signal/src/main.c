@@ -18,7 +18,6 @@
 #include <signal.h>
 
 #define NOPS ""
-#define __SWINUM(x) ((x) & 0x00ffffff)
 
 #include <arch/signal.h>
 

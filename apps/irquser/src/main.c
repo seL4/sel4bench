@@ -48,7 +48,7 @@ spinner_fn(int argc, char **argv)
 
     while (1) {
         /* just take the low bits so the reads are atomic */
-        SEL4BENCH_READ_CCNT(*current_time);    
+        SEL4BENCH_READ_CCNT(*current_time);
     }
 }
 
@@ -95,8 +95,8 @@ main(int argc, char **argv)
     if (vka_alloc_endpoint(&env->vka, &endpoint) != 0) {
         ZF_LOGF("Failed to allocate endpoint\n");
     }
-    
-    /* set globals */
+
+    /* set up globals */
     done_ep = endpoint.cptr;
     timer = env->timeout_timer;
     timer_signal = env->ntfn.cptr;
@@ -130,8 +130,8 @@ main(int argc, char **argv)
     /* first run the benchmark between two threads in the current address space */
     benchmark_configure_thread(env, endpoint.cptr, seL4_MaxPrio - 1, "ticker", &ticker);
     benchmark_configure_thread(env, endpoint.cptr, seL4_MaxPrio - 2, "spinner", &spinner);
-    
-    error = sel4utils_start_thread(&ticker, ticker_fn, (void *) results->thread_results, 
+
+    error = sel4utils_start_thread(&ticker, ticker_fn, (void *) results->thread_results,
                                    (void *) local_current_time, true);
     if (error) {
         ZF_LOGF("Failed to start ticker");
@@ -149,14 +149,14 @@ main(int argc, char **argv)
     /* stop spinner thread */
     error = seL4_TCB_Suspend(spinner.tcb.cptr);
     assert(error == seL4_NoError);
-    
+
     error = seL4_TCB_Suspend(ticker.tcb.cptr);
     assert(error == seL4_NoError);
-    
+
     /* now run the benchmark again, but run the spinner in another address space */
-    
+
     /* restart ticker */
-    error = sel4utils_start_thread(&ticker, ticker_fn, (void *) results->process_results, 
+    error = sel4utils_start_thread(&ticker, ticker_fn, (void *) results->process_results,
                                    (void *) local_current_time, true);
     assert(!error);
 

@@ -7,9 +7,11 @@
  *
  * @TAG(NICTA_GPL)
  */
+#include <autoconf.h>
+
 #include "benchmark.h"
 #include "processing.h"
-#include "printing.h"
+#include "json.h"
 
 #include <irq.h>
 #include <sel4platsupport/device.h>
@@ -22,11 +24,15 @@
 #define TRACE_POINT_IRQ_PATH_START 1
 #define TRACE_POINT_IRQ_PATH_END 2
 
+#ifndef CONFIG_MAX_NUM_TRACE_POINTS
+#define CONFIG_MAX_NUM_TRACE_POINTS 0
+#endif
+
 static ccnt_t kernel_log_data[KERNEL_MAX_NUM_LOG_ENTRIES];
 static unsigned int offsets[CONFIG_MAX_NUM_TRACE_POINTS];
 static unsigned int sizes[CONFIG_MAX_NUM_TRACE_POINTS];
 
-static void 
+static json_t *
 process(void *results) {
      irq_results_t *irq_results = (irq_results_t *) results;
 
@@ -53,7 +59,6 @@ process(void *results) {
     }
 
     ccnt_t *overhead_data = &kernel_log_data[offsets[TRACE_POINT_OVERHEAD] + N_IGNORED];
-    result_t overhead_result = process_result(overhead_data, n_overhead_data, NULL);
 
     /* The results of the IRQ path benchmark are split over multiple tracepoints.
      * A new buffer is allocated to store the amalgamated results. */
@@ -67,6 +72,18 @@ process(void *results) {
         ZF_LOGF("Failed to allocate memory\n");
     }
 
+    json_t *array = json_array();
+    result_desc_t desc = {0};
+    result_t result = process_result(n_overhead_data, overhead_data, desc);
+
+    result_set_t set = {
+        .name = "Tracepoint overhead",
+        .n_results = 1,
+        .results = &result,
+    };
+
+    json_array_append_new(array, result_set_to_json(set));
+
     /* Add the results from the IRQ path tracepoints to get the total IRQ path cycle counts.
      * The average overhead is subtracted from each cycle count (doubled as there are 2
      * tracepoints) to account for overhead added to the cycle counts by use of tracepoints.
@@ -74,23 +91,17 @@ process(void *results) {
     ccnt_t *starts = &kernel_log_data[offsets[TRACE_POINT_IRQ_PATH_START] + N_IGNORED];
     ccnt_t *ends = &kernel_log_data[offsets[TRACE_POINT_IRQ_PATH_END] + N_IGNORED];
     for (int i = 0; i < n_data; ++i) {
-        data[i] = starts[i] + ends[i] - (overhead_result.mean * 2);
+        data[i] = starts[i] + ends[i] - (result.mean * 2);
     }
 
-    print_banner("Tracepoint Overhead", n_overhead_data);
-    result_t result = process_result(overhead_data, n_overhead_data, NULL);
-    print_result_header();
-    print_result(&result);
-    printf("\n");
+    set.name = "IRQ Path Cycle Count (accounting for overhead)";
 
-    print_banner("IRQ Path Cycle Count (accounting for overhead)", n_data);
-    
-    result = process_result(data, n_data, NULL);
-    print_result_header();
-    print_result(&result);
-    printf("\n");
+    result = process_result(n_data, data, desc);
+    json_array_append_new(array, result_set_to_json(set));
 
     free(data);
+
+    return array;
 }
 
 
@@ -108,35 +119,43 @@ irq_benchmark_new(void)
     return &irq_benchmark;
 }
 
-static void 
-irquser_process(void *results) {
-    irquser_results_t *raw_results;
-    result_t interas_result;
-    result_t intraas_result;
-    result_t overhead;
+static json_t *
+irquser_process(void *r) {
+    irquser_results_t *raw_results = r;
 
-    raw_results = (irquser_results_t *) results;
+    result_desc_t desc = {
+        .ignored = N_IGNORED,
+        .name = "IRQ user measurement overhead"
+    };
 
-    overhead = process_result_ignored(raw_results->overheads, N_RUNS, N_IGNORED, "overhead");
-  
-    /* account for overhead */
-    for (int i = 0; i < N_RUNS; i++) {
-        raw_results->thread_results[i] -= overhead.min;
-        raw_results->process_results[i] -= overhead.min;
-    }
+    result_t results[3];
 
-    intraas_result = process_result_ignored(raw_results->thread_results, N_RUNS, N_IGNORED, "thread irq");
-    interas_result = process_result_ignored(raw_results->process_results, N_RUNS, N_IGNORED, "process irq");
+    results[0] = process_result(N_RUNS, raw_results->overheads, desc);
 
-    print_banner("IRQ Path Cycle Count (measured from user level)", N_RUNS - N_IGNORED);
-    printf("Type\t");
-    print_result_header();
-    printf("Measurement overhead\t");
-    print_result(&overhead);
-    printf("Without context switch\t");
-    print_result(&intraas_result);
-    printf("With context switch\t");
-    print_result(&interas_result);
+    desc.overhead = results[0].min;
+
+    results[1] = process_result(N_RUNS, raw_results->thread_results, desc);
+    results[2] = process_result(N_RUNS, raw_results->process_results, desc);
+
+    char *types[] = {"Measurement overhead", "Without context switch", "With context switch"};
+
+    column_t col = {
+        .header = "Type",
+        .type = JSON_STRING,
+        .string_array = types
+    };
+
+    result_set_t set = {
+        .name = "IRQ path cycle count (measured from user level)",
+        .n_results = 3,
+        .results = results,
+        .n_extra_cols = 1,
+        .extra_cols = &col
+    };
+
+    json_t *json = json_array();
+    json_array_append_new(json, result_set_to_json(set));
+    return json;
 }
 
 static benchmark_t irquser_benchmark = {
@@ -148,7 +167,7 @@ static benchmark_t irquser_benchmark = {
 };
 
 benchmark_t *
-irquser_benchmark_new(void) 
+irquser_benchmark_new(void)
 {
    return &irquser_benchmark;
 }

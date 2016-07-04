@@ -41,3 +41,8 @@ simulate-ia32:
 	qemu-system-i386 \
 		-m 512 -nographic -kernel images/kernel-ia32-pc99 \
 		-initrd images/sel4bench-image-ia32-pc99
+
+simulate-x86_64:
+	qemu-system-x86_64 \
+		-m 512 -nographic -kernel images/kernel-x86_64-pc99 \
+		-initrd images/sel4bench-image-x86_64-pc99 -cpu Haswell
