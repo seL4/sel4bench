@@ -14,21 +14,42 @@
 #include <scheduler.h>
 #include <stdio.h>
 
-static json_t *
-scheduler_process(void *results) {
-    scheduler_results_t *raw_results = results;
+static void
+process_yield_results(scheduler_results_t *results, ccnt_t overhead, json_t *array)
+{
+    result_desc_t desc = {
+        .ignored = N_IGNORED,
+        .overhead = overhead,
+    };
 
+    result_t result;
+    result_set_t set = {
+        .name = "Thread yield",
+        .n_extra_cols = 0,
+        .results = &result,
+        .n_results = 1,
+    };
+
+    result = process_result(N_RUNS, results->thread_yield, desc);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Process yield";
+    result = process_result(N_RUNS, results->process_yield, desc);
+    json_array_append_new(array, result_set_to_json(set));
+}
+
+static void
+process_scheduler_results(scheduler_results_t *results, json_t *array)
+{
     result_desc_t desc = {
         .stable = true,
         .name = "Signal overhead",
         .ignored = N_IGNORED
     };
-
-    result_t result = process_result(N_RUNS, raw_results->overhead_signal, desc);
+    result_t result = process_result(N_RUNS, results->overhead_signal, desc);
     result_t per_prio_result[N_PRIOS];
 
     /* signal overhead */
-    json_t *array = json_array();
     result_set_t set = {
         .name = "Signal overhead",
         .n_extra_cols = 0,
@@ -41,7 +62,7 @@ scheduler_process(void *results) {
     desc.stable = false;
     desc.overhead = result.min;
 
-    process_results(N_PRIOS, N_RUNS, raw_results->thread_results, desc, per_prio_result);
+    process_results(N_PRIOS, N_RUNS, results->thread_results, desc, per_prio_result);
 
     /* construct prio column */
     json_int_t column_values[N_PRIOS];
@@ -61,35 +82,38 @@ scheduler_process(void *results) {
     set.n_extra_cols = 1,
     set.results = per_prio_result,
     set.n_results = N_PRIOS,
-
     json_array_append_new(array, result_set_to_json(set));
 
     set.name = "Signal to process of higher prio";
-    process_results(N_PRIOS, N_RUNS, raw_results->process_results, desc, per_prio_result);
+    process_results(N_PRIOS, N_RUNS, results->process_results, desc, per_prio_result);
+    json_array_append_new(array, result_set_to_json(set));
+}
+
+static json_t *
+scheduler_process(void *results) {
+    scheduler_results_t *raw_results = results;
+    json_t *array = json_array();
+
+    process_scheduler_results(raw_results, array);
+
+    result_desc_t desc = {
+        .name = "Read ccnt overhead",
+        .stable = true,
+        .ignored = N_IGNORED,
+    };
+
+    result_t ccnt_overhead = process_result(N_RUNS, raw_results->overhead_ccnt, desc);
+
+    result_set_t set = {
+        .name = "Read ccnt overhead",
+        .n_extra_cols = 0,
+        .results = &ccnt_overhead,
+        .n_results = 1
+    };
+
     json_array_append_new(array, result_set_to_json(set));
 
-    desc.name = "Yield overhead";
-    desc.stable = true;
-
-    result = process_result(N_RUNS, raw_results->overhead_yield, desc);
-
-    set.name = "Yield overhead",
-    set.n_extra_cols = 0,
-    set.results = &result,
-    set.n_results = 1,
-
-    json_array_append_new(array, result_set_to_json(set));
-
-    desc.stable = false;
-    desc.overhead = result.min;
-
-    result = process_result(N_RUNS, raw_results->thread_yield, desc);
-    set.name = "Thread yield";
-    json_array_append_new(array, result_set_to_json(set));
-
-    result = process_result(N_RUNS, raw_results->process_yield, desc);
-    set.name = "Process yield";
-    json_array_append_new(array, result_set_to_json(set));
+    process_yield_results(raw_results, ccnt_overhead.min, array);
 
     return array;
 }

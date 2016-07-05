@@ -23,7 +23,7 @@ typedef struct scheduler_results_t {
     
     ccnt_t thread_yield[N_RUNS];
     ccnt_t process_yield[N_RUNS];
-    ccnt_t overhead_yield[N_RUNS];
+    ccnt_t overhead_ccnt[N_RUNS];
 } scheduler_results_t;
 
 static inline uint8_t
