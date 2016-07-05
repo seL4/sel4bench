@@ -321,7 +321,7 @@ main(int argc, char **argv)
     
     /* measure overhead */    
     measure_signal_overhead(produce.cptr, results->overhead_signal);
-    measure_yield_overhead(results->overhead_yield);
+    measure_yield_overhead(results->overhead_ccnt);
     /* for the master seL4 kernel, the only thing that effects the length of a
      * schedule call is how far apart the two prios are that we are switching between.
      *
