@@ -176,6 +176,17 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
         ZF_LOGF("Failed to configure process for %s benchmark", benchmark->name);
     }
 
+    /* set criticality */
+    error = seL4_TCB_SetCriticality(process.thread.tcb.cptr, seL4_MaxCrit);
+    if (error != seL4_NoError) {
+        ZF_LOGF("Failed to set criticality for %s benchmark", benchmark->name);
+    }
+
+    error = seL4_TCB_SetMCCriticality(process.thread.tcb.cptr, seL4_MaxCrit);
+    if (error != seL4_NoError) {
+        ZF_LOGF("Failed to set mccriticality for %s benchmark", benchmark->name);
+    }
+
     /* copy untyped to process */
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, untyped->cptr, &path);

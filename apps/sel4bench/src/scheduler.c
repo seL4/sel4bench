@@ -89,6 +89,53 @@ process_scheduler_results(scheduler_results_t *results, json_t *array)
     json_array_append_new(array, result_set_to_json(set));
 }
 
+static void
+process_criticality_results(scheduler_results_t *results, ccnt_t overhead, json_t *array)
+{
+    json_int_t num_threads_col[NUM_THREAD_SIZES];
+
+    /* set up columns */
+    column_t extra = {
+        .header = "lo threads",
+        .type = JSON_INTEGER,
+        .integer_array = &num_threads_col[0],
+    };
+
+    for (int i = 0; i < NUM_THREAD_SIZES; i++) {
+        num_threads_col[i] = BIT(i);
+    }
+
+    result_desc_t desc = {
+        .ignored = N_IGNORED,
+        .overhead = overhead,
+    };
+
+    result_t crit_results[NUM_THREAD_SIZES];
+    result_set_t set = {
+        .n_extra_cols = 1,
+        .extra_cols = &extra,
+        .results = crit_results,
+        .n_results = ARRAY_SIZE(crit_results),
+    };
+
+    set.name = "Vary lo threads (switch up)";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo[UP], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Vary lo threads (switch down)";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo[DOWN], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    extra.header = "hi threads";
+    set.name = "Vary hi threads (switch up)";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi[UP], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Vary hi threads (switch down)";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi[DOWN], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+}
+
 static json_t *
 scheduler_process(void *results) {
     scheduler_results_t *raw_results = results;
@@ -114,7 +161,7 @@ scheduler_process(void *results) {
     json_array_append_new(array, result_set_to_json(set));
 
     process_yield_results(raw_results, ccnt_overhead.min, array);
-
+    process_criticality_results(raw_results, ccnt_overhead.min, array);
     return array;
 }
 
