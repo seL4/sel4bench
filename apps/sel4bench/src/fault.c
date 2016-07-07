@@ -44,6 +44,10 @@ fault_process(void *results) {
     result = process_result(N_RUNS, raw_results->round_trip, desc);
     json_array_append_new(array, result_set_to_json(set));
 
+    set.name = "fault round trip (passive handler)";
+    result = process_result(N_RUNS, raw_results->round_trip_passive, desc);
+    json_array_append_new(array, result_set_to_json(set));
+
     set.name = "faulter -> fault handler";
     result = process_result(N_RUNS, raw_results->fault, desc);
     json_array_append_new(array, result_set_to_json(set));

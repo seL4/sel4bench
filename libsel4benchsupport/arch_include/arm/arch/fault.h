@@ -40,3 +40,9 @@ seL4_ReplyWith1MR(seL4_Word mr0)
     return seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 1), &mr0, NULL, NULL, NULL);
 }
 
+static inline seL4_MessageInfo_t
+seL4_SignalRecvWith1MR(seL4_CPtr dest, seL4_CPtr src, seL4_Word *mr0)
+{
+    return seL4_SignalRecvWithMRs(dest, src, NULL, mr0, NULL, NULL, NULL);
+}
+

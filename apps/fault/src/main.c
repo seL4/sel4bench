@@ -21,7 +21,7 @@
 #define NOPS ""
 #include <arch/fault.h>
 
-#define N_FAULTER_ARGS 3
+#define N_FAULTER_ARGS 4
 #define N_HANDLER_ARGS 4
 
 void
@@ -157,15 +157,19 @@ static void
 measure_fault_roundtrip_fn(int argc, char **argv)
 {
     assert(argc == N_FAULTER_ARGS);
-    fault_results_t *results = (fault_results_t *) atol(argv[1]);
+    fault_results_t *fault_results = (fault_results_t *) atol(argv[1]);
     seL4_CPtr done_ep = atol(argv[2]);
+    bool passive = atol(argv[3]);
+
+    ccnt_t *results = passive ? fault_results->round_trip :
+                                fault_results->round_trip_passive;
 
     for (int i = 0; i < N_RUNS + 1; i++) {
         ccnt_t start, end;
         SEL4BENCH_READ_CCNT(start);
         fault();
         SEL4BENCH_READ_CCNT(end);
-        results->round_trip[i] = end - start;
+        results[i] = end - start;
     }
     seL4_Signal(done_ep);
 }
@@ -180,6 +184,26 @@ measure_fault_roundtrip_handler_fn(int argc, char **argv)
     parse_handler_args(argc, argv, &ep, &start, &results, &done_ep);
 
     seL4_Word ip = fault_handler_start(ep);
+    for (int i = 0; i < N_RUNS; i++) {
+        /* wait for fault */
+        ip += UD_INSTRUCTION_SIZE;
+        DO_REAL_REPLY_RECV_1(ep, ip);
+    }
+    fault_handler_done(ep, ip, done_ep);
+}
+
+static void
+measure_fault_roundtrip_passive_handler_fn(int argc, char **argv)
+{
+    seL4_CPtr ep, done_ep;
+    UNUSED volatile ccnt_t *start;
+    fault_results_t *results;
+
+    parse_handler_args(argc, argv, &ep, &start, &results, &done_ep);
+
+    /* signal driver to convert us to passive and wait for first fault */
+    seL4_Word ip;
+    seL4_SignalRecvWith1MR(done_ep, ep, &ip);
     for (int i = 0; i < N_RUNS; i++) {
         /* wait for fault */
         ip += UD_INSTRUCTION_SIZE;
@@ -207,7 +231,7 @@ run_fault_benchmark(env_t *env, fault_results_t *results)
     sel4utils_thread_t faulter;
 
     sel4utils_create_word_args(faulter_args, faulter_argv, N_FAULTER_ARGS, (seL4_Word) &start,
-                               (seL4_Word) results, done_ep.cptr);
+                               (seL4_Word) results, done_ep.cptr, false);
     benchmark_configure_thread(env, fault_endpoint.cptr, seL4_MinPrio + 1, "faulter", &faulter);
 
     /* create fault handler */
@@ -245,6 +269,33 @@ run_fault_benchmark(env_t *env, fault_results_t *results)
                                    (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
     assert(error == 0);
     benchmark_wait_children(done_ep.cptr, "fault handler", 2);
+
+    /* stop both threads so they are not waiting on endpoints ->
+     * otherwise the next benchmark will fail */
+    error = seL4_TCB_Suspend(fault_handler.tcb.cptr);
+    assert(error == seL4_NoError);
+    error = seL4_TCB_Suspend(faulter.tcb.cptr);
+    assert(error == seL4_NoError);
+
+    /* benchmark round_trip with passive fault handler */
+    error = sel4utils_start_thread(&fault_handler, measure_fault_roundtrip_passive_handler_fn,
+                                   (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
+    assert(error == 0);
+    /* convert fault handler to passive */
+    seL4_Recv(done_ep.cptr, NULL);
+    error = seL4_SchedContext_Unbind(fault_handler.sched_context.cptr);
+    assert(error == 0);
+
+    /* update args so faulter knows to record passive results */
+    sel4utils_create_word_args(faulter_args, faulter_argv, N_FAULTER_ARGS, (seL4_Word) &start,
+                               (seL4_Word) results, done_ep.cptr, true);
+    error = sel4utils_start_thread(&faulter, measure_fault_roundtrip_fn,
+                                   (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
+    assert(error == 0);
+    benchmark_wait_children(done_ep.cptr, "fault handler", 1);
+    /* convert fault handler back to active to finish */
+    seL4_SchedContext_Bind(fault_handler.sched_context.cptr, fault_handler.tcb.cptr);
+    benchmark_wait_children(done_ep.cptr, "fault handler", 1);
 }
 
 void

@@ -25,5 +25,6 @@ typedef struct {
     ccnt_t round_trip[N_RUNS + 1];
     ccnt_t fault[N_RUNS + 1];
     ccnt_t fault_reply[N_RUNS + 1];
+    ccnt_t round_trip_passive[N_RUNS + 1];
 } fault_results_t;
 
