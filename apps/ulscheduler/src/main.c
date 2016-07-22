@@ -19,7 +19,6 @@
 #include <sel4utils/sched.h>
 #include <sel4utils/sel4_zf_logif.h>
 #include <vka/capops.h>
-#include <sel4/tfIPC.h>
 #include <benchmark.h>
 #include <ulscheduler.h>
 
