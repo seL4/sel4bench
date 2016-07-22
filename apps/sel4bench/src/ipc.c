@@ -26,7 +26,7 @@ process_ipc_results(void *r)
 
     /* check overheads */
     for (int i = 0; i < NUM_OVERHEAD_BENCHMARKS; i++) {
-        if (!results_stable(raw_results->overhead_benchmarks[i], RUNS)) {
+        if (!results_stable(&raw_results->overhead_benchmarks[i][1] , RUNS - 1)) {
             if (!config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
                 printf("Benchmarking overhead of a %s is not stable! Cannot continue\n",
                         overhead_benchmark_params[i].name);
