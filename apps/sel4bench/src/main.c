@@ -320,6 +320,7 @@ main_continued(void *arg)
         signal_benchmark_new(),
         ulscheduler_benchmark_new(),
         fault_benchmark_new(),
+        timeout_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */

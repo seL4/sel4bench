@@ -50,6 +50,7 @@ menu "seL4 Applications"
     source "apps/signal/Kconfig"
     source "apps/ulscheduler/Kconfig"
     source "apps/fault/Kconfig"
+    source "apps/timeout/Kconfig"
 endmenu
 
 menu "Tools"

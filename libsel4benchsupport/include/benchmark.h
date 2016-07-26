@@ -10,6 +10,7 @@
 #ifndef __BENCHMARK_H
 #define __BENCHMARK_H
 
+#include <sel4/sel4.h>
 #include <allocman/vka.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4platsupport/timer.h>

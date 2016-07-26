@@ -91,6 +91,20 @@
             );                                  \
 } while (0)
 
+#define DO_REPLY_10(tag, sys) do { \
+    asm volatile(                               \
+            "movq   %%rsp, %%rbx \n"            \
+            sys" \n"                            \
+            "movq   %%rbx, %%rsp \n"            \
+            :                                   \
+            "+S" (tag)                         \
+            :                                   \
+            "d" ((seL4_Word)seL4_SysReply)             \
+            :                                   \
+            "rcx","rbx","r11","r10","r8"        \
+            );                                  \
+} while (0)
+
 #define DO_RECV(ep, sys) do { \
     uint64_t ep_copy = ep; \
     uint64_t tag = 0; \
@@ -145,6 +159,7 @@
 #define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_RECV(ep) DO_RECV(ep, "syscall")
 #define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
+#define DO_NOP_REPLY_10(tag) DO_REPLY_10(tag, ".byte 0x66\n.byte 0x90")
 
 
 #endif /* __SEL4_ARCH_IPC_H */

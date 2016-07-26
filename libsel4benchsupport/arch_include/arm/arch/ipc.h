@@ -77,6 +77,16 @@
     ); \
 } while(0)
 
+#define DO_REPLY_10(tag, swi) do { \
+    register seL4_MessageInfo_t info asm("r1") = tag; \
+    register seL4_Word scno asm("r7") = seL4_SysReply; \
+    asm volatile(NOPS swi NOPS \
+        : "+r"(info) \
+        : [swi_num] "i" __SEL4_SWINUM(seL4_SysReply), "r"(scno) \
+        : "r2", "r3", "r4", "r5" \
+    ); \
+} while(0)
+
 #define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "swi %[swi_num]")
 #define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, "nop")
 #define DO_REAL_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, "swi %[swi_num]")
@@ -89,5 +99,6 @@
 #define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, "nop")
 #define DO_REAL_RECV(ep) DO_RECV(ep, "swi %[swi_num]")
 #define DO_NOP_RECV(ep) DO_RECV(ep, "nop")
+#define DO_NOP_REPLY_10(tag) DO_REPLY_10(tag, "nop")
 
 #endif /* __ARCH_IPC_H */
