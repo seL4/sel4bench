@@ -11,6 +11,12 @@
 config APP_FAULTBENCH
     bool "Fault handler benchmarks"
     depends on APP_SEL4BENCH
+    # the fault benchmark triggers an undefined instruction, which does not work on
+    # armv6 as undefined instruction is leveraged to read the cycle count efficiently
+    # when benchmarking seL4. This only occurs when CONFIG_DANGEROUS_CODE_INJECTION
+    # is enabled, however this option is enabled by sel4bench in order to read the cycle
+    # counter.
+    depends on !ARCH_ARM_V6
     default y
     depends on LIB_SEL4 && HAVE_LIBC && LIB_SEL4_ALLOCMAN && LIB_UTILS && LIB_SEL4_UTILS && \
     LIB_SEL4_BENCH && LIB_ELF && LIB_SEL4_SIMPLE && LIB_SEL4_VKA && \
