@@ -30,12 +30,11 @@ include tools/common/project.mk
 # Some example qemu invocations
 
 simulate-kzm:
-	/opt/ertos/simulators-x86_64/qemu-arm -nographic -M kzm \
+	qemu-system-arm -nographic -M kzm \
 		-kernel images/sel4bench-image-arm-imx31
 
 simulate-beagle:
-	/opt/ertos/simulators-x86_64/qemu-arm -nographic -M beagle \
-		-kernel images/sel4bench-image-arm-omap3
+	beagle_run_elf images/sel4bench-image-arm-omap3
 
 simulate-ia32:
 	qemu-system-i386 \
