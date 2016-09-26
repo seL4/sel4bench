@@ -111,7 +111,7 @@ init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits)
 
     /* add untyped memory */
     vka_cspace_make_path(vka, UNTYPED_SLOT, &path);
-    error = allocman_utspace_add_uts(allocator, 1, &path, &untyped_size_bits, &paddr);
+    error = allocman_utspace_add_uts(allocator, 1, &path, &untyped_size_bits, &paddr, ALLOCMAN_UT_KERNEL);
     if (error) {
         ZF_LOGF("Failed to add untyped to allocator");
     }
