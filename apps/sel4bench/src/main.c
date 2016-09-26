@@ -102,11 +102,14 @@ setup_fault_handler(env_t *env)
     }
 }
 
+static cspacepath_t timer_cap_path = {{0}};
+
 static void
 init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
 {
     cspacepath_t path;
     UNUSED seL4_CPtr cap;
+    int error;
 
     /* irq */
     if (sel4platsupport_copy_irq_cap(vka, simple, DEFAULT_TIMER_INTERRUPT, &path) != seL4_NoError) {
@@ -117,14 +120,16 @@ init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
     assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
 
     /* frame */
-    if (DEFAULT_TIMER_PADDR != 0) {
-        sel4platsupport_copy_frame_cap(vka, simple, (void *) DEFAULT_TIMER_PADDR, seL4_PageBits, &path);
-        cap = sel4utils_copy_cap_to_process(process, path);
-    } else {
-        /* no frame - this can only be pit - use io port cap */
-        vka_cspace_make_path(vka, seL4_CapIOPort, &path);
-        cap = sel4utils_copy_cap_to_process(process, path);
+    if (timer_cap_path.capPtr == 0) {
+        if (DEFAULT_TIMER_PADDR != 0) {
+            error = sel4platsupport_copy_frame_cap(vka, simple, (void *) DEFAULT_TIMER_PADDR, seL4_PageBits, &timer_cap_path);
+            ZF_LOGF_IF(error, "Failed to copy timer cap");
+        } else {
+            /* no frame - this can only be pit - use io port cap */
+            vka_cspace_make_path(vka, seL4_CapIOPort, &timer_cap_path);
+        }
     }
+    cap = sel4utils_copy_cap_to_process(process, timer_cap_path);
  
     assert(cap == TIMEOUT_TIMER_FRAME_SLOT);
 }
