@@ -14,8 +14,8 @@
 
 typedef enum {
     UNTYPED_SLOT = SEL4UTILS_FIRST_FREE,
+    TIMER_UNTYPED_SLOT,
     TIMEOUT_TIMER_IRQ_SLOT,
-    TIMEOUT_TIMER_FRAME_SLOT,
     /* define new slots here */
     FREE_SLOT /* first free slot in a benchmark's cspace */
 } benchmark_cspace_t;

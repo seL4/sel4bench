@@ -41,6 +41,8 @@ typedef struct env {
     seL4_timer_t *timeout_timer;
     /* notification that is bound to both timer irq handlers */
     vka_object_t ntfn;
+    /* paddr for timeout timer */
+    uintptr_t timer_paddr;
 } env_t;
 
 /* initialise the benchmarking environment and return it */
