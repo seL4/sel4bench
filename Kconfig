@@ -49,6 +49,7 @@ menu "seL4 Applications"
     source "apps/scheduler/Kconfig"
     source "apps/signal/Kconfig"
     source "apps/fault/Kconfig"
+    source "apps/hardware/Kconfig"
 endmenu
 
 menu "Tools"

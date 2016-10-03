@@ -23,6 +23,7 @@ sel4bench-components-$(CONFIG_APP_IRQUSERBENCH) += irquser
 sel4bench-components-$(CONFIG_APP_SCHEDULERBENCH) += scheduler
 sel4bench-components-$(CONFIG_APP_SIGNALBENCH) += signal
 sel4bench-components-$(CONFIG_APP_FAULTBENCH) += fault
+sel4bench-components-$(CONFIG_APP_HARDWAREBENCH) += hardware
 
 sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y))
 

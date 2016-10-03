@@ -94,6 +94,7 @@ benchmark_t *irquser_benchmark_new(void);
 benchmark_t *scheduler_benchmark_new(void);
 benchmark_t *signal_benchmark_new(void);
 benchmark_t *fault_benchmark_new(void);
+benchmark_t *hardware_benchmark_new(void);
 
 static inline void
 blank_init(UNUSED vka_t *vka, UNUSED simple_t *simple, UNUSED sel4utils_process_t *process)

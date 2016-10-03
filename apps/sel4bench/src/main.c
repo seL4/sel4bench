@@ -273,6 +273,7 @@ main_continued(void *arg)
         scheduler_benchmark_new(),
         signal_benchmark_new(),
         fault_benchmark_new(),
+        hardware_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */
