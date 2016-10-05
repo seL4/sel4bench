@@ -16,14 +16,14 @@
     register seL4_Word scno asm("r7") = syscall; \
     asm volatile (NOPS swi NOPS \
         : /* no outputs */ \
-        : [swi_num] "i" __SEL4_SWINUM(syscall), "r"(scno) \
+        : "r"(scno) \
         : /* no clobber */ \
     ); \
 } while (0);
 
 #define DO_NULLSYSCALL(swi) DO_NULLSYSCALL_OP(swi, seL4_SysBenchmarkNullSyscall)
 
-#define DO_REAL_NULLSYSCALL()     DO_NULLSYSCALL("swi %[swi_num]")
+#define DO_REAL_NULLSYSCALL()     DO_NULLSYSCALL("swi $0")
 #define DO_NOP_NULLSYSCALL()      DO_NULLSYSCALL("nop")
 
 #endif /* __ARCH_HARDWARE_H */

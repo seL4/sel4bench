@@ -12,7 +12,7 @@
 
 config APP_HARDWAREBENCH
     bool "hardware benchmarks"
-    depends on APP_SEL4BENCH
+    depends on APP_SEL4BENCH && ENABLE_BENCHMARKS
     default y
     depends on LIB_SEL4 && HAVE_LIBC && LIB_SEL4_ALLOCMAN && LIB_UTILS && LIB_SEL4_UTILS && \
     LIB_SEL4_BENCH && LIB_ELF && LIB_SEL4_SIMPLE && LIB_SEL4_VKA && \
