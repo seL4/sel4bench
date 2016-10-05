@@ -22,6 +22,7 @@
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "+r"(info), "+r" (mr0) \
         : [swi_num] "i" __SEL4_SWINUM(seL4_SysReplyRecv), "r"(scno) \
+        : "r3", "r4", "r5" \
     ); \
     ip = mr0; \
 } while(0)
