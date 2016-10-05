@@ -146,10 +146,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     seL4_Word stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
     uintptr_t stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
 
-
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugNameThread(process.thread.tcb.cptr, benchmark->name);
-#endif
+    NAME_THREAD(process.thread.tcb.cptr, benchmark->name);
 
     /* set up shared memory for results */
     void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr,
