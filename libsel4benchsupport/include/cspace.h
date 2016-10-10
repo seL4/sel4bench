@@ -14,10 +14,10 @@
 
 typedef enum {
     UNTYPED_SLOT = SEL4UTILS_FIRST_FREE,
+    TIMER_UNTYPED_SLOT,
+    CLOCK_UNTYPED_SLOT,
     SCHED_CTRL_SLOT,
     TIMEOUT_TIMER_IRQ_SLOT,
-    TIMEOUT_TIMER_FRAME_SLOT,
-    CLOCK_FRAME_SLOT,
     CLOCK_IRQ_SLOT,
     /* define new slots here */
     FREE_SLOT /* first free slot in a benchmark's cspace */

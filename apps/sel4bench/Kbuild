@@ -25,6 +25,7 @@ sel4bench-components-$(CONFIG_APP_ULSCHEDULERBENCH) += ulscheduler
 sel4bench-components-$(CONFIG_APP_SIGNALBENCH) += signal
 sel4bench-components-$(CONFIG_APP_FAULTBENCH) += fault
 sel4bench-components-$(CONFIG_APP_TIMEOUTBENCH) += timeout
+sel4bench-components-$(CONFIG_APP_HARDWAREBENCH) += hardware
 
 sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y))
 

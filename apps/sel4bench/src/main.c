@@ -42,6 +42,13 @@ static struct env {
     vka_t vka;
     simple_t simple;
     vspace_t vspace;
+    /* regular untyped memory to pass to benchmark apps */
+    vka_object_t untyped;
+    /* untyped memory for benchmark timer paddr */
+    vka_object_t timer_untyped;
+    vka_object_t clock_untyped;
+    /* physical address of the timeout timer device */
+    uintptr_t timer_paddr;
 } global_env;
 
 typedef struct env env_t;
@@ -103,7 +110,7 @@ setup_fault_handler(env_t *env)
 }
 
 static void
-init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
+init_timers(vka_t *vka, vspace_t *vspace, simple_t *simple, sel4utils_process_t *process)
 {
     cspacepath_t path;
     UNUSED seL4_CPtr cap;
@@ -120,33 +127,6 @@ init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
 
     cap = sel4utils_move_cap_to_process(process, path, vka);
     assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
-
-    /* frame */
-    if (DEFAULT_TIMER_PADDR != 0) {
-        sel4platsupport_copy_frame_cap(vka, simple, (void *) DEFAULT_TIMER_PADDR, seL4_PageBits, &path);
-        sel4utils_copy_cap_to_process(process, path);
-    } else {
-        process->cspace_next_free++;
-    }
-
-    assert(process->cspace_next_free == TIMEOUT_TIMER_FRAME_SLOT + 1);
-
-    seL4_Word clock_timer_paddr = 0;
-#ifdef  CLOCK_TIMER_PADDR
-    /* this ifdef be removed once all platforms define CLOCK_TIMER_PADDR */
-    clock_timer_paddr = CLOCK_TIMER_PADDR;
-#endif /* CLOCK_TIMER_PADDR */
-
-    /* some platforms don't have a physical frame for their clock timer impl */
-    if (clock_timer_paddr) {
-        error = sel4platsupport_copy_frame_cap(vka, simple, (void *) clock_timer_paddr,
-                                             seL4_PageBits, &path);
-        ZF_LOGF_IF(error != 0, "Failed to copy timer cap");
-        sel4utils_move_cap_to_process(process, path, vka);
-    } else {
-        process->cspace_next_free++;
-    }
-    assert(process->cspace_next_free - 1 == CLOCK_FRAME_SLOT);
 
     seL4_Word clock_timer_irq = 0;
 #ifdef CLOCK_TIMER_INTERRUPT
@@ -165,7 +145,7 @@ init_timers(vka_t *vka, simple_t *simple, sel4utils_process_t *process)
 }
 
 int
-run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *local_results_vaddr)
+run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
 {
     int error;
     sel4utils_process_t process;
@@ -189,9 +169,21 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 
     /* copy untyped to process */
     cspacepath_t path;
-    vka_cspace_make_path(&env->vka, untyped->cptr, &path);
+    vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
     UNUSED seL4_CPtr slot = sel4utils_copy_cap_to_process(&process, path);
     assert(slot == UNTYPED_SLOT);
+
+    vka_cspace_make_path(&env->vka, env->timer_untyped.cptr, &path);
+    slot = sel4utils_copy_cap_to_process(&process, path);
+    assert(slot == TIMER_UNTYPED_SLOT);
+
+#ifdef CLOCK_TIMER_PADDR
+    vka_cspace_make_path(&env->vka, env->clock_untyped.cptr, &path);
+    slot = sel4utils_copy_cap_to_process(&process, path);
+    assert(slot == CLOCK_UNTYPED_SLOT);
+#else
+    process->cspace_next_free++;
+#endif
 
     /* copy sched ctrl to process */
     vka_cspace_make_path(&env->vka, simple_get_sched_ctrl(&env->simple), &path);
@@ -201,6 +193,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
     seL4_Word stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
     uintptr_t stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
 
+    NAME_THREAD(process.thread.tcb.cptr, benchmark->name);
 
 #ifdef CONFIG_DEBUG_BUILD
     seL4_DebugNameThread(process.thread.tcb.cptr, benchmark->name);
@@ -211,18 +204,19 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
                                                   benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
 
     /* initialise timers for benchmark environment */
-    init_timers(&env->vka, &env->simple, &process);
+    init_timers(&env->vka, &env->vspace, &env->simple, &process);
 
     /* do benchmark specific init */
     benchmark->init(&env->vka, &env->simple, &process);
 
     /* set up arguments */
     /* untyped size */
-    seL4_Word argc = 4;
-    char args[4][WORD_STRING_SIZE];
+    seL4_Word argc = 5;
+    char args[5][WORD_STRING_SIZE];
     char *argv[argc];
-    sel4utils_create_word_args(args, argv, argc, untyped->size_bits, stack_vaddr, stack_pages,
-                               (seL4_Word) remote_results_vaddr);
+    sel4utils_create_word_args(args, argv, argc, env->untyped.size_bits, stack_vaddr,
+                               stack_pages, (seL4_Word) remote_results_vaddr,
+                               env->timer_paddr);
     /* start process */
     error = sel4utils_spawn_process_v(&process, &env->vka, &env->vspace, argc, argv, 1);
     if (error) {
@@ -245,8 +239,10 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
     vspace_unmap_pages(&process.vspace, remote_results_vaddr, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
      /* clean up */
 
-    /* revoke the untyped so it's clean for the next benchmark */
-    vka_cspace_make_path(&env->vka, untyped->cptr, &path);
+    /* revoke the untypeds so it's clean for the next benchmark */
+    vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
+    vka_cnode_revoke(&path);
+    vka_cspace_make_path(&env->vka, env->timer_untyped.cptr, &path);
     vka_cnode_revoke(&path);
 
     /* destroy the process */
@@ -256,7 +252,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, vka_object_t *untyped, void *l
 }
 
 json_t *
-launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
+launch_benchmark(benchmark_t *benchmark, env_t *env)
 {
     ZF_LOGV("\n%s Benchmarks\n==============\n\n", benchmark->name);
 
@@ -268,7 +264,7 @@ launch_benchmark(benchmark_t *benchmark, env_t *env, vka_object_t *untyped)
     }
 
     /* Run benchmark process */
-    int exit_code = run_benchmark(env, benchmark, untyped, results);
+    int exit_code = run_benchmark(env, benchmark, results);
 
     /* process & print results */
     json_t *json = NULL;
@@ -298,18 +294,36 @@ find_untyped(vka_t *vka, vka_object_t *untyped)
     if (error != 0) {
         ZF_LOGF("Failed to find free untyped\n");
     }
+}
+
+void
+find_timer_untyped(env_t *env)
+{
+
+    /* timer paddr */
+    env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka, &env->vspace);
+    int error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr,
+                                   &env->timer_untyped);
+    if (error) {
+        ZF_LOGF("Failed to find timer untyped");
+    }
+
+#ifdef CLOCK_TIMER_PADDR
+    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, CLOCK_TIMER_PADDR, &env->clock_untyped);
+    ZF_LOGF_IF(error != 0, "Failed to allocate timer cap");
+#endif
 
 }
 
 void *
 main_continued(void *arg)
 {
-    vka_object_t untyped;
 
     setup_fault_handler(&global_env);
 
     /* find an untyped for the process to use */
-    find_untyped(&global_env.vka, &untyped);
+    find_untyped(&global_env.vka, &global_env.untyped);
+    find_timer_untyped(&global_env);
 
     /* list of benchmarks */
     benchmark_t *benchmarks[] = {
@@ -321,6 +335,7 @@ main_continued(void *arg)
         ulscheduler_benchmark_new(),
         fault_benchmark_new(),
         timeout_benchmark_new(),
+        hardware_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */
@@ -333,7 +348,7 @@ main_continued(void *arg)
     /* run the benchmarks */
     for (int i = 0; benchmarks[i] != NULL; i++) {
         if (benchmarks[i]->enabled) {
-            json_t *result = launch_benchmark(benchmarks[i], &global_env, &untyped);
+            json_t *result = launch_benchmark(benchmarks[i], &global_env);
             if (result == NULL) {
                 ZF_LOGF("Failed to run benchmark %s", benchmarks[i]->name);
             }

@@ -51,6 +51,7 @@ menu "seL4 Applications"
     source "apps/ulscheduler/Kconfig"
     source "apps/fault/Kconfig"
     source "apps/timeout/Kconfig"
+    source "apps/hardware/Kconfig"
 endmenu
 
 menu "Tools"

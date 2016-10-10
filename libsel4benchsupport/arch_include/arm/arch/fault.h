@@ -21,12 +21,13 @@
     register seL4_Word mr0 asm("r2") = ip; \
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "+r"(info), "+r" (mr0) \
-        : [swi_num] "i" __SEL4_SWINUM(seL4_SysReplyRecv), "r"(scno) \
+        : "r"(scno) \
+        : "r3", "r4", "r5" \
     ); \
     ip = mr0; \
 } while(0)
 
-#define DO_REAL_REPLY_RECV_1(ep, mr0) DO_REPLY_RECV_1(ep, mr0, "swi %[swi_num]")
+#define DO_REAL_REPLY_RECV_1(ep, mr0) DO_REPLY_RECV_1(ep, mr0, "swi $0")
 #define DO_NOP_REPLY_RECV_1(ep, mr0)  DO_REPLY_RECV_1(ep, mr0, "nop")
 
 static inline seL4_MessageInfo_t

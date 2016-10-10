@@ -28,11 +28,11 @@
 #include "support.h"
 
 #ifndef CLOCK_TIMER_PADDR
-#define CLOCK_TIMER_PADDR (DEFAULT_TIMER_PADDR + 1)
+#define CLOCK_TIMER_PADDR 0
 #endif
 
 #ifndef CLOCK_TIMER_INTERRUPT
-#define CLOCK_TIMER_INTERRUPT (DEFAULT_TIMER_INTERRUPT + 1)
+#define CLOCK_TIMER_INTERRUPT 0
 #endif
 
 /* benchmarking environment */
@@ -97,12 +97,22 @@ add_frames(void *frames[], size_t start, uintptr_t addr, size_t num_frames)
 }
 
 static void
-init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits)
+add_single_untyped(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
+                   uintptr_t *paddr, seL4_CPtr cap, int utType)
 {
-    uintptr_t paddr;
-    int error;
     cspacepath_t path;
+    vka_cspace_make_path(vka, cap, &path);
+    int error = allocman_utspace_add_uts(allocator, 1, &path, &untyped_size_bits, paddr,
+                                     utType);
+    if (error) {
+        ZF_LOGF("Failed to add untyped to allocator");
+    }
+}
 
+static void
+init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
+               uintptr_t timer_paddr)
+{
     /* set up malloc area */
     morecore_area = app_morecore_area;
     morecore_size = MORE_CORE_SIZE;
@@ -118,11 +128,16 @@ init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits)
     allocman_make_vka(vka, allocator);
 
     /* add untyped memory */
-    vka_cspace_make_path(vka, UNTYPED_SLOT, &path);
-    error = allocman_utspace_add_uts(allocator, 1, &path, &untyped_size_bits, &paddr);
-    if (error) {
-        ZF_LOGF("Failed to add untyped to allocator");
-    }
+    add_single_untyped(allocator, vka, untyped_size_bits, NULL, UNTYPED_SLOT,
+                       ALLOCMAN_UT_KERNEL);
+    add_single_untyped(allocator, vka, seL4_PageBits, &timer_paddr, TIMER_UNTYPED_SLOT,
+                       ALLOCMAN_UT_DEV);
+
+#ifdef CLOCK_TIMER_PADDR
+    uintptr_t paddr = CLOCK_TIMER_PADDR;
+    add_single_untyped(allocator, vka, seL4_PageBits, &paddr, CLOCK_UNTYPED_SLOT,
+                        ALLOCMAN_UT_DEV);
+#endif
 }
 
 static void
@@ -149,40 +164,14 @@ init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
 }
 
 static seL4_Error
-get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
-{
-    path->root = SEL4UTILS_CNODE_SLOT;
-    path->capDepth = seL4_WordBits;
-
-    switch ((uintptr_t) paddr) {
-    case DEFAULT_TIMER_PADDR:
-        path->capPtr = TIMEOUT_TIMER_FRAME_SLOT;
-        break;
-    case CLOCK_TIMER_PADDR:
-        path->capPtr = CLOCK_FRAME_SLOT;
-        break;
-    default:
-        path->capPtr = 0;
-        break;
-    }
-    return path->capPtr == 0 ? seL4_InvalidArgument : seL4_NoError;
-}
-
-static seL4_Error
 get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
-    seL4_CPtr slot;
+    seL4_CPtr slot = seL4_CapNull;
 
-    switch (irq) {
-    case DEFAULT_TIMER_INTERRUPT:
+    if (irq == DEFAULT_TIMER_INTERRUPT) {
         slot = TIMEOUT_TIMER_IRQ_SLOT;
-        break;
-    case CLOCK_TIMER_INTERRUPT:
+    } else if (irq == CLOCK_TIMER_INTERRUPT) {
         slot = CLOCK_IRQ_SLOT;
-        break;
-    default:
-        slot = seL4_CapNull;
-        break;
     }
 
     return seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
@@ -311,21 +300,21 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     uintptr_t stack_vaddr;
 
     /* parse arguments */
-    if (argc < 4) {
-        ZF_LOGF("Insufficient arguments, expected 4, got %d\n", (int) argc);
+    if (argc < 5) {
+        ZF_LOGF("Insufficient arguments, expected 5, got %d\n", (int) argc);
     }
 
     untyped_size_bits = (size_t) atol(argv[0]);
     stack_vaddr = (uintptr_t) atol(argv[1]);
     stack_pages = (size_t) atol(argv[2]);
     env.results = (void *) atoi(argv[3]);
+    env.timer_paddr = (uintptr_t) atol(argv[4]);
 
-    init_allocator(&env.allocman, &env.vka, untyped_size_bits);
+    init_allocator(&env.allocman, &env.vka, untyped_size_bits, env.timer_paddr);
     init_vspace(&env.vka, &env.vspace, &env.data, stack_pages, stack_vaddr,
                 (uintptr_t) env.results, results_size);
     parse_code_region(&env.region);
 
-    env.simple.frame_cap = get_frame_cap;
     env.simple.init_cap = init_cap;
     env.simple.arch_simple.irq = get_irq;
     benchmark_arch_get_simple(&env.simple.arch_simple);
