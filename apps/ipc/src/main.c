@@ -132,16 +132,16 @@ dummy_seL4_Reply(seL4_MessageInfo_t tag)
     (void)tag;
 }
 
-uint32_t ipc_call_func(int argc, char *argv[]);
-uint32_t ipc_call_func2(int argc, char *argv[]);
-uint32_t ipc_call_10_func(int argc, char *argv[]);
-uint32_t ipc_call_10_func2(int argc, char *argv[]);
-uint32_t ipc_replyrecv_func2(int argc, char *argv[]);
-uint32_t ipc_replyrecv_func(int argc, char *argv[]);
-uint32_t ipc_replyrecv_10_func2(int argc, char *argv[]);
-uint32_t ipc_replyrecv_10_func(int argc, char *argv[]);
-uint32_t ipc_send_func(int argc, char *argv[]);
-uint32_t ipc_recv_func(int argc, char *argv[]);
+seL4_Word ipc_call_func(int argc, char *argv[]);
+seL4_Word ipc_call_func2(int argc, char *argv[]);
+seL4_Word ipc_call_10_func(int argc, char *argv[]);
+seL4_Word ipc_call_10_func2(int argc, char *argv[]);
+seL4_Word ipc_replyrecv_func2(int argc, char *argv[]);
+seL4_Word ipc_replyrecv_func(int argc, char *argv[]);
+seL4_Word ipc_replyrecv_10_func2(int argc, char *argv[]);
+seL4_Word ipc_replyrecv_10_func(int argc, char *argv[]);
+seL4_Word ipc_send_func(int argc, char *argv[]);
+seL4_Word ipc_recv_func(int argc, char *argv[]);
 
 static helper_func_t bench_funcs[] = {
     ipc_call_func,
@@ -157,7 +157,7 @@ static helper_func_t bench_funcs[] = {
 };
 
 #define IPC_CALL_FUNC(name, bench_func, send_func, call_func, send_start_end, length) \
-    uint32_t name(int argc, char *argv[]) { \
+    seL4_Word name(int argc, char *argv[]) { \
     uint32_t i; \
     ccnt_t start UNUSED, end UNUSED; \
     seL4_CPtr ep = atoi(argv[0]);\
@@ -183,7 +183,7 @@ IPC_CALL_FUNC(ipc_call_10_func, DO_REAL_CALL_10, seL4_Send, dummy_seL4_Call, end
 IPC_CALL_FUNC(ipc_call_10_func2, DO_REAL_CALL_10, dummy_seL4_Send, seL4_Call, start, 10)
 
 #define IPC_REPLY_RECV_FUNC(name, bench_func, reply_func, recv_func, send_start_end, length) \
-uint32_t name(int argc, char *argv[]) { \
+seL4_Word name(int argc, char *argv[]) { \
     uint32_t i; \
     ccnt_t start UNUSED, end UNUSED; \
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
@@ -208,7 +208,7 @@ IPC_REPLY_RECV_FUNC(ipc_replyrecv_func, DO_REAL_REPLY_RECV, dummy_seL4_Reply, se
 IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func2, DO_REAL_REPLY_RECV_10, seL4_Reply, seL4_Recv, end, 10)
 IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func, DO_REAL_REPLY_RECV_10, dummy_seL4_Reply, seL4_Recv, start, 10)
 
-uint32_t
+seL4_Word
 ipc_recv_func(int argc, char *argv[])
 {
     uint32_t i;
@@ -227,7 +227,7 @@ ipc_recv_func(int argc, char *argv[])
     return 0;
 }
 
-uint32_t
+seL4_Word
 ipc_send_func(int argc, char *argv[])
 {
     uint32_t i;

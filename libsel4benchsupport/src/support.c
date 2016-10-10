@@ -276,7 +276,7 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     untyped_size_bits = (size_t) atol(argv[0]);
     stack_vaddr = (uintptr_t) atol(argv[1]);
     stack_pages = (size_t) atol(argv[2]);
-    env.results = (void *) atoi(argv[3]);
+    env.results = (void *) atol(argv[3]);
     env.timer_paddr = (uintptr_t) atol(argv[4]);
 
     init_allocator(&env.allocman, &env.vka, untyped_size_bits, env.timer_paddr);

@@ -10,6 +10,10 @@
 #ifndef __SEL4_ARCH_IPC_H
 #define __SEL4_ARCH_IPC_H
 
+#include <autoconf.h>
+
+#ifdef CONFIG_SYSCALL
+
 #define DO_CALL(ep, tag, sys) do { \
     uint64_t ep_copy = ep; \
     asm volatile(\
@@ -146,5 +150,8 @@
 #define DO_REAL_RECV(ep) DO_RECV(ep, "syscall")
 #define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
 
+#else
+#error Only support benchmarking with syscall as sysenter is known to be slower
+#endif /* CONFIG_SYSCALL */
 
 #endif /* __SEL4_ARCH_IPC_H */
