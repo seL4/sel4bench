@@ -33,25 +33,9 @@
 #include <ipc.h>
 
 #include "benchmark.h"
+#include "env.h"
 #include "printing.h"
 #include "processing.h"
-
-/* Contains information about the benchmark environment. */
-static struct env {
-    /* An initialised vka that may be used by the test. */
-    vka_t vka;
-    simple_t simple;
-    vspace_t vspace;
-    /* regular untyped memory to pass to benchmark apps */
-    vka_object_t untyped;
-    /* untyped memory for benchmark timer paddr */
-    vka_object_t timer_untyped;
-    vka_object_t clock_untyped;
-    /* physical address of the timeout timer device */
-    uintptr_t timer_paddr;
-} global_env;
-
-typedef struct env env_t;
 
 /* dimensions of virtual memory for the allocator to use */
 #define ALLOCATOR_VIRTUAL_POOL_SIZE ((1 << seL4_PageBits) * 100)
@@ -63,20 +47,7 @@ static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 /* static memory for virtual memory bootstrapping */
 static sel4utils_alloc_data_t data;
 
-void
-check_cpu_features(void)
-{
-#ifdef CONFIG_X86_64
-    /* check if the cpu support rdtscp */
-    int edx = 0;
-    asm volatile("cpuid":"=d"(edx):"a"(0x80000001):"ecx");
-    if ((edx & (1 << 27)) == 0) {
-        ZF_LOGF("CPU does not support rdtscp instruction, halting\n");
-        assert(0);
-    }
-#endif
-
-}
+static env_t global_env;
 
 static void
 setup_fault_handler(env_t *env)
@@ -406,7 +377,7 @@ int main(void)
     printf("%s==============%s\n", A_FG_G, A_FG_W);
     printf("\n");
 
-    check_cpu_features();
+    plat_setup(&global_env);
 
     /* Switch to a bigger stack with a guard page! */
     ZF_LOGV("Switching to a safer, bigger stack... ");
