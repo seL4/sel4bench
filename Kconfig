@@ -50,6 +50,7 @@ menu "seL4 Applications"
     source "apps/signal/Kconfig"
     source "apps/fault/Kconfig"
     source "apps/hardware/Kconfig"
+    source "apps/sync/Kconfig"
 endmenu
 
 menu "Tools"
