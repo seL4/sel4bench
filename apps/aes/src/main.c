@@ -461,7 +461,7 @@ main(int argc, char **argv)
     /* let it initialise */
     seL4_SchedContext_YieldTo_t ytr = seL4_SchedContext_YieldTo(tfep_thread.sched_context.cptr);
     ZF_LOGF_IF(ytr.error != seL4_NoError, "Failed to yield to tfep thread");
-    ZF_LOGF_IF(ytr.consumed == 0, "tfep did not run!");
+    ZF_LOGF_IF(ytr.consumed > 0, "tfep did not run!");
 
     /* create an ep for clients to signal on when they are done */
     vka_object_t done;
