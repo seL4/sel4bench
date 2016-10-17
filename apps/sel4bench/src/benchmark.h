@@ -97,6 +97,7 @@ benchmark_t *ulscheduler_benchmark_new(void);
 benchmark_t *fault_benchmark_new(void);
 benchmark_t *timeout_benchmark_new(void);
 benchmark_t *hardware_benchmark_new(void);
+benchmark_t *aes_benchmark_new(void);
 
 static inline void
 blank_init(UNUSED vka_t *vka, UNUSED simple_t *simple, UNUSED sel4utils_process_t *process)

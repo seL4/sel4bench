@@ -52,6 +52,7 @@ menu "seL4 Applications"
     source "apps/fault/Kconfig"
     source "apps/timeout/Kconfig"
     source "apps/hardware/Kconfig"
+    source "apps/aes/Kconfig"
 endmenu
 
 menu "Tools"

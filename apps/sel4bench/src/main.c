@@ -18,6 +18,7 @@
 #include <simple/simple.h>
 #include <simple-default/simple-default.h>
 
+#include <aes.h>
 #include <sel4debug/register_dump.h>
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
@@ -307,6 +308,7 @@ main_continued(void *arg)
         fault_benchmark_new(),
         timeout_benchmark_new(),
         hardware_benchmark_new(),
+        aes_benchmark_new(),
         /* add new benchmarks here */
 
         /* null terminator */
