@@ -28,7 +28,7 @@ config ALLOW_UNSTABLE_OVERHEAD
 config OUTPUT_RAW_RESULTS
     depends on APP_SEL4BENCH
     bool "Output raw results"
-    default y
+    default n
     help
         As well as outputting statistics, dump raw results in JSON format.
 
