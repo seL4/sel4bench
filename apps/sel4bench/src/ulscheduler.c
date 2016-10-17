@@ -78,6 +78,10 @@ ulscheduler_process(void *results) {
     process_results(CONFIG_NUM_TASK_SETS, N_RUNS, raw_results->cfs_coop, desc, per_task_results);
     json_array_append_new(array, result_set_to_json(set));
 
+    set.name = "CFS (preempt)";
+    process_results(CONFIG_NUM_TASK_SETS, N_RUNS, raw_results->cfs_preempt, desc, per_task_results);
+    json_array_append_new(array, result_set_to_json(set));
+
     return array;
 }
 
