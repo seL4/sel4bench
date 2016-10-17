@@ -153,7 +153,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     slot = sel4utils_copy_cap_to_process(&process, path);
     assert(slot == CLOCK_UNTYPED_SLOT);
 #else
-    process->cspace_next_free++;
+    process.cspace_next_free++;
 #endif
 
     /* copy sched ctrl to process */
