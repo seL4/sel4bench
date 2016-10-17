@@ -1,8 +1,8 @@
 # sel4bench
 
-sel4 benchmarking applications and support library.
+sel4 benchmarking applications and support library for the experimental RT branch of the kernel.
 
-To get this project, check out the project manifest: https://github.com/seL4/sel4bench-manifest
+To get this project, check out the project manifest: https://github.com/seL4/sel4bench-manifest and initialiserepo with -b rt to get the rt branch of the manifest.
 
 # Applications
 
@@ -14,7 +14,7 @@ This is the driver application: it launches each benchmark in a separate process
 
 ## ipc
 
-This is a hot cache benchmark of the IPC path. 
+This is a hot cache benchmark of the IPC path.
 
 ## irq
 
@@ -26,9 +26,21 @@ This is a hot cache benchmark of the irq path, measured from user-level.
 
 ## scheduler
 
-This is a hot cache benchmark of a scheduling decision. It works by using a producer-consumer pattern between two notification objects. 
+This is a hot cache benchmark of a scheduling decision. It works by using a producer-consumer pattern between two notification objects.
 This benchmark also measures `seL4_Yield`
 
 ## signal
 
-This is a hot cache benchmark of the signal path in the kernel, measured from user level. 
+This is a hot cache benchmark of the signal path in the kernel, measured from user level.
+
+## ulscheduler
+
+hot cache benchmark of a EDF and CFS user level scheduler implementation
+
+## criticality
+
+benchmarks mode switch cost, hot and cold cache
+
+## aes
+
+benchmarks timeout fault handling in a passive aes server
