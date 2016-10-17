@@ -118,21 +118,38 @@ process_criticality_results(scheduler_results_t *results, ccnt_t overhead, json_
         .n_results = ARRAY_SIZE(crit_results),
     };
 
-    set.name = "Vary lo threads (switch up)";
-    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo[UP], desc, crit_results);
+    set.name = "Vary lo threads (switch up) HOT";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo_hot[UP], desc, crit_results);
     json_array_append_new(array, result_set_to_json(set));
 
-    set.name = "Vary lo threads (switch down)";
-    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo[DOWN], desc, crit_results);
+    set.name = "Vary lo threads (switch down) HOT";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo_hot[DOWN], desc, crit_results);
     json_array_append_new(array, result_set_to_json(set));
 
     extra.header = "hi threads";
-    set.name = "Vary hi threads (switch up)";
-    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi[UP], desc, crit_results);
+    set.name = "Vary hi threads (switch up) HOT";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi_hot[UP], desc, crit_results);
     json_array_append_new(array, result_set_to_json(set));
 
-    set.name = "Vary hi threads (switch down)";
-    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi[DOWN], desc, crit_results);
+    set.name = "Vary hi threads (switch down) HOT";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi_hot[DOWN], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Vary lo threads (switch up) COLD";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo_cold[UP], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Vary lo threads (switch down) COLD";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_lo_cold[DOWN], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    extra.header = "hi threads";
+    set.name = "Vary hi threads (switch up) COLD";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi_cold[UP], desc, crit_results);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Vary hi threads (switch down) COLD";
+    process_results(NUM_THREAD_SIZES, N_RUNS, results->modeswitch_vary_hi_cold[DOWN], desc, crit_results);
     json_array_append_new(array, result_set_to_json(set));
 }
 

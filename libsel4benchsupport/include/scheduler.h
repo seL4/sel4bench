@@ -29,8 +29,10 @@ typedef struct scheduler_results_t {
     ccnt_t thread_results[N_PRIOS][N_RUNS];
     ccnt_t process_results[N_PRIOS][N_RUNS];
     ccnt_t overhead_signal[N_RUNS];
-    ccnt_t modeswitch_vary_lo[NUM_MODE_SWITCHES][NUM_THREAD_SIZES][N_RUNS];
-    ccnt_t modeswitch_vary_hi[NUM_MODE_SWITCHES][NUM_THREAD_SIZES][N_RUNS];
+    ccnt_t modeswitch_vary_lo_hot[NUM_MODE_SWITCHES][NUM_THREAD_SIZES][N_RUNS];
+    ccnt_t modeswitch_vary_hi_hot[NUM_MODE_SWITCHES][NUM_THREAD_SIZES][N_RUNS];
+    ccnt_t modeswitch_vary_lo_cold[NUM_MODE_SWITCHES][NUM_THREAD_SIZES][N_RUNS];
+    ccnt_t modeswitch_vary_hi_cold[NUM_MODE_SWITCHES][NUM_THREAD_SIZES][N_RUNS];
     ccnt_t thread_yield[N_RUNS];
     ccnt_t process_yield[N_RUNS];
     ccnt_t overhead_ccnt[N_RUNS];

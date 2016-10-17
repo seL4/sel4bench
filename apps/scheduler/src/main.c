@@ -298,7 +298,7 @@ measure_yield_overhead(ccnt_t *results)
 }
 
 static void
-modeswitch(env_t *env, int crit, ccnt_t up[N_RUNS], ccnt_t down[N_RUNS])
+modeswitch(env_t *env, int crit, ccnt_t up[N_RUNS], ccnt_t down[N_RUNS], bool cold)
 {
 
     seL4_CPtr sched_control = simple_get_sched_ctrl(&env->simple);
@@ -307,6 +307,10 @@ modeswitch(env_t *env, int crit, ccnt_t up[N_RUNS], ccnt_t down[N_RUNS])
 
     for (int i = 0; i < N_RUNS; i++) {
         /* switch up */
+        if (cold) {
+            seL4_BenchmarkFlushCaches();
+        }
+
         SEL4BENCH_READ_CCNT(start);
         error = seL4_SchedControl_SetCriticality(sched_control, crit);
         assert(error == seL4_NoError);
@@ -325,7 +329,7 @@ modeswitch(env_t *env, int crit, ccnt_t up[N_RUNS], ccnt_t down[N_RUNS])
 }
 
 static void
-benchmark_modeswitch(env_t *env, scheduler_results_t *results)
+benchmark_modeswitch(env_t *env, scheduler_results_t *results, bool cold)
 {
     int error;
     sel4utils_thread_config_t config = {
@@ -362,8 +366,14 @@ benchmark_modeswitch(env_t *env, scheduler_results_t *results)
             ZF_LOGF_IF(error != seL4_NoError, "Failed to start thread");
         }
         prev_n_threads = n_threads;
-        modeswitch(env, seL4_MaxCrit, results->modeswitch_vary_lo[UP][results_index],
-                                      results->modeswitch_vary_lo[DOWN][results_index]);
+        if (cold) {
+            modeswitch(env, seL4_MaxCrit, results->modeswitch_vary_lo_cold[UP][results_index],
+                                      results->modeswitch_vary_lo_cold[DOWN][results_index], cold);
+        } else {
+
+            modeswitch(env, seL4_MaxCrit, results->modeswitch_vary_lo_hot[UP][results_index],
+                                      results->modeswitch_vary_lo_hot[DOWN][results_index], cold);
+        }
         results_index++;
     }
 
@@ -386,9 +396,20 @@ benchmark_modeswitch(env_t *env, scheduler_results_t *results)
             ZF_LOGF_IF(error != seL4_NoError, "Failed to start thread %d", i);
         }
         prev_n_threads = n_threads;
-        modeswitch(env, seL4_MaxCrit, results->modeswitch_vary_hi[UP][results_index],
-                                      results->modeswitch_vary_hi[DOWN][results_index]);
+        if (cold) {
+            modeswitch(env, seL4_MaxCrit, results->modeswitch_vary_hi_cold[UP][results_index],
+                                          results->modeswitch_vary_hi_cold[DOWN][results_index], cold);
+        } else {
+
+            modeswitch(env, seL4_MaxCrit, results->modeswitch_vary_hi_hot[UP][results_index],
+                                          results->modeswitch_vary_hi_hot[DOWN][results_index], cold);
+        }
         results_index++;
+    }
+
+    /* clean up all the threads */
+    for (int i = 0; i < NUM_THREADS; i++) {
+        sel4utils_clean_up_thread(&env->vka, &env->vspace, &threads[i]);
     }
 }
 
@@ -439,7 +460,8 @@ main(int argc, char **argv)
     benchmark_yield_process(env, done_ep.cptr, results->process_yield);
 
     /* criticality change benchmarks */
-    benchmark_modeswitch(env, results);
+    benchmark_modeswitch(env, results, false);
+    benchmark_modeswitch(env, results, true);
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);
