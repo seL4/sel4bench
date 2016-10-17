@@ -11,6 +11,8 @@
  */
 #include "../../env.h"
 
+#include <sel4/bootinfo.h>
+
 void
 plat_setup(env_t *env)
 {
@@ -20,4 +22,6 @@ plat_setup(env_t *env)
 	    asm volatile("cpuid":"=d"(edx):"a"(0x80000001):"ecx");
       	ZF_LOGF_IF((edx & (BIT(27))) == 0, "CPU does not support rdtscp instruction");
  	}
+
+    ZF_LOGI("TSC runs at %u mhz\n", seL4_GetBootInfo()->archInfo);
 }
