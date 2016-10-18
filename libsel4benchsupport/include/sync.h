@@ -14,12 +14,16 @@
 
 #include <sel4bench/sel4bench.h>
 
-#define N_IGNORED 10
-#define N_RUNS (100 + N_IGNORED)
+#define N_IGNORED 0
+///#define N_RUNS (100 + N_IGNORED)
+#define N_RUNS 20
+#define N_WAITERS 16
 
 typedef struct sync_results {
     ccnt_t lo_prio_results[N_RUNS];
     ccnt_t hi_prio_results[N_RUNS];
+    ccnt_t broadcast_wait_time[N_WAITERS][N_RUNS];
+    ccnt_t broadcast_broadcast_time;
     ccnt_t overhead[N_RUNS];
 } sync_results_t;
 

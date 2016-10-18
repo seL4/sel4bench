@@ -49,6 +49,28 @@ sync_process(void *results) {
     set.name = "Signal to low prio thread";
     json_array_append_new(array, result_set_to_json(set));
 
+    result_t wait_results[N_WAITERS];
+    process_results(N_WAITERS, N_RUNS, raw_results->broadcast_wait_time, desc, wait_results);
+
+    /* construct waiter column */
+    json_int_t column_values[N_WAITERS];
+    for (json_int_t i = 0; i < N_WAITERS; i++) {
+        column_values[i] = i;
+    }
+
+    column_t extra = {
+        .header = "Waiter",
+        .type = JSON_INTEGER,
+        .integer_array = &column_values[0]
+    };
+
+    set.name = "Broadcast wait time";
+    set.extra_cols = &extra,
+    set.n_extra_cols = 1,
+    set.results = wait_results,
+    set.n_results = N_WAITERS,
+    json_array_append_new(array, result_set_to_json(set));
+
     return array;
 }
 
