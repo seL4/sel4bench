@@ -21,36 +21,10 @@ sync_process(void *results) {
     sync_results_t *raw_results = results;
 
     result_desc_t desc = {
-        .stable = true,
-        .name = "signal overhead",
+        .stable = false,
+        .name = "sync benchmarks",
         .ignored = N_IGNORED
     };
-
-    result_t result = process_result(N_RUNS, raw_results->overhead, desc);
-
-    result_set_t set = {
-        .name = "Signal overhead",
-        .n_results = 1,
-        .n_extra_cols = 0,
-        .results = &result
-    };
-
-    json_t *array = json_array();
-    json_array_append_new(array, result_set_to_json(set));
-
-    desc.stable = false;
-    desc.overhead = result.min;
-
-    result = process_result(N_RUNS, raw_results->lo_prio_results, desc);
-    set.name = "Signal to high prio thread";
-    json_array_append_new(array, result_set_to_json(set));
-
-    result = process_result(N_RUNS, raw_results->hi_prio_results, desc);
-    set.name = "Signal to low prio thread";
-    json_array_append_new(array, result_set_to_json(set));
-
-    result_t wait_results[N_WAITERS];
-    process_results(N_WAITERS, N_RUNS, raw_results->broadcast_wait_time, desc, wait_results);
 
     /* construct waiter column */
     json_int_t column_values[N_WAITERS];
@@ -64,12 +38,47 @@ sync_process(void *results) {
         .integer_array = &column_values[0]
     };
 
-    set.name = "Broadcast wait time";
-    set.extra_cols = &extra,
-    set.n_extra_cols = 1,
-    set.results = wait_results,
-    set.n_results = N_WAITERS,
-    json_array_append_new(array, result_set_to_json(set));
+    result_t wait_results[N_WAITERS];
+
+    result_set_t set = {
+        .name = "",
+        .extra_cols = &extra,
+        .n_extra_cols = 1,
+        .results = wait_results,
+        .n_results = N_WAITERS,
+    };
+
+    json_t *array = json_array();
+
+    for (int j = 0; j < N_BROADCAST_BENCHMARKS; ++j) {
+        process_results(N_WAITERS, N_RUNS, raw_results->broadcast_wait_time[j], desc, wait_results);
+        set.name = broadcast_wait_names[j];
+        json_array_append_new(array, result_set_to_json(set));
+    }
+
+    result_t result;
+    set.n_extra_cols = 0;
+    set.extra_cols = NULL;
+    set.results = &result;
+    set.n_results = 1;
+
+    for (int j = 0; j < N_BROADCAST_BENCHMARKS; ++j) {
+        result = process_result(N_RUNS, raw_results->broadcast_broadcast_time[j], desc);
+        set.name = broadcast_broadcast_names[j];
+        json_array_append_new(array, result_set_to_json(set));
+    }
+
+    for (int j = 0; j < N_PROD_CONS_BENCHMARKS; ++j) {
+        result = process_result(N_RUNS, raw_results->producer_to_consumer[j], desc);
+        set.name = producer_to_consumer_names[j];
+        json_array_append_new(array, result_set_to_json(set));
+    }
+
+    for (int j = 0; j < N_PROD_CONS_BENCHMARKS; ++j) {
+        result = process_result(N_RUNS, raw_results->consumer_to_producer[j], desc);
+        set.name = consumer_to_producer_names[j];
+        json_array_append_new(array, result_set_to_json(set));
+    }
 
     return array;
 }
