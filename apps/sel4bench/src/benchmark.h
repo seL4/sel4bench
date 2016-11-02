@@ -64,7 +64,7 @@ typedef struct {
 /* describes result output */
 typedef struct {
     /* name of the result set */
-    char *name;
+    const char *name;
     /* columns to prepend to result output */
     column_t *extra_cols;
     /* number of extra columns */
