@@ -42,6 +42,7 @@ static char app_morecore_area[MORE_CORE_SIZE];
 /* allocator */
 #define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 20)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
+#define ALLOCMAN_VIRTUAL_SIZE BIT(20)
 
 void
 benchmark_putchar(int c)
@@ -101,8 +102,8 @@ add_single_untyped(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
     }
 }
 
-static void
-init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
+static allocman_t*
+init_allocator(vka_t *vka, size_t untyped_size_bits,
                uintptr_t timer_paddr)
 {
     /* set up malloc area */
@@ -110,7 +111,7 @@ init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
     morecore_size = MORE_CORE_SIZE;
 
     /* set up allocator */
-    allocator = bootstrap_use_current_1level(SEL4UTILS_CNODE_SLOT,
+    allocman_t *allocator = bootstrap_use_current_1level(SEL4UTILS_CNODE_SLOT,
                                              CONFIG_SEL4UTILS_CSPACE_SIZE_BITS,
                                              FREE_SLOT,
                                              (1u << CONFIG_SEL4UTILS_CSPACE_SIZE_BITS),
@@ -124,6 +125,26 @@ init_allocator(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
                        ALLOCMAN_UT_KERNEL);
     add_single_untyped(allocator, vka, seL4_PageBits, &timer_paddr, TIMER_UNTYPED_SLOT,
                        ALLOCMAN_UT_DEV);
+    return allocator;
+}
+
+static void
+init_allocator_vspace(allocman_t *allocator, vspace_t *vspace)
+{
+    int error;
+    /* Create virtual pool */
+    reservation_t pool_reservation;
+    void *vaddr;
+    pool_reservation.res = allocman_mspace_alloc(allocator, sizeof(sel4utils_res_t), &error);
+    if (!pool_reservation.res) {
+        ZF_LOGF("Failed to allocate reservation");
+    }
+    error = sel4utils_reserve_range_no_alloc(vspace, pool_reservation.res,
+                                             ALLOCMAN_VIRTUAL_SIZE, seL4_AllRights, 1, &vaddr);
+    if (error) {
+        ZF_LOGF("Failed to provide virtual memory allocator");
+    }
+    bootstrap_configure_virtual_pool(allocator, vaddr, ALLOCMAN_VIRTUAL_SIZE, SEL4UTILS_PD_SLOT);
 }
 
 static void
@@ -279,9 +300,10 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     env.results = (void *) atol(argv[3]);
     env.timer_paddr = (uintptr_t) atol(argv[4]);
 
-    init_allocator(&env.allocman, &env.vka, untyped_size_bits, env.timer_paddr);
+    env.allocman = init_allocator(&env.vka, untyped_size_bits, env.timer_paddr);
     init_vspace(&env.vka, &env.vspace, &env.data, stack_pages, stack_vaddr,
                 (uintptr_t) env.results, results_size);
+    init_allocator_vspace(env.allocman, &env.vspace);
     parse_code_region(&env.region);
 
     env.simple.arch_simple.irq = get_irq;
