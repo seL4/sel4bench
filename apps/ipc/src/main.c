@@ -164,13 +164,13 @@ static helper_func_t bench_funcs[] = {
     seL4_CPtr result_ep = atoi(argv[1]);\
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length); \
     call_func(ep, tag); \
-    SEL4BENCH_FENCE(); \
+    COMPILER_MEMORY_FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
         READ_COUNTER_BEFORE(start); \
         bench_func(ep, tag); \
         READ_COUNTER_AFTER(end); \
     } \
-    SEL4BENCH_FENCE(); \
+    COMPILER_MEMORY_FENCE(); \
     send_result(result_ep, send_start_end); \
     send_func(ep, tag); \
     seL4_Recv(ep, NULL);/* block so we don't run off the stack */ \
@@ -190,13 +190,13 @@ seL4_Word name(int argc, char *argv[]) { \
     seL4_CPtr ep = atoi(argv[0]);\
     seL4_CPtr result_ep = atoi(argv[1]);\
     recv_func(ep, NULL); \
-    SEL4BENCH_FENCE(); \
+    COMPILER_MEMORY_FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
         READ_COUNTER_BEFORE(start); \
         bench_func(ep, tag); \
         READ_COUNTER_AFTER(end); \
     } \
-    SEL4BENCH_FENCE(); \
+    COMPILER_MEMORY_FENCE(); \
     send_result(result_ep, send_start_end); \
     reply_func(tag); \
     seL4_Recv(ep, NULL); /* block so we don't run off the stack */ \
@@ -215,13 +215,13 @@ ipc_recv_func(int argc, char *argv[])
     ccnt_t start UNUSED, end UNUSED;
     seL4_CPtr ep = atoi(argv[0]);
     seL4_CPtr result_ep = atoi(argv[1]);
-    SEL4BENCH_FENCE();
+    COMPILER_MEMORY_FENCE();
     for (i = 0; i < WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
         DO_REAL_RECV(ep);
         READ_COUNTER_AFTER(end);
     }
-    SEL4BENCH_FENCE();
+    COMPILER_MEMORY_FENCE();
     DO_REAL_RECV(ep);
     send_result(result_ep, end);
     return 0;
@@ -235,13 +235,13 @@ ipc_send_func(int argc, char *argv[])
     seL4_CPtr ep = atoi(argv[0]);
     seL4_CPtr result_ep = atoi(argv[1]);
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
-    SEL4BENCH_FENCE();
+    COMPILER_MEMORY_FENCE();
     for (i = 0; i < WARMUPS; i++) {
         READ_COUNTER_BEFORE(start);
         DO_REAL_SEND(ep, tag);
         READ_COUNTER_AFTER(end);
     }
-    SEL4BENCH_FENCE();
+    COMPILER_MEMORY_FENCE();
     send_result(result_ep, start);
     DO_REAL_SEND(ep, tag);
     return 0;
@@ -256,13 +256,13 @@ ipc_send_func(int argc, char *argv[])
             uint32_t k; \
             decls; \
             ccnt_t start, end; \
-            SEL4BENCH_FENCE(); \
+            COMPILER_MEMORY_FENCE(); \
             for (k = 0; k < WARMUPS; k++) { \
                 READ_COUNTER_BEFORE(start); \
                 op; \
                 READ_COUNTER_AFTER(end); \
             } \
-            SEL4BENCH_FENCE(); \
+            COMPILER_MEMORY_FENCE(); \
             dest[j] = end - start; \
         } \
         if (results_stable(dest, RUNS)) break; \
