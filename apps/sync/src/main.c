@@ -256,7 +256,7 @@ main(int argc, char **argv)
     assert(error == seL4_NoError);
 
     /* Broadcast benchmark */
-    error = sync_bin_sem_new(&env->vka, &lock);
+    error = sync_bin_sem_new(&env->vka, &lock, 1);
     assert(error == seL4_NoError);
 
     error = sync_cv_new(&env->vka, &cv);
@@ -268,7 +268,7 @@ main(int argc, char **argv)
     sync_bin_sem_destroy(&env->vka, &lock);
 
     /* Producer consumer benchmark */
-    error = sync_bin_sem_new(&env->vka, &lock);
+    error = sync_bin_sem_new(&env->vka, &lock, 1);
     assert(error == seL4_NoError);
 
     error = sync_cv_new(&env->vka, &producer_cv);
