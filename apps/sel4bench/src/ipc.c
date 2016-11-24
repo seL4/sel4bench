@@ -23,6 +23,7 @@ static json_t *
 process_ipc_results(void *r)
 {
     ipc_results_t *raw_results = r;
+    ccnt_t overheads[NUM_OVERHEAD_BENCHMARKS];
 
     /* check overheads */
     for (int i = 0; i < NUM_OVERHEAD_BENCHMARKS; i++) {
@@ -34,6 +35,15 @@ process_ipc_results(void *r)
                 return NULL;
             }
         }
+        result_desc_t desc = {
+            .stable = false,
+            .name = "overhead",
+            .ignored = 0,
+            .overhead = 0
+        };
+        result_t overhead_result;
+        overhead_result = process_result(RUNS - 1, raw_results->overhead_benchmarks[i], desc);
+        overheads[i] = overhead_result.min;
     }
 
     int n = ARRAY_SIZE(benchmark_params);
@@ -99,10 +109,11 @@ process_ipc_results(void *r)
         .n_results = n,
     };
 
-    /* now calculate the results (overheads already taken into account) */
+    /* now calculate the results */
     for (int i = 0; i < n; i++) {
         result_desc_t desc = {
-            .name = benchmark_params[i].name
+            .name = benchmark_params[i].name,
+            .overhead = overheads[benchmark_params[i].overhead_id],
         };
 
         functions[i] = (char *) benchmark_params[i].name,

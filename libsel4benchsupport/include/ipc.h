@@ -16,7 +16,7 @@
 #define OVERHEAD_BENCH_PARAMS(n) { .name = n }
 #define RUNS 16
 
-enum overhead_benchmarks {
+enum overheads {
     CALL_OVERHEAD,
     REPLY_RECV_OVERHEAD,
     SEND_OVERHEAD,
@@ -25,14 +25,6 @@ enum overhead_benchmarks {
     REPLY_RECV_10_OVERHEAD,
     /******/
     NUM_OVERHEAD_BENCHMARKS
-};
-
-enum overheads {
-    CALL_REPLY_RECV_OVERHEAD,
-    CALL_REPLY_RECV_10_OVERHEAD,
-    SEND_RECV_OVERHEAD,
-    /******/
-    NOVERHEADS
 };
 
 typedef enum dir {
@@ -95,7 +87,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = CALL_OVERHEAD
     },
     /* ReplyRecv fastpath between server and client in the same address space */
     {
@@ -107,7 +99,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD
     },
     /* Call faspath between client and server in different address spaces */
     {
@@ -119,7 +111,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = CALL_OVERHEAD
     },
     /* ReplyRecv fastpath between server and client in different address spaces */
     {
@@ -131,7 +123,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD
     },
     /* Call fastpath, low prio client to high prio server in different address space */
     {
@@ -143,7 +135,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MinPrio,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = CALL_OVERHEAD
     },
     /* ReplyRecv slowpath, high prio server to low prio client, different address space */
     {
@@ -155,7 +147,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MinPrio,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD
     },
     /* Call slowpath, high prio client to low prio server, different address space */
     {
@@ -167,7 +159,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MinPrio,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = CALL_OVERHEAD
     },
     /* ReplyRecv fastpath, low prio server to high prio client, different address space */
     {
@@ -179,7 +171,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MinPrio,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD
     },
     /* ReplyRecv slowpath, high prio server to low prio client, different address space, with
      * low prio dummy thread also in scheduler */
@@ -192,7 +184,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MinPrio + 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD,
+        .overhead_id = REPLY_RECV_OVERHEAD,
         .dummy_thread = true,
         .dummy_prio = seL4_MinPrio,
     },
@@ -207,7 +199,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MinPrio + 1,
         .length = 0,
-        .overhead_id = CALL_REPLY_RECV_OVERHEAD,
+        .overhead_id = CALL_OVERHEAD,
         .dummy_thread = true,
         .dummy_prio = seL4_MinPrio,
     },
@@ -221,7 +213,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = 100,
         .server_prio = 100,
         .length = 0,
-        .overhead_id = SEND_RECV_OVERHEAD
+        .overhead_id = SEND_OVERHEAD
     },
     /* Call slowpath, long IPC (10), same prio client to server, different address space */
     {
@@ -233,7 +225,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = 100,
         .server_prio = 100,
         .length = 10,
-        .overhead_id = CALL_REPLY_RECV_10_OVERHEAD
+        .overhead_id = CALL_10_OVERHEAD
     },
     /* ReplyRecv slowpath, long IPC (10), same prio server to client, on the slowpath, different address space */
     {
@@ -245,7 +237,7 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = 100,
         .server_prio = 100,
         .length = 10,
-        .overhead_id = CALL_REPLY_RECV_10_OVERHEAD
+        .overhead_id = REPLY_RECV_10_OVERHEAD
     }
 };
 
@@ -262,8 +254,6 @@ typedef struct ipc_results {
     /* Raw results from benchmarking. These get checked for sanity */
     ccnt_t overhead_benchmarks[NUM_OVERHEAD_BENCHMARKS][RUNS];
     ccnt_t benchmarks[ARRAY_SIZE(benchmark_params)][RUNS];
-    /* A worst case overhead */
-    ccnt_t overheads[NOVERHEADS];
 } ipc_results_t;
 
 static inline bool

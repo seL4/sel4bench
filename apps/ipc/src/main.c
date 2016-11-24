@@ -414,7 +414,6 @@ main(int argc, char **argv)
             } else {
                 results->benchmarks[j][i] = start - end;
             }
-            results->benchmarks[j][i] -= results->overheads[params->overhead_id];
         }
     }
 
