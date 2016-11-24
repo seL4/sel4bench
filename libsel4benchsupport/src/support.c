@@ -314,6 +314,14 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     /* get the timers */
     benchmark_arch_get_timers(&env);
 
+    /* In case we used any FPU during our setup we will attempt to put the system
+     * back into a steady state before returning */
+#ifdef CONFIG_X86_FPU_MAX_RESTORES_SINCE_SWITCH
+    for (int i = 0; i < CONFIG_X86_FPU_MAX_RESTORES_SINCE_SWITCH; i++) {
+        seL4_Yield();
+    }
+#endif
+
     return &env;
 }
 
