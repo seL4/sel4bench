@@ -201,7 +201,7 @@ benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_b
     char *producer_argv[N_PRODUCER_CONSUMER_ARGS];
     char consumer_args_strings[N_PRODUCER_CONSUMER_ARGS][WORD_STRING_SIZE];
     char *consumer_argv[N_PRODUCER_CONSUMER_ARGS];
-    int error;
+    int UNUSED error;
 
     for (int j = 0; j != N_PROD_CONS_BENCHMARKS; ++j) {
         int fifo_head = 0;
