@@ -42,7 +42,7 @@
             :                               \
             "d" ((seL4_Word)seL4_SysCall)              \
             :                               \
-            "rcx","rbx","r11","r10","r8"    \
+            "rcx","rbx","r11","r10","r8", "r9", "r15" \
             );                              \
 } while (0)
 
@@ -91,7 +91,7 @@
             :                                   \
             "d" ((seL4_Word)seL4_SysReplyRecv)             \
             :                                   \
-            "rcx","rbx","r11","r10","r8"        \
+            "rcx","rbx","r11","r10","r8", "r9", "r15"  \
             );                                  \
 } while (0)
 

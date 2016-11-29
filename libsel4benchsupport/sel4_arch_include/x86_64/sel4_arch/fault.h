@@ -37,7 +37,9 @@
          "%rcx", \
          "%rbx", \
          "%r11", \
-         "%r8" \
+         "%r8",  \
+         "%r9",  \
+         "%r15"  \
     ); \
     msg0 = mr0; \
 } while(0)
@@ -47,13 +49,13 @@
 
 static inline seL4_MessageInfo_t
 seL4_RecvWith1MR(seL4_CPtr src, seL4_Word *mr0) {
-    return seL4_RecvWithMRs(src, NULL, mr0, NULL);
+    return seL4_RecvWithMRs(src, NULL, mr0, NULL, NULL, NULL);
 }
 
 static inline void
 seL4_ReplyWith1MR(seL4_Word mr0)
 {
-    return seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 1), &mr0, NULL);
+    return seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 1), &mr0, NULL, NULL, NULL);
 }
 
 #else
