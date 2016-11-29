@@ -148,7 +148,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     /* wait for it to finish */
     seL4_MessageInfo_t info = seL4_Recv(process.fault_endpoint.cptr, NULL);
     int result = seL4_GetMR(0);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, benchmark->name);
         sel4debug_dump_registers(process.thread.tcb.cptr);
         result = EXIT_FAILURE;

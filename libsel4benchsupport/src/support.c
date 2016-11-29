@@ -57,7 +57,7 @@ NORETURN void
 benchmark_finished(int exit_code)
 {
     /* send back exit code */
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, exit_code);
     seL4_Send(SEL4UTILS_ENDPOINT_SLOT, info);
     /* we should not return */
@@ -275,7 +275,7 @@ benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
 {
     for (int i = 0; i < num_children; i++) {
         seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);
-        if (seL4_MessageInfo_get_label(tag) != seL4_NoFault) {
+        if (seL4_MessageInfo_get_label(tag) != seL4_Fault_NullFault) {
             /* failure - a thread we are waiting for faulted */
             sel4utils_print_fault_message(tag, name);
             abort();
