@@ -38,3 +38,4 @@ typedef struct env {
 
 /* do any platform specific set up */
 void plat_setup(env_t *env);
+int arch_init_timer_irq_cap(env_t *env, cspacepath_t *path);

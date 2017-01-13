@@ -82,15 +82,16 @@ setup_fault_handler(env_t *env)
 }
 
 static void
-init_timers(vka_t *vka, vspace_t *vspace, simple_t *simple, sel4utils_process_t *process)
+init_timers(env_t *env, sel4utils_process_t *process)
 {
     cspacepath_t path;
-    int error = sel4platsupport_copy_irq_cap(vka, simple, DEFAULT_TIMER_INTERRUPT, &path);
+    int error;
+    error = arch_init_timer_irq_cap(env, &path);
     if (error != seL4_NoError) {
         ZF_LOGF("Failed to get timer interrupt");
     }
 
-    UNUSED seL4_CPtr cap = sel4utils_move_cap_to_process(process, path, vka);
+    UNUSED seL4_CPtr cap = sel4utils_move_cap_to_process(process, path, &env->vka);
     assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
 }
 
@@ -106,7 +107,10 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
         ZF_LOGF("Failed to configure process for %s benchmark", benchmark->name);
     }
 
-   /* copy untyped to process */
+    /* initialise timers for benchmark environment */
+    init_timers(env, &process);
+
+    /* copy untyped to process */
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
     UNUSED seL4_CPtr slot = sel4utils_copy_cap_to_process(&process, path);
@@ -124,9 +128,6 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     /* set up shared memory for results */
     void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr,
                                                   benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
-
-    /* initialise timers for benchmark environment */
-    init_timers(&env->vka, &env->vspace, &env->simple, &process);
 
     /* do benchmark specific init */
     benchmark->init(&env->vka, &env->simple, &process);

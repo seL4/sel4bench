@@ -13,9 +13,9 @@
 #include <sel4utils/process.h>
 
 typedef enum {
-    UNTYPED_SLOT = SEL4UTILS_FIRST_FREE,
+    TIMEOUT_TIMER_IRQ_SLOT = SEL4UTILS_FIRST_FREE,
+    UNTYPED_SLOT,
     TIMER_UNTYPED_SLOT,
-    TIMEOUT_TIMER_IRQ_SLOT,
     /* define new slots here */
     FREE_SLOT /* first free slot in a benchmark's cspace */
 } benchmark_cspace_t;
