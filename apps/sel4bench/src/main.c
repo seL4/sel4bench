@@ -294,8 +294,8 @@ int main(void)
     UNUSED int error;
     void *vaddr;
 
-    info  = seL4_GetBootInfo();
-    simple_default_init_bootinfo(&global_env.simple, seL4_GetBootInfo());
+    info  = platsupport_get_bootinfo();
+    simple_default_init_bootinfo(&global_env.simple, info);
 
     /* create allocator */
     allocman = bootstrap_use_current_simple(&global_env.simple, ALLOCATOR_STATIC_POOL_SIZE, allocator_mem_pool);
