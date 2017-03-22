@@ -123,7 +123,7 @@ benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
 
     benchmark_configure_thread(env, ep, seL4_MaxPrio, "yielder", &thread);
     sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, ep, (seL4_Word) &end);
-    sel4utils_start_thread(&thread, yield_fn, (void *) N_YIELD_ARGS, (void *) argv, 1);
+    sel4utils_start_thread(&thread, (sel4utils_thread_entry_fn) yield_fn, (void *) N_YIELD_ARGS, (void *) argv, 1);
 
     benchmark_yield(ep, results, &end);
 
@@ -246,7 +246,7 @@ benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr 
     sel4utils_create_word_args(low_args_strings, low_argv, N_LOW_ARGS, produce, 
                                (seL4_Word) start, (seL4_Word) results, ep, consume);
 
-    error = sel4utils_start_thread(&low, low_fn, (void *) N_LOW_ARGS, (void *) low_argv, 1);
+    error = sel4utils_start_thread(&low, (sel4utils_thread_entry_fn) low_fn, (void *) N_LOW_ARGS, (void *) low_argv, 1);
     assert(error == seL4_NoError);
     error = sel4utils_spawn_process(&high, &env->vka, &env->vspace, N_HIGH_ARGS, high_argv, 1);
     assert(error == seL4_NoError);

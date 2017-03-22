@@ -131,12 +131,12 @@ benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t
                 sel4utils_create_word_args(wait_args_strings[i], wait_argv[i], N_WAIT_ARGS, ep, 
                         block_ep, lock, cv, &shared, &start,
                         &(results->broadcast_wait_time[j][i][run]));
-                error = sel4utils_start_thread(&waiters[i], bench_waiter_funcs[j],
+                error = sel4utils_start_thread(&waiters[i], (sel4utils_thread_entry_fn) bench_waiter_funcs[j],
                         (void *) N_WAIT_ARGS, (void *) wait_argv[i], 1);
             }
             assert(error == seL4_NoError);
 
-            error = sel4utils_start_thread(&broadcaster, bench_broadcast_funcs[j],
+            error = sel4utils_start_thread(&broadcaster, (sel4utils_thread_entry_fn) bench_broadcast_funcs[j],
                     (void *) N_BROADCAST_ARGS, (void *) broadcast_argv, 1);
             assert(error == seL4_NoError);
 
@@ -219,11 +219,11 @@ benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_b
                 ep, block_ep, lock, producer_cv, consumer_cv, &fifo_head,
                 &consumer_signal, &producer_signal, &(results->producer_to_consumer[j]));
 
-        error = sel4utils_start_thread(&producer, bench_producer_funcs[j], 
+        error = sel4utils_start_thread(&producer, (sel4utils_thread_entry_fn) bench_producer_funcs[j],
                 (void *) N_PRODUCER_CONSUMER_ARGS, (void *) producer_argv, 1);
         assert(error == seL4_NoError);
 
-        error = sel4utils_start_thread(&consumer, bench_consumer_funcs[j], 
+        error = sel4utils_start_thread(&consumer, (sel4utils_thread_entry_fn) bench_consumer_funcs[j],
                 (void *) N_PRODUCER_CONSUMER_ARGS, (void *) consumer_argv, 1);
         assert(error == seL4_NoError);
 

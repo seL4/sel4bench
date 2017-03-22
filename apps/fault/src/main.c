@@ -220,28 +220,28 @@ run_fault_benchmark(env_t *env, fault_results_t *results)
     benchmark_configure_thread(env, seL4_CapNull, seL4_MinPrio, "fault handler", &fault_handler);
 
     /* benchmark fault */
-    error = sel4utils_start_thread(&faulter, measure_fault_fn,
+    error = sel4utils_start_thread(&faulter, (sel4utils_thread_entry_fn) measure_fault_fn,
                                    (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
     assert(error == 0);
-    error = sel4utils_start_thread(&fault_handler, measure_fault_handler_fn,
+    error = sel4utils_start_thread(&fault_handler, (sel4utils_thread_entry_fn) measure_fault_handler_fn,
                                    (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
     assert(error == 0);
     benchmark_wait_children(done_ep.cptr, "fault handler", 2);
 
     /* benchmark reply */
-    error = sel4utils_start_thread(&faulter, measure_fault_reply_fn,
+    error = sel4utils_start_thread(&faulter, (sel4utils_thread_entry_fn) measure_fault_reply_fn,
                                    (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
     assert(error == 0);
-    error = sel4utils_start_thread(&fault_handler, measure_fault_reply_handler_fn,
+    error = sel4utils_start_thread(&fault_handler, (sel4utils_thread_entry_fn) measure_fault_reply_handler_fn,
                                    (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
     assert(error == 0);
     benchmark_wait_children(done_ep.cptr, "fault handler", 2);
 
     /* benchmark round_trip */
-    error = sel4utils_start_thread(&faulter, measure_fault_roundtrip_fn,
+    error = sel4utils_start_thread(&faulter, (sel4utils_thread_entry_fn) measure_fault_roundtrip_fn,
                                    (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
     assert(error == 0);
-    error = sel4utils_start_thread(&fault_handler, measure_fault_roundtrip_handler_fn,
+    error = sel4utils_start_thread(&fault_handler, (sel4utils_thread_entry_fn) measure_fault_roundtrip_handler_fn,
                                    (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
     assert(error == 0);
     benchmark_wait_children(done_ep.cptr, "fault handler", 2);

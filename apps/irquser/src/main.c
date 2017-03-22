@@ -130,8 +130,8 @@ main(int argc, char **argv)
     /* first run the benchmark between two threads in the current address space */
     benchmark_configure_thread(env, endpoint.cptr, seL4_MaxPrio - 1, "ticker", &ticker);
     benchmark_configure_thread(env, endpoint.cptr, seL4_MaxPrio - 2, "spinner", &spinner);
-    
-    error = sel4utils_start_thread(&ticker, ticker_fn, (void *) results->thread_results, 
+
+    error = sel4utils_start_thread(&ticker, (sel4utils_thread_entry_fn) ticker_fn, (void *) results->thread_results,
                                    (void *) local_current_time, true);
     if (error) {
         ZF_LOGF("Failed to start ticker");
@@ -141,7 +141,7 @@ main(int argc, char **argv)
     char *spinner_argv[1];
 
     sel4utils_create_word_args(strings, spinner_argv, 1, (seL4_Word) local_current_time);
-    error = sel4utils_start_thread(&spinner, spinner_fn, (void *) 1, (void *) spinner_argv, true);
+    error = sel4utils_start_thread(&spinner, (sel4utils_thread_entry_fn) spinner_fn, (void *) 1, (void *) spinner_argv, true);
     assert(!error);
 
     benchmark_wait_children(endpoint.cptr, "child of irq-user", 1);
@@ -156,7 +156,7 @@ main(int argc, char **argv)
     /* now run the benchmark again, but run the spinner in another address space */
     
     /* restart ticker */
-    error = sel4utils_start_thread(&ticker, ticker_fn, (void *) results->process_results, 
+    error = sel4utils_start_thread(&ticker,  (sel4utils_thread_entry_fn) ticker_fn, (void *) results->process_results,
                                    (void *) local_current_time, true);
     assert(!error);
 

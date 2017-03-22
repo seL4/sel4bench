@@ -124,10 +124,10 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
                                (seL4_Word) &end, (seL4_Word) results->lo_prio_results, ep);
 
     printf("Starting thread\n");
-    error = sel4utils_start_thread(&signal, low_prio_signal_fn, (void *) N_LO_SIGNAL_ARGS,
+    error = sel4utils_start_thread(&signal, (sel4utils_thread_entry_fn) low_prio_signal_fn, (void *) N_LO_SIGNAL_ARGS,
                                    (void *) signal_argv, 1);
     assert(error == seL4_NoError);
-    error = sel4utils_start_thread(&wait, wait_fn, (void *) N_WAIT_ARGS, (void *) wait_argv, 1);
+    error = sel4utils_start_thread(&wait, (sel4utils_thread_entry_fn) wait_fn, (void *) N_WAIT_ARGS, (void *) wait_argv, 1);
     assert(error == seL4_NoError);
 
     benchmark_wait_children(ep, "children of notification benchmark", 2);
@@ -143,13 +143,13 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
     seL4_TCB_SetPriority(SEL4UTILS_TCB_SLOT, seL4_MaxPrio - 2);
 
     /* start the waiter */
-    error = sel4utils_start_thread(&wait, wait_fn, (void *) N_WAIT_ARGS, (void *) wait_argv, 1);
+    error = sel4utils_start_thread(&wait, (sel4utils_thread_entry_fn) wait_fn, (void *) N_WAIT_ARGS, (void *) wait_argv, 1);
     assert(error == seL4_NoError);
 
     /* waiter will run and block, now start the signaller */
     sel4utils_create_word_args(signal_args_strings, signal_argv, N_HI_SIGNAL_ARGS, ntfn, 
                                (seL4_Word) results->hi_prio_results, ep);
-    error = sel4utils_start_thread(&signal, high_prio_signal_fn, (void *) N_HI_SIGNAL_ARGS,
+    error = sel4utils_start_thread(&signal, (sel4utils_thread_entry_fn) high_prio_signal_fn, (void *) N_HI_SIGNAL_ARGS,
                                    (void *) signal_argv, 1);
     assert(error == seL4_NoError);
 
