@@ -113,22 +113,23 @@ benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t
     ccnt_t start;
     UNUSED int error;
 
-    for (int j = 0; j < N_BROADCAST_BENCHMARKS; ++j) {
-        /* Create some waiter threads and a broadcaster thread */
-        for (int i = 0; i != N_WAITERS; ++i)  {
-            benchmark_configure_thread(env, 0, seL4_MaxPrio, "waiter", &waiters[i]);
-        }
-        benchmark_configure_thread(env, 0, seL4_MaxPrio-1, "broadcaster", &broadcaster);
+    /* Create some waiter threads and a broadcaster thread */
+    for (int i = 0; i != N_WAITERS; ++i)  {
+        benchmark_configure_thread(env, 0, seL4_MaxPrio, "waiter", &waiters[i]);
+    }
+    benchmark_configure_thread(env, 0, seL4_MaxPrio-1, "broadcaster", &broadcaster);
 
-        for (int run = 0; run < N_RUNS; ++run) {
+
+    for (int j = 0; j < N_BROADCAST_BENCHMARKS; ++j) {
+         for (int run = 0; run < N_RUNS; ++run) {
             shared = 0;
 
-            sel4utils_create_word_args(broadcast_args_strings, broadcast_argv, 
-                    N_BROADCAST_ARGS, ep, block_ep, lock, cv, &shared, &start, 
+            sel4utils_create_word_args(broadcast_args_strings, broadcast_argv,
+                    N_BROADCAST_ARGS, ep, block_ep, lock, cv, &shared, &start,
                     &(results->broadcast_broadcast_time[j][run]));
 
             for (int i = 0; i < N_WAITERS; ++i)  {
-                sel4utils_create_word_args(wait_args_strings[i], wait_argv[i], N_WAIT_ARGS, ep, 
+                sel4utils_create_word_args(wait_args_strings[i], wait_argv[i], N_WAIT_ARGS, ep,
                         block_ep, lock, cv, &shared, &start,
                         &(results->broadcast_wait_time[j][i][run]));
                 error = sel4utils_start_thread(&waiters[i], (sel4utils_thread_entry_fn) bench_waiter_funcs[j],
@@ -142,11 +143,6 @@ benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t
 
             benchmark_wait_children(ep, "Broadcast bench waiters", N_WAITERS + 1);
         }
-
-        for (int i = 0; i != N_WAITERS; ++i)  {
-            sel4utils_clean_up_thread(&env->vka, &env->vspace, &waiters[i]);
-        }
-        sel4utils_clean_up_thread(&env->vka, &env->vspace, &broadcaster);
     }
 }
 
@@ -203,19 +199,19 @@ benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_b
     char *consumer_argv[N_PRODUCER_CONSUMER_ARGS];
     int UNUSED error;
 
+    /* Create producer consumer threads */
+    benchmark_configure_thread(env, 0, seL4_MaxPrio, "producer", &producer);
+    benchmark_configure_thread(env, 0, seL4_MaxPrio, "consumer", &consumer);
+
     for (int j = 0; j != N_PROD_CONS_BENCHMARKS; ++j) {
         int fifo_head = 0;
         ccnt_t producer_signal, consumer_signal;
 
-        /* Create producer consumer threads */
-        benchmark_configure_thread(env, 0, seL4_MaxPrio, "producer", &producer);
-        benchmark_configure_thread(env, 0, seL4_MaxPrio, "consumer", &consumer);
-
-        sel4utils_create_word_args(producer_args_strings, producer_argv, N_PRODUCER_CONSUMER_ARGS, 
+        sel4utils_create_word_args(producer_args_strings, producer_argv, N_PRODUCER_CONSUMER_ARGS,
                 ep, block_ep, lock, consumer_cv, producer_cv, &fifo_head,
                 &producer_signal, &consumer_signal, &(results->consumer_to_producer[j]));
 
-        sel4utils_create_word_args(consumer_args_strings, consumer_argv, N_PRODUCER_CONSUMER_ARGS, 
+        sel4utils_create_word_args(consumer_args_strings, consumer_argv, N_PRODUCER_CONSUMER_ARGS,
                 ep, block_ep, lock, producer_cv, consumer_cv, &fifo_head,
                 &consumer_signal, &producer_signal, &(results->producer_to_consumer[j]));
 
@@ -228,9 +224,6 @@ benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_b
         assert(error == seL4_NoError);
 
         benchmark_wait_children(ep, "Broadcast bench waiters", 2);
-
-        sel4utils_clean_up_thread(&env->vka, &env->vspace, &producer);
-        sel4utils_clean_up_thread(&env->vka, &env->vspace, &consumer);
     }
 }
 
@@ -244,48 +237,54 @@ main(int argc, char **argv)
     sync_bin_sem_t lock;
     sync_cv_t cv, producer_cv, consumer_cv;
 
-    env = benchmark_get_env(argc, argv, sizeof(sync_results_t));
+    static size_t object_freq[seL4_ObjectTypeCount] = {
+        [seL4_TCBObject] = N_WAITERS + 3,
+        [seL4_EndpointObject] = 2,
+        [seL4_NotificationObject] = 5,
+    };
+
+    env = benchmark_get_env(argc, argv, sizeof(sync_results_t), object_freq);
     results = (sync_results_t *) env->results;
 
     sel4bench_init();
 
-    error = vka_alloc_endpoint(&env->vka, &done_ep);
+    error = vka_alloc_endpoint(&env->slab_vka, &done_ep);
     assert(error == seL4_NoError);
 
-    error = vka_alloc_endpoint(&env->vka, &block_ep);
+    error = vka_alloc_endpoint(&env->slab_vka, &block_ep);
     assert(error == seL4_NoError);
 
     /* Broadcast benchmark */
-    error = sync_bin_sem_new(&env->vka, &lock, 1);
+    error = sync_bin_sem_new(&env->slab_vka, &lock, 1);
     assert(error == seL4_NoError);
 
-    error = sync_cv_new(&env->vka, &cv);
+    error = sync_cv_new(&env->slab_vka, &cv);
     assert(error == seL4_NoError);
 
     benchmark_broadcast(env, done_ep.cptr, block_ep.cptr, &lock, &cv, results);
 
-    sync_cv_destroy(&env->vka, &cv);
-    sync_bin_sem_destroy(&env->vka, &lock);
+    sync_cv_destroy(&env->slab_vka, &cv);
+    sync_bin_sem_destroy(&env->slab_vka, &lock);
 
     /* Producer consumer benchmark */
-    error = sync_bin_sem_new(&env->vka, &lock, 1);
+    error = sync_bin_sem_new(&env->slab_vka, &lock, 1);
     assert(error == seL4_NoError);
 
-    error = sync_cv_new(&env->vka, &producer_cv);
+    error = sync_cv_new(&env->slab_vka, &producer_cv);
     assert(error == seL4_NoError);
 
-    error = sync_cv_new(&env->vka, &consumer_cv);
+    error = sync_cv_new(&env->slab_vka, &consumer_cv);
     assert(error == seL4_NoError);
 
-    benchmark_producer_consumer(env, done_ep.cptr, block_ep.cptr, &lock, 
+    benchmark_producer_consumer(env, done_ep.cptr, block_ep.cptr, &lock,
             &producer_cv, &consumer_cv, results);
 
-    sync_cv_destroy(&env->vka, &producer_cv);
-    sync_cv_destroy(&env->vka, &consumer_cv);
-    sync_bin_sem_destroy(&env->vka, &lock);
+    sync_cv_destroy(&env->slab_vka, &producer_cv);
+    sync_cv_destroy(&env->slab_vka, &consumer_cv);
+    sync_bin_sem_destroy(&env->slab_vka, &lock);
 
-    vka_free_object(&env->vka, &done_ep);
-    vka_free_object(&env->vka, &block_ep);
+    vka_free_object(&env->slab_vka, &done_ep);
+    vka_free_object(&env->slab_vka, &block_ep);
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);

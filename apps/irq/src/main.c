@@ -41,7 +41,8 @@ main(int argc, char **argv)
     env_t *env;
     irq_results_t *results;
 
-    env = benchmark_get_env(argc, argv, sizeof(irq_results_t));
+    static size_t object_freq[seL4_ObjectTypeCount] = {0};
+    env = benchmark_get_env(argc, argv, sizeof(irq_results_t), object_freq);
     results = (irq_results_t *) env->results;
 
     ZF_LOGF_IF(timer_periodic(env->timeout_timer->timer, INTERRUPT_PERIOD_NS) != 0,

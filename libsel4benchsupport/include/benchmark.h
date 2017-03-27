@@ -15,6 +15,7 @@
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4utils/process.h>
+#include <sel4utils/slab.h>
 #include <simple/simple.h>
 #include <vka/vka.h>
 #include <vspace/vspace.h>
@@ -23,8 +24,10 @@
 
 /* benchmarking environment set up by root task */
 typedef struct env {
-    /* vka interface for allocating cslots and objects in the benchmark */
-    vka_t vka;
+    /* vka interface for allocating *fast* objects in the benchmark */
+    vka_t slab_vka;
+    /* vka interface for everything else */
+    vka_t delegate_vka;
     /* vspace interface for managing virtual memory in the benchmark */
     vspace_t vspace;
     /* intialised allocman that backs the vka interface */
@@ -46,7 +49,7 @@ typedef struct env {
 } env_t;
 
 /* initialise the benchmarking environment and return it */
-env_t *benchmark_get_env(int argc, char **argv, size_t results_size);
+env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount]);
 /* signal to the benchmark driver process that we are done */
 NORETURN void benchmark_finished(int exit_code);
 /* put char for benchmarks, does not print if kernel is not a debug kernel */

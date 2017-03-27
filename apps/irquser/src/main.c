@@ -89,10 +89,15 @@ main(int argc, char **argv)
     irquser_results_t *results;
     vka_object_t endpoint = {0};
 
-    env = benchmark_get_env(argc, argv, sizeof(irquser_results_t));
+    static size_t object_freq[seL4_ObjectTypeCount] = {
+        [seL4_TCBObject] = 2,
+        [seL4_EndpointObject] = 1,
+    };
+
+    env = benchmark_get_env(argc, argv, sizeof(irquser_results_t), object_freq);
     results = (irquser_results_t *) env->results;
 
-    if (vka_alloc_endpoint(&env->vka, &endpoint) != 0) {
+    if (vka_alloc_endpoint(&env->slab_vka, &endpoint) != 0) {
         ZF_LOGF("Failed to allocate endpoint\n");
     }
 
@@ -171,7 +176,7 @@ main(int argc, char **argv)
 
     /* start the spinner process */
     sel4utils_create_word_args(strings, spinner_argv, 1, (seL4_Word) current_time_remote);
-    error = sel4utils_spawn_process(&spinner_process, &env->vka, &env->vspace, 1, spinner_argv, 1);
+    error = sel4utils_spawn_process(&spinner_process, &env->slab_vka, &env->vspace, 1, spinner_argv, 1);
     if (error) {
         ZF_LOGF("Failed to start spinner process");
     }

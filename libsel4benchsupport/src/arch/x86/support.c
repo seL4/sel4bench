@@ -25,7 +25,7 @@ benchmark_arch_get_timers(env_t *env)
     /* Map the HPET so we can query its proprties */
     vka_object_t frame;
     void *vaddr;
-    vaddr = sel4platsupport_map_frame_at(&env->vka, &env->vspace, env->timer_paddr, seL4_PageBits, &frame);
+    vaddr = sel4platsupport_map_frame_at(&env->delegate_vka, &env->vspace, env->timer_paddr, seL4_PageBits, &frame);
     int irq;
     int vector;
     ZF_LOGF_IF(vaddr == NULL, "Failed to map HPET paddr");
@@ -41,8 +41,8 @@ benchmark_arch_get_timers(env_t *env)
     }
     vector = DEFAULT_TIMER_INTERRUPT;
     vspace_unmap_pages(&env->vspace, vaddr, 1, seL4_PageBits, VSPACE_PRESERVE);
-    vka_free_object(&env->vka, &frame);
-    env->timeout_timer = sel4platsupport_get_hpet_paddr(&env->vspace, &env->simple, &env->vka,
+    vka_free_object(&env->delegate_vka, &frame);
+    env->timeout_timer = sel4platsupport_get_hpet_paddr(&env->vspace, &env->simple, &env->delegate_vka,
                                          env->timer_paddr, env->ntfn.cptr,
                                          irq, vector);
     ZF_LOGF_IF(env->timeout_timer == NULL, "Failed to get HPET timer");

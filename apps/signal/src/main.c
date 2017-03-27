@@ -13,6 +13,7 @@
 
 #include <sel4/sel4.h>
 #include <sel4bench/arch/sel4bench.h>
+#include <sel4utils/slab.h>
 
 #include <benchmark.h>
 #include <signal.h>
@@ -123,7 +124,6 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
     sel4utils_create_word_args(signal_args_strings, signal_argv, N_LO_SIGNAL_ARGS, ntfn, 
                                (seL4_Word) &end, (seL4_Word) results->lo_prio_results, ep);
 
-    printf("Starting thread\n");
     error = sel4utils_start_thread(&signal, (sel4utils_thread_entry_fn) low_prio_signal_fn, (void *) N_LO_SIGNAL_ARGS,
                                    (void *) signal_argv, 1);
     assert(error == seL4_NoError);
@@ -131,13 +131,13 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
     assert(error == seL4_NoError);
 
     benchmark_wait_children(ep, "children of notification benchmark", 2);
-        
-    sel4utils_clean_up_thread(&env->vka, &env->vspace, &wait);
-    sel4utils_clean_up_thread(&env->vka, &env->vspace, &signal);
 
     /* now benchmark signalling to a lower prio thread */
-    benchmark_configure_thread(env, ep, seL4_MaxPrio - 1, "wait", &wait);
-    benchmark_configure_thread(env, ep, seL4_MaxPrio, "signal", &signal);
+    error = seL4_TCB_SetPriority(wait.tcb.cptr, seL4_MaxPrio - 1);
+    assert(error == seL4_NoError);
+
+    error = seL4_TCB_SetPriority(signal.tcb.cptr, seL4_MaxPrio);
+    assert(error == seL4_NoError);
 
     /* set our prio down so the waiting thread can get on the endpoint */
     seL4_TCB_SetPriority(SEL4UTILS_TCB_SLOT, seL4_MaxPrio - 2);
@@ -176,15 +176,22 @@ main(int argc, char **argv)
     vka_object_t done_ep, ntfn;
     signal_results_t *results;
 
-    env = benchmark_get_env(argc, argv, sizeof(signal_results_t));
+    /* configure the slab allocator - we need 2 tcbs, 2 scs, 1 ntfn, 1 ep */
+    static size_t object_freq[seL4_ObjectTypeCount] = {
+        [seL4_TCBObject] = 2,
+        [seL4_EndpointObject] = 1,
+        [seL4_NotificationObject] = 1,
+    };
+
+    env = benchmark_get_env(argc, argv, sizeof(signal_results_t), object_freq);
     results = (signal_results_t *) env->results;
 
     sel4bench_init();
 
-    error = vka_alloc_endpoint(&env->vka, &done_ep);
+    error = vka_alloc_endpoint(&env->slab_vka, &done_ep);
     assert(error == seL4_NoError);
-    
-    error = vka_alloc_notification(&env->vka, &ntfn);
+
+    error = vka_alloc_notification(&env->slab_vka, &ntfn);
     assert(error == seL4_NoError);
 
     /* measure overhead */    

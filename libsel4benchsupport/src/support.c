@@ -208,8 +208,8 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
     sel4utils_process_config_t config;
 
     get_process_config(env, &config, prio, entry_point);
-    error = sel4utils_configure_process_custom(process, &env->vka, &env->vspace, config);
-    
+    error = sel4utils_configure_process_custom(process, &env->slab_vka, &env->vspace, config);
+
     if (error) {
         ZF_LOGF("Failed to configure process %s", name);
     }
@@ -243,7 +243,7 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
     config.create_vspace = false;
     config.vspace = &process->vspace;
 
-    error = sel4utils_configure_process_custom(thread, &env->vka, &env->vspace, config);
+    error = sel4utils_configure_process_custom(thread, &env->slab_vka, &env->vspace, config);
     if (error) {
         ZF_LOGF("Failed to configure process %s", name);
     }
@@ -260,7 +260,7 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
     seL4_CapData_t guard = seL4_CapData_Guard_new(0, seL4_WordBits -
                                                      CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
 
-    int error = sel4utils_configure_thread(&env->vka, &env->vspace, &env->vspace, fault_ep, prio,
+    int error = sel4utils_configure_thread(&env->slab_vka, &env->vspace, &env->vspace, fault_ep, prio,
                                            SEL4UTILS_CNODE_SLOT, guard, thread);
     if (error) {
         ZF_LOGF("Failed to configure %s\n", name);
@@ -284,7 +284,7 @@ benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
 }
 
 env_t *
-benchmark_get_env(int argc, char **argv, size_t results_size)
+benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
 {
     size_t untyped_size_bits, stack_pages;
     uintptr_t stack_vaddr;
@@ -300,8 +300,8 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     env.results = (void *) atol(argv[3]);
     env.timer_paddr = (uintptr_t) atol(argv[4]);
 
-    env.allocman = init_allocator(&env.vka, untyped_size_bits, env.timer_paddr);
-    init_vspace(&env.vka, &env.vspace, &env.data, stack_pages, stack_vaddr,
+    env.allocman = init_allocator(&env.delegate_vka, untyped_size_bits, env.timer_paddr);
+    init_vspace(&env.delegate_vka, &env.vspace, &env.data, stack_pages, stack_vaddr,
                 (uintptr_t) env.results, results_size);
     init_allocator_vspace(env.allocman, &env.vspace);
     parse_code_region(&env.region);
@@ -310,7 +310,7 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
     benchmark_arch_get_simple(&env.simple.arch_simple);
 
     /* allocate a notification for timers */
-    ZF_LOGF_IFERR(vka_alloc_notification(&env.vka, &env.ntfn), "Failed to allocate ntfn");
+    ZF_LOGF_IFERR(vka_alloc_notification(&env.delegate_vka, &env.ntfn), "Failed to allocate ntfn");
     /* get the timers */
     benchmark_arch_get_timers(&env);
 
@@ -321,6 +321,11 @@ benchmark_get_env(int argc, char **argv, size_t results_size)
         seL4_Yield();
     }
 #endif
+
+    /* set up slab allocator */
+    if (slab_init(&env.slab_vka, &env.delegate_vka, object_freq) != 0) {
+        ZF_LOGF("Failed to init slab allocator");
+    }
 
     return &env;
 }

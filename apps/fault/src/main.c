@@ -193,11 +193,11 @@ run_fault_benchmark(env_t *env, fault_results_t *results)
 {
     /* allocate endpoint */
     vka_object_t fault_endpoint = {0};
-    UNUSED int error = vka_alloc_endpoint(&env->vka, &fault_endpoint);
+    UNUSED int error = vka_alloc_endpoint(&env->slab_vka, &fault_endpoint);
     assert(error == 0);
 
     vka_object_t done_ep = {0};
-    error = vka_alloc_endpoint(&env->vka, &done_ep);
+    error = vka_alloc_endpoint(&env->slab_vka, &done_ep);
     assert(error == 0);
 
     /* create faulter */
@@ -277,7 +277,12 @@ main(int argc, char **argv)
     UNUSED int error;
     fault_results_t *results;
 
-    env = benchmark_get_env(argc, argv, sizeof(fault_results_t));
+    static size_t object_freq[seL4_ObjectTypeCount] = {
+        [seL4_TCBObject] = 2,
+        [seL4_EndpointObject] = 2,
+    };
+
+    env = benchmark_get_env(argc, argv, sizeof(fault_results_t), object_freq);
     results = (fault_results_t *) env->results;
 
     sel4bench_init();

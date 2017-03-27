@@ -67,7 +67,8 @@ main(int argc, char **argv)
     UNUSED int error;
     hardware_results_t *results;
 
-    env = benchmark_get_env(argc, argv, sizeof(hardware_results_t));
+    static size_t object_freq[seL4_ObjectTypeCount] = {0};
+    env = benchmark_get_env(argc, argv, sizeof(hardware_results_t), object_freq);
     results = (hardware_results_t *) env->results;
 
     sel4bench_init();

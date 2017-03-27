@@ -301,54 +301,20 @@ dummy_fn(int argc, char *argv[])
 }
 
 void
-run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
+run_bench(env_t *env, cspacepath_t result_ep_path,
           const benchmark_params_t *params,
-          ccnt_t *ret1, ccnt_t *ret2)
+          ccnt_t *ret1, ccnt_t *ret2,
+          helper_thread_t *client, helper_thread_t *server)
 {
-    helper_thread_t client, server, dummy;
 
     timing_init();
 
-    benchmark_shallow_clone_process(env, &client.process, params->client_prio, 
-                                            bench_funcs[params->client_fn], "client");
-
-    if (params->same_vspace) {
-        benchmark_configure_thread_in_process(env, &client.process, &server.process, params->server_prio, 
-                                              bench_funcs[params->server_fn], "server");
-    } else {
-        benchmark_shallow_clone_process(env, &server.process, params->server_prio,
-                                        bench_funcs[params->server_fn], "server");
-    }
-
-    if (params->dummy_thread) {
-        benchmark_shallow_clone_process(env, &dummy.process, params->dummy_prio, dummy_fn, "dummy");
-        if (sel4utils_spawn_process(&dummy.process, &env->vka, &env->vspace, 0, NULL, 1)) {
-            ZF_LOGF("Failed to spawn dummy process\n");
-        }
-    }
-
-    /* copy endpoint cptrs into a and b's respective cspaces*/
-    client.ep = sel4utils_copy_cap_to_process(&client.process, ep_path);
-    client.result_ep = sel4utils_copy_cap_to_process(&client.process, result_ep_path);
-
-    if (!params->same_vspace) {
-        server.ep = sel4utils_copy_cap_to_process(&server.process, ep_path);
-        server.result_ep = sel4utils_copy_cap_to_process(&server.process, result_ep_path);
-    } else {
-        server.ep = client.ep;
-        server.result_ep = client.result_ep;
-    }
-
-    /* set up args */
-    sel4utils_create_word_args(client.argv_strings, client.argv, NUM_ARGS, client.ep, client.result_ep);
-    sel4utils_create_word_args(server.argv_strings, server.argv, NUM_ARGS, server.ep, server.result_ep);
-
     /* start processes */
-    if (sel4utils_spawn_process(&client.process, &env->vka, &env->vspace, NUM_ARGS, client.argv, 1)) {
+    if (sel4utils_spawn_process(&client->process, &env->slab_vka, &env->vspace, NUM_ARGS, client->argv, 1)) {
         ZF_LOGF("Failed to spawn client\n");
     }
 
-    if (sel4utils_spawn_process(&server.process, &env->vka, &env->vspace, NUM_ARGS, server.argv, 1)) {
+    if (sel4utils_spawn_process(&server->process, &env->slab_vka, &env->vspace, NUM_ARGS, server->argv, 1)) {
         ZF_LOGF("Failed to spawn server\n");
     }
 
@@ -357,11 +323,8 @@ run_bench(env_t *env, cspacepath_t ep_path, cspacepath_t result_ep_path,
     *ret2 = get_result(result_ep_path.capPtr);
 
     /* clean up - clean server first in case it is sharing the client's cspace and vspace */
-    sel4utils_destroy_process(&server.process, &env->vka);
-    sel4utils_destroy_process(&client.process, &env->vka);
-    if (params->dummy_thread) {
-        sel4utils_destroy_process(&dummy.process, &env->vka);
-    }
+    seL4_TCB_Suspend(client->process.thread.tcb.cptr);
+    seL4_TCB_Suspend(server->process.thread.tcb.cptr);
 
     timing_destroy();
 }
@@ -373,25 +336,56 @@ main(int argc, char **argv)
     vka_object_t ep, result_ep;
     cspacepath_t ep_path, result_ep_path;
 
-    env = benchmark_get_env(argc, argv, sizeof(ipc_results_t));
+    static size_t object_freq[seL4_ObjectTypeCount] = {
+        [seL4_TCBObject] = 4,
+        [seL4_EndpointObject] = 2,
+    };
+
+    env = benchmark_get_env(argc, argv, sizeof(ipc_results_t), object_freq);
     ipc_results_t *results = (ipc_results_t *) env->results;
 
     /* allocate benchmark endpoint - the IPC's that we benchmark
        will be sent over this ep */
-    if (vka_alloc_endpoint(&env->vka, &ep) != 0) {
+    if (vka_alloc_endpoint(&env->slab_vka, &ep) != 0) {
         ZF_LOGF("Failed to allocate endpoint");
     }
-    vka_cspace_make_path(&env->vka, ep.cptr, &ep_path);
+    vka_cspace_make_path(&env->slab_vka, ep.cptr, &ep_path);
 
     /* allocate result ep - the IPC threads will send their timestamps
        to this ep */
-    if (vka_alloc_endpoint(&env->vka, &result_ep) != 0) {
+    if (vka_alloc_endpoint(&env->slab_vka, &result_ep) != 0) {
         ZF_LOGF("Failed to allocate endpoint");
     }
-    vka_cspace_make_path(&env->vka, result_ep.cptr, &result_ep_path);
+    vka_cspace_make_path(&env->slab_vka, result_ep.cptr, &result_ep_path);
 
     /* measure benchmarking overhead */
     measure_overhead(results);
+
+    helper_thread_t client, server_thread, server_process, dummy;
+
+    benchmark_shallow_clone_process(env, &client.process, seL4_MinPrio, 0, "client");
+    benchmark_shallow_clone_process(env, &server_process.process, seL4_MinPrio, 0, "server process");
+    benchmark_configure_thread_in_process(env, &client.process, &server_thread.process, seL4_MinPrio, 0, "server thread");
+    benchmark_shallow_clone_process(env, &dummy.process, seL4_MinPrio, dummy_fn, "dummy");
+
+    if (sel4utils_spawn_process(&dummy.process, &env->slab_vka, &env->vspace, 0, NULL, 1)) {
+        ZF_LOGF("Failed to spawn dummy process\n");
+    }
+
+    client.ep = sel4utils_copy_cap_to_process(&client.process, ep_path);
+    client.result_ep = sel4utils_copy_cap_to_process(&client.process, result_ep_path);
+
+    server_process.ep = sel4utils_copy_cap_to_process(&server_process.process, ep_path);
+    server_process.result_ep = sel4utils_copy_cap_to_process(&server_process.process, result_ep_path);
+
+    server_thread.ep = client.ep;
+    server_thread.result_ep = client.result_ep;
+
+    sel4utils_create_word_args(client.argv_strings, client.argv, NUM_ARGS, client.ep, client.result_ep);
+    sel4utils_create_word_args(server_process.argv_strings, server_process.argv, NUM_ARGS,
+                                server_process.ep, server_process.result_ep);
+    sel4utils_create_word_args(server_thread.argv_strings, server_thread.argv, NUM_ARGS,
+                                server_thread.ep, server_thread.result_ep);
 
     /* run the benchmark */
     ccnt_t start, end;
@@ -408,7 +402,30 @@ main(int argc, char **argv)
                     params->client_prio, params->server_prio,
                     params->same_vspace ? "same" : "diff", params->length);
 
-            run_bench(env, ep_path, result_ep_path, params, &end, &start);
+            /* set up client for benchmark */
+            int error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, params->client_prio);
+            assert(error == seL4_NoError);
+            client.process.entry_point = bench_funcs[params->client_fn];
+
+            /* set up dummy for benchmark */
+            if (params->dummy_thread) {
+                error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, params->dummy_prio);
+                assert(error == seL4_NoError);
+            }
+
+            if (params->same_vspace) {
+                error = seL4_TCB_SetPriority(server_thread.process.thread.tcb.cptr, params->server_prio);
+                assert(error == seL4_NoError);
+                server_thread.process.entry_point = bench_funcs[params->server_fn];
+            } else {
+                error = seL4_TCB_SetPriority(server_process.process.thread.tcb.cptr, params->server_prio);
+                assert(error == seL4_NoError);
+                server_process.process.entry_point = bench_funcs[params->server_fn];
+            }
+
+            run_bench(env, result_ep_path, params, &end, &start, &client,
+                      params->same_vspace ? &server_thread : &server_process);
+
             if (end > start) {
                 results->benchmarks[j][i] = end - start;
             } else {

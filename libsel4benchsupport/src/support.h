@@ -10,6 +10,7 @@
 #ifndef __BENCHMARK_SUPPORT_H
 #define __BENCHMARK_SUPPORT_H
 
+#include <sel4utils/slab.h>
 #include <simple/arch/simple.h>
 
 void benchmark_arch_get_simple(arch_simple_t *simple);
