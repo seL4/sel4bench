@@ -103,26 +103,19 @@ add_single_untyped(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
 }
 
 static allocman_t*
-init_allocator(vka_t *vka, size_t untyped_size_bits,
-               uintptr_t timer_paddr)
+init_allocator(simple_t *simple, vka_t *vka, uintptr_t timer_paddr)
 {
     /* set up malloc area */
     morecore_area = app_morecore_area;
     morecore_size = MORE_CORE_SIZE;
 
     /* set up allocator */
-    allocman_t *allocator = bootstrap_use_current_1level(SEL4UTILS_CNODE_SLOT,
-                                             CONFIG_SEL4UTILS_CSPACE_SIZE_BITS,
-                                             FREE_SLOT,
-                                             (1u << CONFIG_SEL4UTILS_CSPACE_SIZE_BITS),
-                                             ALLOCATOR_STATIC_POOL_SIZE,
-                                             allocator_mem_pool);
+    allocman_t *allocator = bootstrap_new_1level_simple(simple, CONFIG_SEL4UTILS_CSPACE_SIZE_BITS, ALLOCATOR_STATIC_POOL_SIZE,
+                                                        allocator_mem_pool);
+
     /* create vka backed by allocator */
     allocman_make_vka(vka, allocator);
 
-    /* add untyped memory */
-    add_single_untyped(allocator, vka, untyped_size_bits, NULL, UNTYPED_SLOT,
-                       ALLOCMAN_UT_KERNEL);
     add_single_untyped(allocator, vka, seL4_PageBits, &timer_paddr, TIMER_UNTYPED_SLOT,
                        ALLOCMAN_UT_DEV);
     return allocator;
@@ -283,10 +276,85 @@ benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
     }
 }
 
+static int get_untyped_count(void *data)
+{
+    return 1;
+}
+
+static seL4_CPtr get_init_cap(void *data, seL4_CPtr cap)
+{
+    return sel4utils_process_init_cap(cap);
+}
+
+static uint8_t get_cnode_size(void *data)
+{
+    return CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
+}
+
+static seL4_CPtr get_nth_untyped(void *data, int n, size_t *size_bits, uintptr_t *paddr, bool *device)
+{
+    if (n != 0) {
+        ZF_LOGE("Asked for untyped we don't have");
+        return seL4_CapNull;
+    }
+
+    if (size_bits) {
+        *size_bits = ((env_t *) data)->untyped_size_bits;
+    }
+
+    if (device) {
+        *device = false;
+    }
+
+    if (paddr) {
+        *paddr = 0;
+    }
+    return UNTYPED_SLOT;
+}
+
+static seL4_CPtr get_nth_cap(void *data, int n)
+{
+    if (n < FREE_SLOT) {
+        return n;
+    }
+    return seL4_CapNull;
+}
+
+static int get_cap_count(void *data) {
+    return FREE_SLOT;
+}
+
+static void init_simple(env_t *env)
+{
+    env->simple.data = env;
+
+    //env->simple.frame_cap =
+    //env->simple.frame_mapping =
+    //env->simple.frame_info =
+    //env->simple.ASID_assign =
+
+    env->simple.cap_count = get_cap_count;
+    env->simple.nth_cap = get_nth_cap;
+    env->simple.init_cap = get_init_cap;
+    env->simple.cnode_size = get_cnode_size;
+    env->simple.untyped_count = get_untyped_count;
+    env->simple.nth_untyped = get_nth_untyped;
+
+    //env->simple.userimage_count =
+    //env->simple.nth_userimage =
+    //env->simple.core_count =
+    //env->simple.print =
+    //env->simple.arch_info =
+    //env->simple.extended_bootinfo =
+
+    env->simple.arch_simple.irq = get_irq;
+    benchmark_arch_get_simple(&env->simple.arch_simple);
+}
+
 env_t *
 benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
 {
-    size_t untyped_size_bits, stack_pages;
+    size_t stack_pages;
     uintptr_t stack_vaddr;
 
     /* parse arguments */
@@ -294,20 +362,20 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
         ZF_LOGF("Insufficient arguments, expected 5, got %d\n", (int) argc);
     }
 
-    untyped_size_bits = (size_t) atol(argv[0]);
+    env.untyped_size_bits = (size_t) atol(argv[0]);
     stack_vaddr = (uintptr_t) atol(argv[1]);
     stack_pages = (size_t) atol(argv[2]);
     env.results = (void *) atol(argv[3]);
     env.timer_paddr = (uintptr_t) atol(argv[4]);
 
-    env.allocman = init_allocator(&env.delegate_vka, untyped_size_bits, env.timer_paddr);
+    init_simple(&env);
+
+    env.allocman = init_allocator(&env.simple, &env.delegate_vka, env.timer_paddr);
     init_vspace(&env.delegate_vka, &env.vspace, &env.data, stack_pages, stack_vaddr,
                 (uintptr_t) env.results, results_size);
     init_allocator_vspace(env.allocman, &env.vspace);
     parse_code_region(&env.region);
 
-    env.simple.arch_simple.irq = get_irq;
-    benchmark_arch_get_simple(&env.simple.arch_simple);
 
     /* allocate a notification for timers */
     ZF_LOGF_IFERR(vka_alloc_notification(&env.delegate_vka, &env.ntfn), "Failed to allocate ntfn");

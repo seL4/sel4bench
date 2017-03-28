@@ -46,6 +46,8 @@ typedef struct env {
     vka_object_t ntfn;
     /* paddr for timeout timer */
     uintptr_t timer_paddr;
+    /* size of untyped passed to benchmarks */
+    size_t untyped_size_bits;
 } env_t;
 
 /* initialise the benchmarking environment and return it */
