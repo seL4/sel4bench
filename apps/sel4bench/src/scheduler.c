@@ -36,6 +36,8 @@ process_yield_results(scheduler_results_t *results, ccnt_t overhead, json_t *arr
     set.name = "Process yield";
     result = process_result(N_RUNS, results->process_yield, desc);
     json_array_append_new(array, result_set_to_json(set));
+    json_array_append_new(array, average_counters_to_json("Average seL4_Yield (no context switch)",
+                                  results->average_yield));
 }
 
 static void
@@ -87,6 +89,9 @@ process_scheduler_results(scheduler_results_t *results, json_t *array)
     set.name = "Signal to process of higher prio";
     process_results(N_PRIOS, N_RUNS, results->process_results, desc, per_prio_result);
     json_array_append_new(array, result_set_to_json(set));
+
+    json_array_append_new(array, average_counters_to_json("Average to reschedule current thread",
+                                                          results->set_prio_average));
 }
 
 static json_t *

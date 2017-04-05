@@ -23,6 +23,7 @@
 #define N_LOW_ARGS 5
 #define N_HIGH_ARGS 4
 #define N_YIELD_ARGS 2
+#define AVERAGE_RUNS 10000
 
 void
 abort(void)
@@ -294,6 +295,57 @@ measure_yield_overhead(ccnt_t *results)
     }
 }
 
+void
+benchmark_set_prio_average(ccnt_t *results)
+{
+    seL4_Word n_counters = sel4bench_get_num_counters();
+    ccnt_t start = 0;
+    ccnt_t end = 0;
+
+    for (seL4_Word chunk = 0; chunk < sel4bench_get_num_generic_counter_chunks(n_counters); chunk++) {
+        COMPILER_MEMORY_FENCE();
+        counter_bitfield_t mask = sel4bench_enable_generic_counters(chunk, n_counters);
+        SEL4BENCH_READ_CCNT(start);
+        for (int i = 0; i < AVERAGE_RUNS; i++) {
+            /* set prio on self always triggers a reschedule */
+            seL4_TCB_SetPriority(SEL4UTILS_TCB_SLOT, seL4_MaxPrio);
+        }
+        SEL4BENCH_READ_CCNT(end);
+        sel4bench_read_and_stop_counters(mask, chunk, n_counters, results);
+        COMPILER_MEMORY_FENCE();
+    }
+
+    results[CYCLE_COUNT_EVENT] = end - start;
+    for (int i = 0; i < NUM_AVERAGE_EVENTS; i++) {
+        results[i] /= AVERAGE_RUNS;
+    }
+}
+
+void
+benchmark_yield_average(ccnt_t *results)
+{
+    seL4_Word n_counters = sel4bench_get_num_counters();
+    ccnt_t start = 0;
+    ccnt_t end = 0;
+
+    for (seL4_Word chunk = 0; chunk < sel4bench_get_num_generic_counter_chunks(n_counters); chunk++) {
+        COMPILER_MEMORY_FENCE();
+        counter_bitfield_t mask = sel4bench_enable_generic_counters(chunk, n_counters);
+        SEL4BENCH_READ_CCNT(start);
+        for (int i = 0; i < AVERAGE_RUNS; i++) {
+            seL4_Yield();
+        }
+        SEL4BENCH_READ_CCNT(end);
+        sel4bench_read_and_stop_counters(mask, chunk, n_counters, results);
+        COMPILER_MEMORY_FENCE();
+    }
+
+    results[CYCLE_COUNT_EVENT] = end - start;
+    for (int i = 0; i < NUM_AVERAGE_EVENTS; i++) {
+        results[i] /= AVERAGE_RUNS;
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -330,10 +382,12 @@ main(int argc, char **argv)
                                results->thread_results);
     benchmark_prio_processes(env, done_ep.cptr, produce.cptr, consume.cptr,
                                  results->process_results);
+    benchmark_set_prio_average(results->set_prio_average);
 
     /* thread yield benchmarks */
     benchmark_yield_thread(env, done_ep.cptr, results->thread_yield);
     benchmark_yield_process(env, done_ep.cptr, results->process_yield);
+    benchmark_yield_average(results->average_yield);
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);
