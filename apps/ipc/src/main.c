@@ -62,11 +62,6 @@ timing_init(void)
 {
     sel4bench_init();
 
-    assert(sel4bench_get_num_counters() >= 2);
-    sel4bench_set_count_event(0, SEL4BENCH_EVENT_CACHE_L1D_MISS);
-    sel4bench_set_count_event(1, SEL4BENCH_EVENT_CACHE_L1I_MISS);
-    sel4bench_start_counters(0x3);
-    sel4bench_reset_counters(0x3);
 }
 
 void
