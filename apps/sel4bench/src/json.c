@@ -110,3 +110,22 @@ result_set_to_json(result_set_t set)
 
    return object;
 }
+
+json_t *
+average_counters_to_json(char *name, ccnt_t counters[NUM_AVERAGE_EVENTS])
+{
+    json_t *obj = json_object();
+
+    assert(obj != NULL);
+    UNUSED int error = json_object_set_new(obj, "Benchmark", json_string(name));
+    assert(error == 0);
+
+    for (int i = 0; i < SEL4BENCH_NUM_GENERIC_EVENTS; i++) {
+        error = json_object_set_new(obj, GENERIC_EVENT_NAMES[i], json_integer(counters[i]));
+        assert(error == 0);
+    }
+
+    json_object_set_new(obj, "Cycle counter", json_integer(counters[CYCLE_COUNT_EVENT]));
+
+    return obj;
+}

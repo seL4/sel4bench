@@ -26,6 +26,7 @@
 #define N_HI_SIGNAL_ARGS 3
 #define N_WAIT_ARGS 3
 #define MAX_ARGS 4
+#define AVERAGE_RUNS 10000
 
 typedef struct helper_thread {
     sel4utils_thread_t thread;
@@ -90,20 +91,48 @@ low_prio_signal_fn(int argc, char **argv)
     seL4_Wait(ntfn, NULL);
 }
 
-void 
+void
 high_prio_signal_fn(int argc, char **argv)
 {
     assert(argc == N_HI_SIGNAL_ARGS);
     seL4_CPtr ntfn = (seL4_CPtr) atol(argv[0]);
-    ccnt_t *results = (ccnt_t *) atol(argv[1]);
+    signal_results_t *results = (signal_results_t *) atol(argv[1]);
     seL4_CPtr done_ep = (seL4_CPtr) atol(argv[2]);
-    
+
+    /* first we run a benchmark where we try and read the cycle counter
+     * for individual runs - this may not yield a stable result on all platforms
+     * due to pipeline, cache etc */
     for (int i = 0; i < N_RUNS; i++) {
         ccnt_t start, end;
+        COMPILER_MEMORY_FENCE();
         SEL4BENCH_READ_CCNT(start);
         DO_REAL_SIGNAL(ntfn);
         SEL4BENCH_READ_CCNT(end);
-        results[i] = (end - start);
+        COMPILER_MEMORY_FENCE();
+        /* record the result */
+        results->hi_prio_results[i] = (end - start);
+    }
+
+    /* now run an average benchmark and read the perf counters as well */
+    seL4_Word n_counters = sel4bench_get_num_counters();
+    ccnt_t start, end;
+    assert(n_counters > 0);
+    assert(sel4bench_get_num_generic_counter_chunks(n_counters) > 0);
+    for (seL4_Word chunk = 0; chunk < sel4bench_get_num_generic_counter_chunks(n_counters); chunk++) {
+        COMPILER_MEMORY_FENCE();
+        counter_bitfield_t mask = sel4bench_enable_generic_counters(chunk, n_counters);
+        SEL4BENCH_READ_CCNT(start);
+        for (int i = 0; i < AVERAGE_RUNS; i++) {
+            DO_REAL_SIGNAL(ntfn);
+        }
+        SEL4BENCH_READ_CCNT(end);
+        sel4bench_read_and_stop_counters(mask, chunk, n_counters, results->hi_prio_average);
+        COMPILER_MEMORY_FENCE();
+    }
+
+    results->hi_prio_average[CYCLE_COUNT_EVENT] = end - start;
+    for (int i = 0; i < NUM_AVERAGE_EVENTS; i++) {
+        results->hi_prio_average[i] /= AVERAGE_RUNS;
     }
 
     /* signal completion */
@@ -178,7 +207,7 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
     signal.fn = (sel4utils_thread_entry_fn) high_prio_signal_fn;
     signal.argc = N_HI_SIGNAL_ARGS;
     sel4utils_create_word_args(signal.argv_strings, signal.argv, signal.argc, ntfn,
-                               (seL4_Word) results->hi_prio_results, ep);
+                               (seL4_Word) results, ep);
 
     start_threads(&wait, &signal);
 

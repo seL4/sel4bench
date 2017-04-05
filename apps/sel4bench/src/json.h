@@ -13,6 +13,7 @@
 #include "benchmark.h"
 #include <jansson.h>
 #include <sel4bench/sel4bench.h>
+#include <benchmark.h>
 
 json_t *result_set_to_json(result_set_t set);
-
+json_t *average_counters_to_json(char *name, ccnt_t counters[NUM_AVERAGE_EVENTS]);

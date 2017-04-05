@@ -22,6 +22,10 @@
 
 #include <cspace.h>
 
+/* average events = sel4bench generic events + the cycle counter */
+#define NUM_AVERAGE_EVENTS (SEL4BENCH_NUM_GENERIC_EVENTS + 1u)
+#define CYCLE_COUNT_EVENT SEL4BENCH_NUM_GENERIC_EVENTS
+
 /* benchmarking environment set up by root task */
 typedef struct env {
     /* vka interface for allocating *fast* objects in the benchmark */

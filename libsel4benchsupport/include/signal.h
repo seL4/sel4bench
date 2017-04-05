@@ -11,6 +11,7 @@
 #define __SELBENCH_SIGNAL_H
 
 #include <sel4bench/sel4bench.h>
+#include <benchmark.h>
 
 #define N_IGNORED 10
 #define N_RUNS (100 + N_IGNORED)
@@ -19,6 +20,7 @@ typedef struct signal_results {
     ccnt_t lo_prio_results[N_RUNS];
     ccnt_t hi_prio_results[N_RUNS];
     ccnt_t overhead[N_RUNS];
+    ccnt_t hi_prio_average[NUM_AVERAGE_EVENTS];
 } signal_results_t;
 
 #endif /* __SELBENCH_SIGNAL_H */
