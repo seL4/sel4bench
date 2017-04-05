@@ -253,6 +253,7 @@ main_continued(void *arg)
         hardware_benchmark_new(),
         sync_benchmark_new(),
         /* add new benchmarks here */
+        page_mapping_benchmark_new(),
 
         /* null terminator */
         NULL

@@ -125,4 +125,23 @@ void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, ch
  */
 void benchmark_wait_children(seL4_CPtr ep, char *name, int num_children); 
 
+
+/*
+ * Send the cycle counter result through given endpoint
+ *
+ * @param ep The endpoint the result will be send through
+ * @param result The conteng to be sent
+ */
+void send_result(seL4_CPtr ep, ccnt_t result);
+
+
+/*
+ * Receive the cycle counter result from given endpoint
+ *
+ * @param ep The endpoint the result will be received from 
+ */
+ccnt_t get_result(seL4_CPtr ep);
+
+
+
 #endif /* __BENCHMARK_H__ */

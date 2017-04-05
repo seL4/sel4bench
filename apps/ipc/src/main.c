@@ -70,35 +70,6 @@ timing_destroy(void)
     sel4bench_destroy();
 }
 
-static void
-send_result(seL4_CPtr ep, ccnt_t result)
-{
-    int length = sizeof(ccnt_t) / sizeof(seL4_Word);
-    unsigned int shift = length > 1u ? seL4_WordBits : 0;
-    for (int i = length - 1; i >= 0; i--) {
-        seL4_SetMR(i, (seL4_Word) result);
-        result = result >> shift;
-    }
-
-    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
-    seL4_Send(ep, tag);
-}
-
-static ccnt_t
-get_result(seL4_CPtr ep)
-{
-    ccnt_t result = 0;
-    seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);
-    int length = seL4_MessageInfo_get_length(tag);
-    unsigned int shift = length > 1u ? seL4_WordBits : 0;
-
-    for (int i = 0; i < length; i++) {
-        result = result << shift;
-        result += seL4_GetMR(i);
-    }
-
-    return result;
-}
 
 static inline void
 dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
