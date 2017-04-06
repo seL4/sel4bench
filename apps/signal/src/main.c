@@ -115,7 +115,8 @@ high_prio_signal_fn(int argc, char **argv)
 
     /* now run an average benchmark and read the perf counters as well */
     seL4_Word n_counters = sel4bench_get_num_counters();
-    ccnt_t start, end;
+    ccnt_t start = 0;
+    ccnt_t end = 0;
     assert(n_counters > 0);
     assert(sel4bench_get_num_generic_counter_chunks(n_counters) > 0);
     for (seL4_Word chunk = 0; chunk < sel4bench_get_num_generic_counter_chunks(n_counters); chunk++) {
