@@ -377,11 +377,6 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     parse_code_region(&env.region);
 
 
-    /* allocate a notification for timers */
-    ZF_LOGF_IFERR(vka_alloc_notification(&env.delegate_vka, &env.ntfn), "Failed to allocate ntfn");
-    /* get the timers */
-    benchmark_arch_get_timers(&env);
-
     /* In case we used any FPU during our setup we will attempt to put the system
      * back into a steady state before returning */
 #ifdef CONFIG_X86_FPU_MAX_RESTORES_SINCE_SWITCH
@@ -394,6 +389,12 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     if (slab_init(&env.slab_vka, &env.delegate_vka, object_freq) != 0) {
         ZF_LOGF("Failed to init slab allocator");
     }
+
+    /* allocate a notification for timers */
+    ZF_LOGF_IFERR(vka_alloc_notification(&env.slab_vka, &env.ntfn), "Failed to allocate ntfn");
+    /* get the timers */
+    benchmark_arch_get_timers(&env);
+
 
     return &env;
 }
