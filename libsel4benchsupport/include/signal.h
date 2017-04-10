@@ -20,7 +20,7 @@ typedef struct signal_results {
     ccnt_t lo_prio_results[N_RUNS];
     ccnt_t hi_prio_results[N_RUNS];
     ccnt_t overhead[N_RUNS];
-    ccnt_t hi_prio_average[NUM_AVERAGE_EVENTS];
+    ccnt_t hi_prio_average[N_RUNS][NUM_AVERAGE_EVENTS];
 } signal_results_t;
 
 #endif /* __SELBENCH_SIGNAL_H */

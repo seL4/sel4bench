@@ -8,6 +8,7 @@
 * @TAG(NICTA_GPL)
 */
 #include <autoconf.h>
+#include <benchmark.h>
 #include "json.h"
 
 static void
@@ -112,7 +113,7 @@ result_set_to_json(result_set_t set)
 }
 
 json_t *
-average_counters_to_json(char *name, ccnt_t counters[NUM_AVERAGE_EVENTS])
+average_counters_to_json(char *name, result_t results[NUM_AVERAGE_EVENTS])
 {
     json_t *obj = json_object();
 
@@ -120,12 +121,33 @@ average_counters_to_json(char *name, ccnt_t counters[NUM_AVERAGE_EVENTS])
     UNUSED int error = json_object_set_new(obj, "Benchmark", json_string(name));
     assert(error == 0);
 
+    json_t *rows = json_array();
+    assert(rows != 0);
+
+    error = json_object_set_new(obj, "Results", rows);
+
     for (int i = 0; i < SEL4BENCH_NUM_GENERIC_EVENTS; i++) {
-        error = json_object_set_new(obj, GENERIC_EVENT_NAMES[i], json_integer(counters[i]));
+        json_t *row = json_object();
+        assert(result != NULL);
+
+        error = json_object_set_new(row, "Event",  json_string(GENERIC_EVENT_NAMES[i]));
         assert(error == 0);
+
+        result_to_json(results[i], row);
+
+        json_array_append_new(rows, row);
     }
 
-    json_object_set_new(obj, "Cycle counter", json_integer(counters[CYCLE_COUNT_EVENT]));
+    json_t *row = json_object();
+    assert(result != NULL);
+
+    error = json_object_set_new(row, "Event", json_string("Cycle counter"));
+    assert(error == 0);
+
+    result_to_json(results[CYCLE_COUNT_EVENT], row);
+
+    error = json_array_append_new(rows, row);
+    assert(error == 0);
 
     return obj;
 }

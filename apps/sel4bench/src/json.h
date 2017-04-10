@@ -16,4 +16,4 @@
 #include <benchmark.h>
 
 json_t *result_set_to_json(result_set_t set);
-json_t *average_counters_to_json(char *name, ccnt_t counters[NUM_AVERAGE_EVENTS]);
+json_t *average_counters_to_json(char *name, result_t counters[NUM_AVERAGE_EVENTS]);

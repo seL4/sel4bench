@@ -36,8 +36,11 @@ process_yield_results(scheduler_results_t *results, ccnt_t overhead, json_t *arr
     set.name = "Process yield";
     result = process_result(N_RUNS, results->process_yield, desc);
     json_array_append_new(array, result_set_to_json(set));
-    json_array_append_new(array, average_counters_to_json("Average seL4_Yield (no context switch)",
-                                  results->average_yield));
+
+    result_t average_results[NUM_AVERAGE_EVENTS];
+    process_average_results(N_RUNS, NUM_AVERAGE_EVENTS, results->average_yield, average_results);
+    json_array_append_new(array, average_counters_to_json("Average seL4_Yield (no thread switch)",
+                                                           average_results));
 }
 
 static void
@@ -90,8 +93,10 @@ process_scheduler_results(scheduler_results_t *results, json_t *array)
     process_results(N_PRIOS, N_RUNS, results->process_results, desc, per_prio_result);
     json_array_append_new(array, result_set_to_json(set));
 
+    result_t average_results[NUM_AVERAGE_EVENTS];
+    process_average_results(N_RUNS, NUM_AVERAGE_EVENTS, results->set_prio_average, average_results);
     json_array_append_new(array, average_counters_to_json("Average to reschedule current thread",
-                                                          results->set_prio_average));
+                                                           average_results));
 }
 
 static json_t *

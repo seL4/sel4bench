@@ -26,7 +26,6 @@
 #define N_HI_SIGNAL_ARGS 3
 #define N_WAIT_ARGS 3
 #define MAX_ARGS 4
-#define AVERAGE_RUNS 10000
 
 typedef struct helper_thread {
     sel4utils_thread_t thread;
@@ -119,21 +118,19 @@ high_prio_signal_fn(int argc, char **argv)
     ccnt_t end = 0;
     assert(n_counters > 0);
     assert(sel4bench_get_num_generic_counter_chunks(n_counters) > 0);
-    for (seL4_Word chunk = 0; chunk < sel4bench_get_num_generic_counter_chunks(n_counters); chunk++) {
-        COMPILER_MEMORY_FENCE();
-        counter_bitfield_t mask = sel4bench_enable_generic_counters(chunk, n_counters);
-        SEL4BENCH_READ_CCNT(start);
-        for (int i = 0; i < AVERAGE_RUNS; i++) {
-            DO_REAL_SIGNAL(ntfn);
+    for (int j = 0; j < N_RUNS; j++) {
+        for (seL4_Word chunk = 0; chunk < sel4bench_get_num_generic_counter_chunks(n_counters); chunk++) {
+            COMPILER_MEMORY_FENCE();
+            counter_bitfield_t mask = sel4bench_enable_generic_counters(chunk, n_counters);
+            SEL4BENCH_READ_CCNT(start);
+            for (int i = 0; i < AVERAGE_RUNS; i++) {
+                DO_REAL_SIGNAL(ntfn);
+            }
+            SEL4BENCH_READ_CCNT(end);
+            sel4bench_read_and_stop_counters(mask, chunk, n_counters, results->hi_prio_average[j]);
+            results->hi_prio_average[j][CYCLE_COUNT_EVENT] = end - start;
+            COMPILER_MEMORY_FENCE();
         }
-        SEL4BENCH_READ_CCNT(end);
-        sel4bench_read_and_stop_counters(mask, chunk, n_counters, results->hi_prio_average);
-        COMPILER_MEMORY_FENCE();
-    }
-
-    results->hi_prio_average[CYCLE_COUNT_EVENT] = end - start;
-    for (int i = 0; i < NUM_AVERAGE_EVENTS; i++) {
-        results->hi_prio_average[i] /= AVERAGE_RUNS;
     }
 
     /* signal completion */

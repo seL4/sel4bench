@@ -8,6 +8,7 @@
  * @TAG(NICTA_GPL)
  */
 
+#include <benchmark.h>
 #include <utils/zf_log.h>
 #include <utils/config.h>
 
@@ -15,6 +16,33 @@
 #include "processing.h"
 #include "math.h"
 #include "printing.h"
+
+void
+process_average_results(int rows, int cols, ccnt_t array[rows][cols], result_t results[cols])
+{
+    /* first divide results by no of runs */
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            array[row][col] /= AVERAGE_RUNS;
+        }
+    }
+
+    /* now calculate */
+    for (int col = 0; col < cols; col++) {
+        /* create an array of the specific column we want to process - we can't reorganise the data structure as
+         * the 2D array is arranged to minimise benchmark impact such that we write to sequential memory addresses in each loop of the benchmark,
+         * additionally we calloc the copy such that the raw data pointed to by the result does not exist on the stack. A different approach will be
+         * required if we run out of memory */
+        ccnt_t *raw_data = calloc(rows, sizeof(ccnt_t));
+        assert(raw_data != NULL);
+
+        for (int i = 0; i < rows; i++) {
+            raw_data[i] = array[i][col];
+        }
+
+        results[col] = calculate_results(rows, raw_data);
+    }
+}
 
 result_t
 process_result(size_t n, ccnt_t array[n], result_desc_t desc)

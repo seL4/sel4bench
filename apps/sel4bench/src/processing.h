@@ -33,3 +33,19 @@ result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc);
 void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
                      result_t results[ncols]);
 
+
+
+
+/**
+ * Process a table of results that need to be divided by AVERAGE_RUNS
+ *
+ * Each column in the table is a single result type.
+ *
+ * First divide all the results by AVERAGE_RUNS, then process each column.
+ *
+ * @param rows the number of rows in the results (should also be number of runs)
+ * @param cols the number of columns in the results (also number of result types)
+ * @param array raw results
+ * @param results destination of the result of this function
+ */
+void process_average_results(int rows, int cols, ccnt_t array[rows][cols], result_t results[cols]);

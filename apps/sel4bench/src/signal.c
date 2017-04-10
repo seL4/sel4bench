@@ -46,8 +46,13 @@ signal_process(void *results) {
     result = process_result(N_RUNS, raw_results->hi_prio_results, desc);
     set.name = "Signal to low prio thread";
     json_array_append_new(array, result_set_to_json(set));
+
+
+    result_t average_results[NUM_AVERAGE_EVENTS];
+    process_average_results(N_RUNS, NUM_AVERAGE_EVENTS, raw_results->hi_prio_average, average_results);
+
     json_array_append_new(array, average_counters_to_json("Average signal to low prio thread",
-                                                           raw_results->hi_prio_average));
+                                                           average_results));
 
     return array;
 }
