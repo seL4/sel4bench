@@ -32,7 +32,7 @@ typedef struct helper_thread {
     char *argv[MAX_ARGS];
     char argv_strings[MAX_ARGS][WORD_STRING_SIZE];
     sel4utils_thread_entry_fn fn;
-    int argc;
+    seL4_Word argc;
 } helper_thread_t;
 
 
