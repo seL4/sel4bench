@@ -298,13 +298,13 @@ main(int argc, char *argv[])
 	benchmark_shallow_clone_process(env, &proc.process, seL4_MaxPrio, 
 									bench_proc, "Proc");
 
-	proc.result_ep = sel4utils_copy_cap_to_process(&proc.process,
+	proc.result_ep = sel4utils_copy_path_to_process(&proc.process,
 												   result_ep_path);
 
 	measure_overhead(results);
 	for (int i = 0; i < RUNS; i++) {
 		for (int j = 0; j < TESTS; j++) {
-			proc.untyped = sel4utils_copy_cap_to_process(&proc.process, 
+			proc.untyped = sel4utils_copy_path_to_process(&proc.process, 
 														untyped_path);
 			proc.npage = page_mapping_benchmark_params[j].npage;
 

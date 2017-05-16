@@ -154,7 +154,7 @@ benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
 
     /* copy ep cap */
     vka_cspace_make_path(&env->slab_vka, ep, &path);
-    remote_ep = sel4utils_copy_cap_to_process(&process, path);
+    remote_ep = sel4utils_copy_path_to_process(&process, path);
     assert(remote_ep != seL4_CapNull);
  
     sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, remote_ep, (seL4_Word) remote_start);
@@ -234,17 +234,17 @@ benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr 
 
     /* copy ep cap */
     vka_cspace_make_path(&env->slab_vka, ep, &path);
-    remote_ep = sel4utils_copy_cap_to_process(&high, path);
+    remote_ep = sel4utils_copy_path_to_process(&high, path);
     assert(remote_ep != seL4_CapNull);
 
     /* copy ntfn cap */
     vka_cspace_make_path(&env->slab_vka, produce, &path);
-    remote_produce = sel4utils_copy_cap_to_process(&high, path);
+    remote_produce = sel4utils_copy_path_to_process(&high, path);
     assert(remote_produce != seL4_CapNull);
 
     /* copy ntfn cap */
     vka_cspace_make_path(&env->slab_vka, consume, &path);
-    remote_consume = sel4utils_copy_cap_to_process(&high, path);
+    remote_consume = sel4utils_copy_path_to_process(&high, path);
     assert(remote_consume != seL4_CapNull);
 
     sel4utils_create_word_args(high_args_strings, high_argv, N_HIGH_ARGS, remote_produce,

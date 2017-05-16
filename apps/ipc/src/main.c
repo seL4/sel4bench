@@ -338,11 +338,11 @@ main(int argc, char **argv)
         ZF_LOGF("Failed to spawn dummy process\n");
     }
 
-    client.ep = sel4utils_copy_cap_to_process(&client.process, ep_path);
-    client.result_ep = sel4utils_copy_cap_to_process(&client.process, result_ep_path);
+    client.ep = sel4utils_copy_path_to_process(&client.process, ep_path);
+    client.result_ep = sel4utils_copy_path_to_process(&client.process, result_ep_path);
 
-    server_process.ep = sel4utils_copy_cap_to_process(&server_process.process, ep_path);
-    server_process.result_ep = sel4utils_copy_cap_to_process(&server_process.process, result_ep_path);
+    server_process.ep = sel4utils_copy_path_to_process(&server_process.process, ep_path);
+    server_process.result_ep = sel4utils_copy_path_to_process(&server_process.process, result_ep_path);
 
     server_thread.ep = client.ep;
     server_thread.result_ep = client.result_ep;

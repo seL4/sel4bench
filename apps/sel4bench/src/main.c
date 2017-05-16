@@ -113,11 +113,11 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     /* copy untyped to process */
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
-    UNUSED seL4_CPtr slot = sel4utils_copy_cap_to_process(&process, path);
+    UNUSED seL4_CPtr slot = sel4utils_copy_path_to_process(&process, path);
     assert(slot == UNTYPED_SLOT);
 
     vka_cspace_make_path(&env->vka, env->timer_untyped.cptr, &path);
-    slot = sel4utils_copy_cap_to_process(&process, path);
+    slot = sel4utils_copy_path_to_process(&process, path);
     assert(slot == TIMER_UNTYPED_SLOT);
 
     seL4_Word stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
