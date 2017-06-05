@@ -1,11 +1,13 @@
 /*
- * Copyright 2016, NICTA
+ * Copyright 2017, Data61
+ * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
+ * ABN 41 687 119 230.
  *
  * This software may be distributed and modified according to the terms of
  * the BSD 2-Clause license. Note that NO WARRANTY is provided.
  * See "LICENSE_BSD2.txt" for details.
  *
- * @TAG(NICTA_BSD)
+ * @TAG(DATA61_BSD)
  */
 /* This is very much a work in progress IPC benchmarking set. Goal is
    to eventually use this to replace the rest of the random benchmarking
