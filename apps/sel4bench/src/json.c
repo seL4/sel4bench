@@ -130,7 +130,7 @@ average_counters_to_json(char *name, result_t results[NUM_AVERAGE_EVENTS])
 
     for (int i = 0; i < SEL4BENCH_NUM_GENERIC_EVENTS; i++) {
         json_t *row = json_object();
-        assert(result != NULL);
+        assert(row != NULL);
 
         error = json_object_set_new(row, "Event",  json_string(GENERIC_EVENT_NAMES[i]));
         assert(error == 0);
@@ -141,7 +141,7 @@ average_counters_to_json(char *name, result_t results[NUM_AVERAGE_EVENTS])
     }
 
     json_t *row = json_object();
-    assert(result != NULL);
+    assert(row != NULL);
 
     error = json_object_set_new(row, "Event", json_string("Cycle counter"));
     assert(error == 0);
