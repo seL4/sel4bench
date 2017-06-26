@@ -136,12 +136,12 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
 
     /* set up arguments */
     /* untyped size */
-    seL4_Word argc = 5;
-    char args[5][WORD_STRING_SIZE];
+    seL4_Word argc = 6;
+    char args[6][WORD_STRING_SIZE];
     char *argv[argc];
     sel4utils_create_word_args(args, argv, argc, env->untyped.size_bits, stack_vaddr,
                                stack_pages, (seL4_Word) remote_results_vaddr,
-                               env->timer_paddr);
+                               env->timer_paddr, simple_get_core_count(&env->simple));
     /* start process */
     error = sel4utils_spawn_process_v(&process, &env->vka, &env->vspace, argc, argv, 1);
     if (error) {

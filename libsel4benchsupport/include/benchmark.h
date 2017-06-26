@@ -55,6 +55,8 @@ typedef struct env {
     uintptr_t timer_paddr;
     /* size of untyped passed to benchmarks */
     size_t untyped_size_bits;
+    /* number of core available for benchmark use */
+    int nr_cores;
 } env_t;
 
 /* initialise the benchmarking environment and return it */

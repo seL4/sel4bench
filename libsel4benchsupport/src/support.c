@@ -326,6 +326,11 @@ static int get_cap_count(void *data) {
     return FREE_SLOT;
 }
 
+static int get_core_count(void *data)
+{
+    return ((env_t *) data)->nr_cores;
+}
+
 static void init_simple(env_t *env)
 {
     env->simple.data = env;
@@ -341,10 +346,10 @@ static void init_simple(env_t *env)
     env->simple.cnode_size = get_cnode_size;
     env->simple.untyped_count = get_untyped_count;
     env->simple.nth_untyped = get_nth_untyped;
+    env->simple.core_count = get_core_count;
 
     //env->simple.userimage_count =
     //env->simple.nth_userimage =
-    //env->simple.core_count =
     //env->simple.print =
     //env->simple.arch_info =
     //env->simple.extended_bootinfo =
@@ -360,8 +365,8 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     uintptr_t stack_vaddr;
 
     /* parse arguments */
-    if (argc < 5) {
-        ZF_LOGF("Insufficient arguments, expected 5, got %d\n", (int) argc);
+    if (argc < 6) {
+        ZF_LOGF("Insufficient arguments, expected 6, got %d\n", (int) argc);
     }
 
     env.untyped_size_bits = (size_t) atol(argv[0]);
@@ -369,6 +374,7 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     stack_pages = (size_t) atol(argv[2]);
     env.results = (void *) atol(argv[3]);
     env.timer_paddr = (uintptr_t) atol(argv[4]);
+    env.nr_cores = (int) atol(argv[5]);
 
     init_simple(&env);
 
