@@ -55,6 +55,7 @@ menu "seL4 Applications"
     source "apps/hardware/Kconfig"
     source "apps/sync/Kconfig"
     source "apps/page_mapping/Kconfig"
+    source "apps/smp/Kconfig"
 endmenu
 
 menu "Tools"

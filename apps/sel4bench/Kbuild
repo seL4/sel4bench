@@ -28,6 +28,7 @@ sel4bench-components-$(CONFIG_APP_FAULTBENCH) += fault
 sel4bench-components-$(CONFIG_APP_HARDWAREBENCH) += hardware
 sel4bench-components-$(CONFIG_APP_SYNCBENCH) += sync
 sel4bench-components-$(CONFIG_APP_PAGEMAPPINGBENCH) += page_mapping
+sel4bench-components-$(CONFIG_APP_SMPBENCH) += smp
 
 sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y))
 

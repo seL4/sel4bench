@@ -43,3 +43,7 @@ This benchmark also measures `seL4_Yield`
 ## signal
 
 This is a hot cache benchmark of the signal path in the kernel, measured from user level. 
+
+## smp
+
+This is an intra-core ipc round-trip benchmark to check overhead of the kernel synchronization on ipc throughput.
