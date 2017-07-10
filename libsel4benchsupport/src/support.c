@@ -283,11 +283,6 @@ static int get_untyped_count(void *data)
     return 1;
 }
 
-static seL4_CPtr get_init_cap(void *data, seL4_CPtr cap)
-{
-    return sel4utils_process_init_cap(cap);
-}
-
 static uint8_t get_cnode_size(void *data)
 {
     return CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
@@ -342,7 +337,7 @@ static void init_simple(env_t *env)
 
     env->simple.cap_count = get_cap_count;
     env->simple.nth_cap = get_nth_cap;
-    env->simple.init_cap = get_init_cap;
+    env->simple.init_cap = sel4utils_process_init_cap;
     env->simple.cnode_size = get_cnode_size;
     env->simple.untyped_count = get_untyped_count;
     env->simple.nth_untyped = get_nth_untyped;
