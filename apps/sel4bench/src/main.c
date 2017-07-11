@@ -70,17 +70,13 @@ setup_fault_handler(env_t *env)
     error = seL4_TCB_SetSpace(simple_get_tcb(&env->simple), fault_ep.cptr,
                               simple_get_cnode(&env->simple), seL4_NilData, simple_get_pd(&env->simple),
                               seL4_NilData);
-    if (error != seL4_NoError) {
-        ZF_LOGF("Failed to set fault ep for benchmark driver\n");
-    }
+    ZF_LOGF_IFERR(error, "Failed to set fault ep for benchmark driver\n");
 
     error = sel4utils_start_fault_handler(fault_ep.cptr,
                                           &env->vka, &env->vspace, seL4_MaxPrio, simple_get_cnode(&env->simple),
                                           seL4_NilData,
                                           "sel4bench-fault-handler", &fault_handler);
-    if (error != 0) {
-        ZF_LOGF("Failed to start fault handler");
-    }
+    ZF_LOGF_IFERR(error, "Failed to start fault handler");
 }
 
 static void
@@ -89,9 +85,7 @@ init_timers(env_t *env, sel4utils_process_t *process)
     cspacepath_t path;
     int error;
     error = arch_init_timer_irq_cap(env, &path);
-    if (error != seL4_NoError) {
-        ZF_LOGF("Failed to get timer interrupt");
-    }
+    ZF_LOGF_IFERR(error, "Failed to get timer interrupt");
 
     UNUSED seL4_CPtr cap = sel4utils_move_cap_to_process(process, path, &env->vka);
     assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
@@ -102,12 +96,10 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
 {
     int error;
     sel4utils_process_t process;
-    
+
     /* configure benchmark process */
     error = sel4utils_configure_process(&process, &env->vka, &env->vspace, seL4_MaxPrio, benchmark->name);
-    if (error != 0) {
-        ZF_LOGF("Failed to configure process for %s benchmark", benchmark->name);
-    }
+    ZF_LOGF_IFERR(error, "Failed to configure process for %s benchmark", benchmark->name);
 
     /* initialise timers for benchmark environment */
     init_timers(env, &process);
@@ -144,9 +136,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
                                env->timer_paddr, simple_get_core_count(&env->simple));
     /* start process */
     error = sel4utils_spawn_process_v(&process, &env->vka, &env->vspace, argc, argv, 1);
-    if (error) {
-        ZF_LOGF("Failed to start benchmark process");
-    }
+    ZF_LOGF_IF(error, "Failed to start benchmark process");
 
     /* wait for it to finish */
     seL4_MessageInfo_t info = seL4_Recv(process.fault_endpoint.cptr, NULL);
@@ -172,7 +162,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
 
     /* destroy the process */
     sel4utils_destroy_process(&process, &env->vka);
-    
+
    return result;
 }
 
@@ -183,10 +173,7 @@ launch_benchmark(benchmark_t *benchmark, env_t *env)
 
     /* reserve memory for the results */
     void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark->results_pages, seL4_PageBits);
-    
-    if (results == NULL) {
-        ZF_LOGF("Failed to allocate pages for results");
-    }
+    ZF_LOGF_IF(results == NULL, "Failed to allocate pages for results");
 
     /* Run benchmark process */
     int exit_code = run_benchmark(env, benchmark, results);
@@ -215,10 +202,7 @@ find_untyped(vka_t *vka, vka_object_t *untyped)
             break;
         }
     }
-
-    if (error != 0) {
-        ZF_LOGF("Failed to find free untyped\n");
-    }
+    ZF_LOGF_IF(error, "Failed to find free untyped\n");
 }
 
 void
@@ -229,9 +213,7 @@ find_timer_untyped(env_t *env)
     env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka, &env->vspace);
     int error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr,
                                    &env->timer_untyped);
-    if (error) {
-        ZF_LOGF("Failed to find timer untyped");
-    }
+    ZF_LOGF_IFERR(error, "Failed to find timer untyped");
 }
 
 void *
@@ -269,9 +251,7 @@ main_continued(void *arg)
     for (int i = 0; benchmarks[i] != NULL; i++) {
         if (benchmarks[i]->enabled) {
             json_t *result = launch_benchmark(benchmarks[i], &global_env);
-            if (result == NULL) {
-                ZF_LOGF("Failed to run benchmark %s", benchmarks[i]->name);
-            }
+            ZF_LOGF_IF(result == NULL, "Failed to run benchmark %s", benchmarks[i]->name);
             UNUSED int error = json_array_extend(output, result);
             assert(error == 0);
 

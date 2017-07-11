@@ -99,9 +99,7 @@ add_single_untyped(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
     vka_cspace_make_path(vka, cap, &path);
     int error = allocman_utspace_add_uts(allocator, 1, &path, &untyped_size_bits, paddr,
                                      utType);
-    if (error) {
-        ZF_LOGF("Failed to add untyped to allocator");
-    }
+    ZF_LOGF_IF(error, "Failed to add untyped to allocator");
 }
 
 static allocman_t*
@@ -131,14 +129,12 @@ init_allocator_vspace(allocman_t *allocator, vspace_t *vspace)
     reservation_t pool_reservation;
     void *vaddr;
     pool_reservation.res = allocman_mspace_alloc(allocator, sizeof(sel4utils_res_t), &error);
-    if (!pool_reservation.res) {
-        ZF_LOGF("Failed to allocate reservation");
-    }
+    ZF_LOGF_IF(!pool_reservation.res, "Failed to allocate reservation");
+
     error = sel4utils_reserve_range_no_alloc(vspace, pool_reservation.res,
                                              ALLOCMAN_VIRTUAL_SIZE, seL4_AllRights, 1, &vaddr);
-    if (error) {
-        ZF_LOGF("Failed to provide virtual memory allocator");
-    }
+    ZF_LOGF_IF(error != 0, "Failed to provide virtual memory allocator");
+
     bootstrap_configure_virtual_pool(allocator, vaddr, ALLOCMAN_VIRTUAL_SIZE, SEL4UTILS_PD_SLOT);
 }
 
@@ -177,7 +173,7 @@ get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 }
 
 static void
-get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio, void *entry_point) 
+get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio, void *entry_point)
 {
     bzero(config, sizeof(sel4utils_process_config_t));
     config->is_elf = false;
@@ -196,7 +192,7 @@ get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio,
 }
 
 void
-benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point, 
+benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point,
                                 char *name)
 {
     int error;
@@ -204,20 +200,15 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
 
     get_process_config(env, &config, prio, entry_point);
     error = sel4utils_configure_process_custom(process, &env->slab_vka, &env->vspace, config);
-
-    if (error) {
-        ZF_LOGF("Failed to configure process %s", name);
-    }
+    ZF_LOGF_IFERR(error, "Failed to configure process %s", name);
 
     /* clone the text segment into the vspace - note that as we are only cloning the text
      * segment, you will not be able to use anything that relies on initialisation in benchmark
      * threads - like printf, (but seL4_Debug_PutChar is ok)
      */
-    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace, 
+    error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace,
                                                   env->region.reservation);
-    if (error) {
-        ZF_LOGF("Failed to bootstrap clone into vspace for %s", name);
-    }
+    ZF_LOGF_IF(error, "Failed to bootstrap clone into vspace for %s", name);
 
 #ifdef CONFIG_DEBUG_BUILD
         seL4_DebugNameThread(process->thread.tcb.cptr, name);
@@ -226,7 +217,7 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
 
 void
 benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
-                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point, 
+                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point,
                                       char *name)
 {
     int error;
@@ -239,17 +230,15 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
     config.vspace = &process->vspace;
 
     error = sel4utils_configure_process_custom(thread, &env->slab_vka, &env->vspace, config);
-    if (error) {
-        ZF_LOGF("Failed to configure process %s", name);
-    }
+    ZF_LOGF_IFERR(error, "Failed to configure process %s", name);
 
 #ifdef CONFIG_DEBUG_BUILD
     seL4_DebugNameThread(thread->thread.tcb.cptr, name);
-#endif 
+#endif
 }
 
 void
-benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread) 
+benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread)
 {
 
     seL4_CapData_t guard = seL4_CapData_Guard_new(0, seL4_WordBits -
@@ -257,16 +246,14 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
 
     int error = sel4utils_configure_thread(&env->slab_vka, &env->vspace, &env->vspace, fault_ep, prio,
                                            SEL4UTILS_CNODE_SLOT, guard, thread);
-    if (error) {
-        ZF_LOGF("Failed to configure %s\n", name);
-    }
+    ZF_LOGF_IF(error, "Failed to configure %s\n", name);
 #ifdef CONFIG_DEBUG_BUILD
     seL4_DebugNameThread(thread->tcb.cptr, name);
 #endif
 }
 
 void
-benchmark_wait_children(seL4_CPtr ep, char *name, int num_children) 
+benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
 {
     for (int i = 0; i < num_children; i++) {
         seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);
