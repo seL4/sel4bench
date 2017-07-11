@@ -73,10 +73,13 @@ setup_fault_handler(env_t *env)
     ZF_LOGF_IFERR(error, "Failed to set fault ep for benchmark driver\n");
 
     error = sel4utils_start_fault_handler(fault_ep.cptr,
-                                          &env->vka, &env->vspace, seL4_MaxPrio, simple_get_cnode(&env->simple),
+                                          &env->vka, &env->vspace, simple_get_cnode(&env->simple),
                                           seL4_NilData,
                                           "sel4bench-fault-handler", &fault_handler);
     ZF_LOGF_IFERR(error, "Failed to start fault handler");
+
+    error = seL4_TCB_SetPriority(fault_handler.tcb.cptr, seL4_MaxPrio);
+    ZF_LOGF_IFERR(error, "Failed to set prio for fault handler");
 }
 
 static void
@@ -98,7 +101,10 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     sel4utils_process_t process;
 
     /* configure benchmark process */
-    error = sel4utils_configure_process(&process, &env->vka, &env->vspace, seL4_MaxPrio, benchmark->name);
+    sel4utils_process_config_t config = process_config_default_simple(&env->simple, benchmark->name,
+            seL4_MaxPrio);
+    config = process_config_mcp(config, seL4_MaxPrio);
+    error = sel4utils_configure_process_custom(&process, &env->vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process for %s benchmark", benchmark->name);
 
     /* initialise timers for benchmark environment */

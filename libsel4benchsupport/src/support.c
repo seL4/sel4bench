@@ -172,23 +172,15 @@ get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
     return seL4_NoError;
 }
 
-static void
-get_process_config(env_t *env, sel4utils_process_config_t *config, uint8_t prio, void *entry_point)
+static inline sel4utils_process_config_t
+get_process_config(env_t *env, uint8_t prio, void *entry_point)
 {
-    bzero(config, sizeof(sel4utils_process_config_t));
-    config->is_elf = false;
-    config->create_cspace = true;
-    config->one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
-    config->create_vspace = true;
-    config->reservations = &env->region;
-    config->num_reservations = 1;
-    config->create_fault_endpoint = false;
-    config->fault_endpoint.cptr = 0; /* benchmark threads do not have fault eps */
-    config->priority = prio;
-    config->entry_point = entry_point;
-    if (!config_set(CONFIG_X86_64)) {
-        config->asid_pool = SEL4UTILS_ASID_POOL_SLOT;
-    }
+    sel4utils_process_config_t config = process_config_new(&env->simple);
+    config = process_config_noelf(config, entry_point, 0);
+    config = process_config_create_cnode(config, CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
+    config = process_config_create_vspace(config, &env->region, 1);
+    config = process_config_priority(config, prio);
+    return process_config_mcp(config, prio);
 }
 
 void
@@ -196,9 +188,7 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
                                 char *name)
 {
     int error;
-    sel4utils_process_config_t config;
-
-    get_process_config(env, &config, prio, entry_point);
+    sel4utils_process_config_t config = get_process_config(env, prio, entry_point);
     error = sel4utils_configure_process_custom(process, &env->slab_vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process %s", name);
 
@@ -221,13 +211,9 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
                                       char *name)
 {
     int error;
-    sel4utils_process_config_t config;
-
-    get_process_config(env, &config, prio, entry_point);
-    config.create_cspace = false;
-    config.cnode = process->cspace;
-    config.create_vspace = false;
-    config.vspace = &process->vspace;
+    sel4utils_process_config_t config = get_process_config(env, prio, entry_point);
+    config = process_config_cnode(config, process->cspace);
+    config = process_config_vspace(config, &process->vspace, process->pd);
 
     error = sel4utils_configure_process_custom(thread, &env->slab_vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process %s", name);
@@ -240,12 +226,12 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
 void
 benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread)
 {
+    sel4utils_thread_config_t config = thread_config_new(&env->simple);
+    config = thread_config_fault_endpoint(config, fault_ep);
+    config = thread_config_priority(config, prio);
+    config = thread_config_mcp(config, prio);
 
-    seL4_CapData_t guard = seL4_CapData_Guard_new(0, seL4_WordBits -
-                                                     CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
-
-    int error = sel4utils_configure_thread(&env->slab_vka, &env->vspace, &env->vspace, fault_ep, prio,
-                                           SEL4UTILS_CNODE_SLOT, guard, thread);
+    int error = sel4utils_configure_thread_config(&env->slab_vka, &env->vspace, &env->vspace, config, thread);
     ZF_LOGF_IF(error, "Failed to configure %s\n", name);
 #ifdef CONFIG_DEBUG_BUILD
     seL4_DebugNameThread(thread->tcb.cptr, name);
