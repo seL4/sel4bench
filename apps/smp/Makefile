@@ -24,5 +24,4 @@ CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 LIBS := sel4 c cpio sel4muslcsys utils sel4utils sel4allocman elf sel4vspace sel4simple sel4vka\
 	    sel4bench sel4benchsupport sel4debug platsupport sel4platsupport sel4simple-default
 
-
 include $(SEL4_COMMON)/common.mk

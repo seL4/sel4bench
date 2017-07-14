@@ -77,4 +77,3 @@ process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_d
         results[i] = process_result(nrows, array[i], desc);
     }
 }
-

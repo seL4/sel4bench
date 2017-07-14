@@ -14,5 +14,3 @@ components-$(CONFIG_APP_PAGEMAPPINGBENCH) += page_mapping
 page_mapping: common libsel4 $(libc) libcpio libsel4vka libsel4vspace libsel4allocman \
            libsel4utils libsel4muslcsys libsel4bench libelf libsel4simple libsel4benchsupport \
            libsel4debug libplatsupport libsel4platsupport
-
-

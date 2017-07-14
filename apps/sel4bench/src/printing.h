@@ -15,4 +15,3 @@
 #include <sel4bench/sel4bench.h>
 
 void print_all(int size, ccnt_t array[size]);
-

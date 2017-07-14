@@ -21,4 +21,3 @@ config APP_IRQUSERBENCH
     depends on DANGEROUS_CODE_INJECTION || EXPORT_PMU_USER
     help
         Application to benchmark seL4 IRQs without modification to the kernel.
-

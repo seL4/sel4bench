@@ -19,6 +19,5 @@ config APP_IRQBENCH
     LIB_SEL4_PLAT_SUPPORT && LIB_PLATSUPPORT && LIB_SEL4_BENCHSUPPORT
     depends on DANGEROUS_CODE_INJECTION || EXPORT_PMU_USER
     help
-        Application to benchmark seL4 IRQs from inside the kernel. 
+        Application to benchmark seL4 IRQs from inside the kernel.
         Requires tracepoints (see irq-tracepoint branch or kernel.
-

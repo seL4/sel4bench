@@ -63,4 +63,3 @@ hardware_benchmark_new(void)
 {
     return &hardware_benchmark;
 }
-

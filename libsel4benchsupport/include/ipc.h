@@ -270,6 +270,4 @@ results_stable(ccnt_t *array, size_t size)
     return true;
 }
 
-
-
 #endif /* __SELBENCH_IPC_H */

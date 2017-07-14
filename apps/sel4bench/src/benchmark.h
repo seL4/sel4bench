@@ -89,7 +89,6 @@ typedef struct {
     int ignored;
 } result_desc_t;
 
-
 benchmark_t *ipc_benchmark_new(void);
 benchmark_t *irq_benchmark_new(void);
 benchmark_t *irquser_benchmark_new(void);
@@ -106,4 +105,3 @@ blank_init(UNUSED vka_t *vka, UNUSED simple_t *simple, UNUSED sel4utils_process_
 {
     /* for benchmarks with no specific init */
 }
-

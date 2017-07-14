@@ -34,4 +34,3 @@ sel4bench-components = $(addprefix $(STAGE_BASE)/bin/, $(sel4bench-components-y)
 
 sel4bench: export COMPONENTS=${sel4bench-components}
 sel4bench: ${sel4bench-components-y} kernel_elf $(sel4bench-y)
-

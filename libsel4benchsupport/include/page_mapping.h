@@ -20,13 +20,11 @@
 #define TESTS ARRAY_SIZE(page_mapping_benchmark_params)
 #define NPHASE ARRAY_SIZE(phase_name)
 
-
 typedef struct benchmark_params {
     /* name of the function we are benchmarking */
     const char* name;
     const int   npage;
 } benchmark_params_t;
-
 
 /* array of benchmarks to run */
 static const
@@ -81,7 +79,6 @@ benchmark_params_t page_mapping_benchmark_params[] = {
         },
 };
 
-
 char *phase_name[] = {
 	"Prepare Page Tables",
 	"Allocate Pages",
@@ -89,7 +86,6 @@ char *phase_name[] = {
 	"Protect Pages as Read Only",
 	"Unprotect Pages"
 };
-
 
 typedef struct page_mapping_results {
     /* Raw results from benchmarking. These get checked for sanity */

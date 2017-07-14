@@ -27,4 +27,3 @@ config APP_FAULTBENCH
     depends on DANGEROUS_CODE_INJECTION || EXPORT_PMU_USER
     help
         Application to benchmark seL4 faults without modification to the kernel.
-

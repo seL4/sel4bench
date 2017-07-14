@@ -43,5 +43,4 @@ config JSON_INDENT
         Set the indent for JSON. By default it is 0, which is very fast to output,
         however setting the indent higher allows for more human readable output.
 
-
 endmenu

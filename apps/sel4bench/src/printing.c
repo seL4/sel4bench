@@ -26,4 +26,3 @@ print_all(int size, ccnt_t array[size])
         printf("\t"CCNT_FORMAT"\n", array[i]);
     }
 }
-

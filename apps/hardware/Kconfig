@@ -21,4 +21,3 @@ config APP_HARDWAREBENCH
     depends on DANGEROUS_CODE_INJECTION || EXPORT_PMU_USER
     help
         Application to benchmark hardware-related operations
-

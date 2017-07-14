@@ -82,4 +82,3 @@ fault_benchmark_new(void)
 {
     return &fault_benchmark;
 }
-

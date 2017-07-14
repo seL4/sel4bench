@@ -13,4 +13,3 @@
 #pragma once
 
 #include <sel4_arch/fault.h>
-

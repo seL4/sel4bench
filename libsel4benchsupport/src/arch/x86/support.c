@@ -81,5 +81,3 @@ benchmark_arch_get_simple(arch_simple_t *simple)
     simple->msi = get_msi;
     simple->ioapic = get_ioapic;
 }
-
-

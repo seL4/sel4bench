@@ -15,4 +15,3 @@
 #include <sel4_arch/hardware.h>
 
 #endif /* __ARCH_HARDWARE_H */
-

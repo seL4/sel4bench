@@ -21,7 +21,6 @@
 #include "printing.h"
 #include "processing.h"
 
-
 static json_t *
 process_mapping_results(void *r)
 {
@@ -40,7 +39,6 @@ process_mapping_results(void *r)
                                               desc);
 
     overhead = overhead_result.min;
-
 
     int nline = TESTS * NPHASE;
 
@@ -81,7 +79,7 @@ process_mapping_results(void *r)
 					.name = page_mapping_benchmark_params[i].name,
 					.overhead = overhead,
 	        };
-			results[i][j] = 
+			results[i][j] =
 				process_result(RUNS,raw_results->benchmarks_result[i][j],desc);
 		}
     }
@@ -105,5 +103,3 @@ page_mapping_benchmark_new(void)
 {
     return &page_mapping_benchmark;
 }
-
-

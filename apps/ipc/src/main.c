@@ -72,7 +72,6 @@ timing_destroy(void)
     sel4bench_destroy();
 }
 
-
 static inline void
 dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
 {
@@ -406,4 +405,3 @@ main(int argc, char **argv)
     benchmark_finished(EXIT_SUCCESS);
     return 0;
 }
-

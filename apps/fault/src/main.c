@@ -296,4 +296,3 @@ main(int argc, char **argv)
     benchmark_finished(EXIT_SUCCESS);
     return 0;
 }
-

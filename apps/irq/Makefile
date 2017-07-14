@@ -17,7 +17,7 @@ TARGETS := $(notdir $(SOURCE_DIR)).bin
 # whoever loads us will
 LDFLAGS += -u __vsyscall_ptr
 
-# Source files required to build the target 
+# Source files required to build the target
 CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 
 # Libraries

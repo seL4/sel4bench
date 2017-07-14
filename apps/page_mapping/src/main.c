@@ -19,20 +19,17 @@
 #define START_ADDR 0x60000000
 #define NUM_ARGS 3
 
-
 #if defined(CONFIG_ARCH_X86_64)
 #define DEFAULT_DEPTH 64
-#else 
+#else
 #define DEFAULT_DEPTH 32
 #endif /* defined(CONFIG_ARCH_X86_64) */
-
 
 #define PAGE_PER_TABLE BIT(seL4_PageTableBits - sizeof(seL4_Word))
 #define untyped_retype_root(a,b,c,e)\
 		seL4_Untyped_Retype(a,b,c,SEL4UTILS_CNODE_SLOT,\
 						SEL4UTILS_CNODE_SLOT,DEFAULT_DEPTH,e,1)
-#define NUM_PAGE_TABLE(npage) DIV_ROUND_UP((npage), PAGE_PER_TABLE) 
-
+#define NUM_PAGE_TABLE(npage) DIV_ROUND_UP((npage), PAGE_PER_TABLE)
 
 typedef struct helper_thread {
 	sel4utils_process_t process;
@@ -43,10 +40,8 @@ typedef struct helper_thread {
 	char argv_strings[NUM_ARGS][WORD_STRING_SIZE];
 } helper_thread_t;
 
-
-
 static void inline
-prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped, 
+prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped,
 					seL4_CPtr *free_slot)
 {
 	long err UNUSED;
@@ -59,17 +54,16 @@ prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped,
 
 		err = seL4_ARCH_PageTable_Map(pt, SEL4UTILS_PD_SLOT, addr,
 									  seL4_ARCH_Default_VMAttributes);
-		
 
 #if defined(CONFIG_ARCH_X86_64)
 		if (err) {
 			seL4_CPtr pd = *free_slot;
-			err = untyped_retype_root(untyped, seL4_X86_PageDirectoryObject, 
+			err = untyped_retype_root(untyped, seL4_X86_PageDirectoryObject,
 									  seL4_PageDirBits, pd);
 			assert(err == 0);
 			(*free_slot)++;
 			err = seL4_X86_PageDirectory_Map(pd, SEL4UTILS_PD_SLOT, addr,
-											seL4_ARCH_Default_VMAttributes); 
+											seL4_ARCH_Default_VMAttributes);
 
 			if (err) {
 				seL4_CPtr pdpt = *free_slot;
@@ -80,9 +74,9 @@ prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped,
 				err = seL4_X86_PDPT_Map(pdpt, SEL4UTILS_PD_SLOT, addr,
 											seL4_ARCH_Default_VMAttributes);
 				err = seL4_X86_PageDirectory_Map(pd, SEL4UTILS_PD_SLOT, addr,
-											seL4_ARCH_Default_VMAttributes); 
+											seL4_ARCH_Default_VMAttributes);
 			}
-			
+
 			err = seL4_ARCH_PageTable_Map(pt, SEL4UTILS_PD_SLOT, addr,
 									  seL4_ARCH_Default_VMAttributes);
 		}
@@ -93,9 +87,8 @@ prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped,
 	}
 }
 
-
 static void inline
-prepare_pages(int npage, seL4_CPtr untyped, 
+prepare_pages(int npage, seL4_CPtr untyped,
 				seL4_CPtr *free_slot)
 {
 	long err UNUSED;
@@ -107,7 +100,6 @@ prepare_pages(int npage, seL4_CPtr untyped,
 		(*free_slot)++;
 	}
 }
-
 
 static void inline
 map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
@@ -122,7 +114,6 @@ map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
 	}
 }
 
-
 #define PROT_UNPROT_NPAGE(func, right)\
 	static void inline func(seL4_CPtr page_cap, int npage){\
 		long err UNUSED;\
@@ -135,7 +126,6 @@ map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
 	}
 PROT_UNPROT_NPAGE(prot_pages, seL4_CanRead)
 PROT_UNPROT_NPAGE(unprot_pages, seL4_AllRights)
-
 
 /* Benchmark Child Process */
 static void
@@ -154,13 +144,12 @@ bench_proc(int argc UNUSED, char *argv[])
 	/* Install page tables to avoid mapping to fail */
 	COMPILER_MEMORY_FENCE();
 	SEL4BENCH_READ_CCNT(start);
-	
+
 		prepare_page_table(addr, npage, untyped, &free_slot);
 
 	SEL4BENCH_READ_CCNT(end);
 	COMPILER_MEMORY_FENCE();
 	send_result(result_ep, end - start);
-	
 
 	seL4_CPtr page_ptr_start = free_slot;
 	/* allocate pages */
@@ -216,13 +205,11 @@ bench_proc(int argc UNUSED, char *argv[])
 
 	}
 
-
 	sel4bench_destroy();
 }
 
-
 static void
-run_bench_child_proc(env_t *env, 
+run_bench_child_proc(env_t *env,
 						cspacepath_t *result_ep_path,
 						ccnt_t result[NPHASE],
 						helper_thread_t *proc
@@ -238,7 +225,6 @@ run_bench_child_proc(env_t *env,
 	for (int i = 0; i < NPHASE; i++)
 		result[i] = get_result(result_ep_path->capPtr);
 }
-
 
 static void
 measure_overhead(page_mapping_results_t *results)
@@ -274,7 +260,7 @@ main(int argc, char *argv[])
 		[seL4_EndpointObject] = 1,
 	};
 
-	env = benchmark_get_env(argc, argv, sizeof(page_mapping_results_t), 
+	env = benchmark_get_env(argc, argv, sizeof(page_mapping_results_t),
 							object_freq);
 	results = (page_mapping_results_t *)env->results;
 
@@ -285,17 +271,16 @@ main(int argc, char *argv[])
 	vka_cspace_make_path(&env->slab_vka, result_ep.cptr, &result_ep_path);
 
 	/* allocate untyped cap for pages */
-	if ((vka_alloc_untyped(&env->delegate_vka, env->untyped_size_bits - 2, 
+	if ((vka_alloc_untyped(&env->delegate_vka, env->untyped_size_bits - 2,
 							&untyped_obj)) != 0) {
 		ZF_LOGF("alloc untyped fail\n");
 	};
 	vka_cspace_make_path(&env->delegate_vka, untyped_obj.cptr, &untyped_path);
 
-
 	/* Create a new process to run test
 	 * shallow clone only copy .text segment
 	 * */
-	benchmark_shallow_clone_process(env, &proc.process, seL4_MaxPrio, 
+	benchmark_shallow_clone_process(env, &proc.process, seL4_MaxPrio,
 									bench_proc, "Proc");
 
 	proc.result_ep = sel4utils_copy_path_to_process(&proc.process,
@@ -304,7 +289,7 @@ main(int argc, char *argv[])
 	measure_overhead(results);
 	for (int i = 0; i < RUNS; i++) {
 		for (int j = 0; j < TESTS; j++) {
-			proc.untyped = sel4utils_copy_path_to_process(&proc.process, 
+			proc.untyped = sel4utils_copy_path_to_process(&proc.process,
 														untyped_path);
 			proc.npage = page_mapping_benchmark_params[j].npage;
 
@@ -315,14 +300,14 @@ main(int argc, char *argv[])
 			ccnt_t ret_time[NPHASE] = {0};
 			run_bench_child_proc(env, &result_ep_path, ret_time, &proc);
 			/* record result */
-			for(int k = 0; k < NPHASE; k++) 
+			for(int k = 0; k < NPHASE; k++)
 				results->benchmarks_result[j][k][i] = ret_time[k];
 			vka_cnode_revoke(&untyped_path);
 
 			/* Mannually set next free slot to make sure untyped cap is set
 			 * at the same slot every time*/
 			proc.process.cspace_next_free--;
-			
+
 			/* suspend proc to be resued */
 			seL4_TCB_Suspend(proc.process.thread.tcb.cptr);
 		}

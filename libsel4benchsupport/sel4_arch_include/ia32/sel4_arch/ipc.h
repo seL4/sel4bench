@@ -146,6 +146,4 @@
 #define DO_REAL_RECV(ep) DO_RECV(ep, "sysenter")
 #define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
 
-
 #endif /* __SEL4_ARCH_IPC_H */
-

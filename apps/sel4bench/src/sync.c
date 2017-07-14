@@ -92,8 +92,7 @@ static benchmark_t sync_benchmark = {
 };
 
 benchmark_t *
-sync_benchmark_new(void) 
+sync_benchmark_new(void)
 {
     return &sync_benchmark;
 }
-

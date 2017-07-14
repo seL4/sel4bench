@@ -25,7 +25,7 @@ This is the driver application: it launches each benchmark in a separate process
 
 ## ipc
 
-This is a hot cache benchmark of the IPC path. 
+This is a hot cache benchmark of the IPC path.
 
 ## irq
 
@@ -37,12 +37,12 @@ This is a hot cache benchmark of the irq path, measured from user-level.
 
 ## scheduler
 
-This is a hot cache benchmark of a scheduling decision. It works by using a producer-consumer pattern between two notification objects. 
+This is a hot cache benchmark of a scheduling decision. It works by using a producer-consumer pattern between two notification objects.
 This benchmark also measures `seL4_Yield`
 
 ## signal
 
-This is a hot cache benchmark of the signal path in the kernel, measured from user level. 
+This is a hot cache benchmark of the signal path in the kernel, measured from user level.
 
 ## smp
 

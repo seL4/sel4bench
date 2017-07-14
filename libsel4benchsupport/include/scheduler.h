@@ -47,5 +47,4 @@ gen_next_prio(int i)
     return seL4_MinPrio + 1 + (i * seL4_WordBits);
 }
 
-
 #endif /* __SELBENCH_SCHEDULER_H */

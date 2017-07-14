@@ -37,7 +37,6 @@ typedef struct helper_thread {
     seL4_Word argc;
 } helper_thread_t;
 
-
 void
 abort(void)
 {
@@ -50,7 +49,7 @@ __arch_putchar(int c)
     benchmark_putchar(c);
 }
 
-void 
+void
 wait_fn(int argc, char **argv) {
 
     assert(argc == N_WAIT_ARGS);
@@ -60,7 +59,7 @@ wait_fn(int argc, char **argv) {
 
     for (int i = 0; i < N_RUNS; i++) {
         DO_REAL_WAIT(ntfn);
-        SEL4BENCH_READ_CCNT(*end);   
+        SEL4BENCH_READ_CCNT(*end);
     }
 
     /* signal completion */
@@ -70,7 +69,7 @@ wait_fn(int argc, char **argv) {
 }
 
 /* this signal function expects to switch threads (ie wait_fn is higher prio) */
-void 
+void
 low_prio_signal_fn(int argc, char **argv)
 {
     assert(argc == N_LO_SIGNAL_ARGS);
@@ -78,7 +77,7 @@ low_prio_signal_fn(int argc, char **argv)
     volatile ccnt_t *end = (volatile ccnt_t *) atol(argv[1]);
     ccnt_t *results = (ccnt_t *) atol(argv[2]);
     seL4_CPtr done_ep = (seL4_CPtr) atol(argv[3]);
-    
+
     for (int i = 0; i < N_RUNS; i++) {
         ccnt_t start;
         SEL4BENCH_READ_CCNT(start);
@@ -160,7 +159,6 @@ static void stop_threads(helper_thread_t *first, helper_thread_t *second)
     assert(error == seL4_NoError);
 }
 
-
 static void
 benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
 {
@@ -178,7 +176,7 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
     UNUSED int error;
 
     assert(N_LO_SIGNAL_ARGS >= N_HI_SIGNAL_ARGS);
-    
+
     /* first benchmark signalling to a higher prio thread */
     benchmark_configure_thread(env, ep, seL4_MaxPrio, "wait", &wait.thread);
     benchmark_configure_thread(env, ep, seL4_MaxPrio - 1, "signal", &signal.thread);
@@ -254,13 +252,12 @@ main(int argc, char **argv)
     error = vka_alloc_notification(&env->slab_vka, &ntfn);
     assert(error == seL4_NoError);
 
-    /* measure overhead */    
+    /* measure overhead */
     measure_signal_overhead(ntfn.cptr, results->overhead);
-        
+
     benchmark(env, done_ep.cptr, ntfn.cptr, results);
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);
     return 0;
 }
-

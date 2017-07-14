@@ -73,10 +73,10 @@ void benchmark_putchar(int c);
  * This is *not* fork, and will only copy the text segment
  * into the new address space. This results in very light weight processes.
  *
- * This means you can start your new process at any function in the text segment, 
+ * This means you can start your new process at any function in the text segment,
  * but those functions cannot rely on any globally initialised data in the heap or the stack
  * Most significantly, any c library calls that rely on the vsyscall table will not work
- * (like abort, or printf). 
+ * (like abort, or printf).
  *
  * @param env environment from benchmark_get_env
  * @param[out] process the process to create
@@ -85,7 +85,7 @@ void benchmark_putchar(int c);
  * @param name a name for the thread for debugging (this will be passed to seL4_DebugNameThread)
  * @param fault_ep fault endpoint for the thread
  */
-void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, 
+void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio,
                                     void *entry_point, char *name);
 
 /*
@@ -98,9 +98,9 @@ void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, u
  * @param entry_point a function in the text segment to start the process at
  * @param name a name for the thread for debugging (this will be passed to seL4_DebugNameThread)
  */
-void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process, 
-                                          sel4utils_process_t *thread, uint8_t prio, 
-                                          void *entry_point, char *name); 
+void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
+                                          sel4utils_process_t *thread, uint8_t prio,
+                                          void *entry_point, char *name);
 
 /*
  * Configure a thread in the address space of the current environment.
@@ -109,15 +109,15 @@ void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *proc
  * @param fault_ep fault endpoint for the thread
  * @param prio the priority to run the process at
  * @param name a name for the thread for debugging (this will be passed to seL4_DebugNameThread)
- * @param[out] thread to create 
+ * @param[out] thread to create
  */
-void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, 
+void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name,
                                 sel4utils_thread_t *thread);
 
-/* 
+/*
  * Wait for n child threads/processes to terminate successfully.
  *
- * The child thread/processes must signal on ep when finished, *and* have ep also 
+ * The child thread/processes must signal on ep when finished, *and* have ep also
  * set as their fault endpoint. This way if a child terminates we will get an IPC.
  *
  * If any child terminates with a fault, abort. Otherwise, return when all children are
@@ -127,8 +127,7 @@ void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, ch
  * @param name a name for the child for debugging output on fault.
  * @param num_children the number of children to wait for
  */
-void benchmark_wait_children(seL4_CPtr ep, char *name, int num_children); 
-
+void benchmark_wait_children(seL4_CPtr ep, char *name, int num_children);
 
 /*
  * Send the cycle counter result through given endpoint
@@ -138,14 +137,11 @@ void benchmark_wait_children(seL4_CPtr ep, char *name, int num_children);
  */
 void send_result(seL4_CPtr ep, ccnt_t result);
 
-
 /*
  * Receive the cycle counter result from given endpoint
  *
- * @param ep The endpoint the result will be received from 
+ * @param ep The endpoint the result will be received from
  */
 ccnt_t get_result(seL4_CPtr ep);
-
-
 
 #endif /* __BENCHMARK_H__ */

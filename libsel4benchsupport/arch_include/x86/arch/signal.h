@@ -15,4 +15,3 @@
 #include <sel4_arch/signal.h>
 
 #endif /* __ARCH_SIGNAL_H */
-

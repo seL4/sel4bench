@@ -30,7 +30,7 @@
  */
 
 const char* broadcast_wait_names[] = {
-    "Wait time" 
+    "Wait time"
 };
 
 const char* broadcast_broadcast_names[] = {

@@ -38,7 +38,7 @@ __arch_putchar(int c)
     benchmark_putchar(c);
 }
 
-void 
+void
 high_fn(int argc, char **argv) {
 
     assert(argc == N_HIGH_ARGS);
@@ -49,7 +49,7 @@ high_fn(int argc, char **argv) {
 
     for (int i = 0; i < N_RUNS; i++) {
         DO_REAL_SIGNAL(produce);
-        /* we're running at high prio, read the cycle counter */ 
+        /* we're running at high prio, read the cycle counter */
         SEL4BENCH_READ_CCNT(*start);
         DO_REAL_WAIT(consume);
     }
@@ -60,7 +60,7 @@ high_fn(int argc, char **argv) {
     seL4_Wait(produce, NULL);
 }
 
-void 
+void
 low_fn(int argc, char **argv)
 {
     assert(argc == N_LOW_ARGS);
@@ -69,7 +69,7 @@ low_fn(int argc, char **argv)
     ccnt_t *results = (ccnt_t *) atol(argv[2]);
     seL4_CPtr done_ep = (seL4_CPtr) atol(argv[3]);
     seL4_CPtr consume = (seL4_CPtr) atol(argv[4]);
-    
+
     for (int i = 0; i < N_RUNS; i++) {
         ccnt_t end;
         DO_REAL_WAIT(produce);
@@ -84,7 +84,7 @@ low_fn(int argc, char **argv)
     seL4_Wait(produce, NULL);
 }
 
-static void 
+static void
 yield_fn(int argc, char **argv) {
 
    assert(argc == N_YIELD_ARGS);
@@ -100,7 +100,7 @@ yield_fn(int argc, char **argv) {
    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
-static void 
+static void
 benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
 {
     ccnt_t start;
@@ -114,9 +114,8 @@ benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
     benchmark_wait_children(ep, "yielder", 1);
 }
 
-
-static void 
-benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results) 
+static void
+benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
 {
     sel4utils_thread_t thread;
     volatile ccnt_t end;
@@ -146,11 +145,11 @@ benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
     /* allocate a page to share for the start cycle count */
     start = vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
     assert(start != NULL);
-  
-    benchmark_shallow_clone_process(env, &process, seL4_MaxPrio, yield_fn, "yield process"); 
+
+    benchmark_shallow_clone_process(env, &process, seL4_MaxPrio, yield_fn, "yield process");
 
     /* share memory for shared variable */
-    remote_start = vspace_share_mem(&env->vspace, &process.vspace, start, 1, seL4_PageBits, 
+    remote_start = vspace_share_mem(&env->vspace, &process.vspace, start, 1, seL4_PageBits,
                                   seL4_AllRights, 1);
     assert(remote_start != NULL);
 
@@ -158,7 +157,7 @@ benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
     vka_cspace_make_path(&env->slab_vka, ep, &path);
     remote_ep = sel4utils_copy_path_to_process(&process, path);
     assert(remote_ep != seL4_CapNull);
- 
+
     sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, remote_ep, (seL4_Word) remote_start);
 
     error = sel4utils_spawn_process(&process, &env->slab_vka, &env->vspace, N_YIELD_ARGS, argv, 1);
@@ -185,7 +184,6 @@ benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr co
 
     sel4utils_create_word_args(high_args_strings, high_argv, N_HIGH_ARGS, produce,
                                ep, (seL4_Word) &start, consume);
-
 
     for (int i = 0; i < N_PRIOS; i++) {
         uint8_t prio = gen_next_prio(i);
@@ -371,8 +369,8 @@ main(int argc, char **argv)
 
     error = vka_alloc_notification(&env->slab_vka, &consume);
     assert(error == seL4_NoError);
-    
-    /* measure overhead */    
+
+    /* measure overhead */
     measure_signal_overhead(produce.cptr, results->overhead_signal);
     measure_yield_overhead(results->overhead_ccnt);
 
@@ -391,4 +389,3 @@ main(int argc, char **argv)
     benchmark_finished(EXIT_SUCCESS);
     return 0;
 }
-

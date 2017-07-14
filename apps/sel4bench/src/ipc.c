@@ -149,4 +149,3 @@ ipc_benchmark_new(void)
 {
    return &ipc_benchmark;
 }
-

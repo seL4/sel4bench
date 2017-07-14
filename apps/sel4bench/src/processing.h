@@ -35,9 +35,6 @@ result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc);
 void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
                      result_t results[ncols]);
 
-
-
-
 /**
  * Process a table of results that need to be divided by AVERAGE_RUNS
  *

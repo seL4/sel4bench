@@ -16,4 +16,3 @@
 #include <sel4_arch/ipc.h>
 
 #endif /* __ARCH_IPC_H */
-

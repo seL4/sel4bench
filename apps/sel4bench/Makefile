@@ -45,4 +45,3 @@ ${COMPONENTS}:
 archive.o: ${COMPONENTS}
 	$(Q)mkdir -p $(dir $@)
 	${COMMON_PATH}/files_to_obj.sh $@ _cpio_archive $^
-

@@ -168,4 +168,3 @@ calculate_results(const size_t n, ccnt_t data[n])
 
     return result;
 }
-

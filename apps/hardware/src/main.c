@@ -19,7 +19,6 @@
 #include <benchmark.h>
 #include <hardware.h>
 
-
 #define NOPS ""
 
 #include <arch/hardware.h>

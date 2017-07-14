@@ -100,7 +100,7 @@ static helper_func_t bench_broadcast_funcs[] = {
 };
 
 void
-benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock, 
+benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock,
         sync_cv_t *cv, sync_results_t *results)
 {
     sel4utils_thread_t waiters[N_WAITERS];
@@ -118,7 +118,6 @@ benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t
         benchmark_configure_thread(env, 0, seL4_MaxPrio, "waiter", &waiters[i]);
     }
     benchmark_configure_thread(env, 0, seL4_MaxPrio-1, "broadcaster", &broadcaster);
-
 
     for (int j = 0; j < N_BROADCAST_BENCHMARKS; ++j) {
          for (int run = 0; run < N_RUNS; ++run) {
@@ -189,7 +188,7 @@ static helper_func_t bench_producer_funcs[] = {
 };
 
 void
-benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock, 
+benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock,
         sync_cv_t *producer_cv, sync_cv_t *consumer_cv, sync_results_t *results)
 {
     sel4utils_thread_t producer, consumer;
@@ -290,4 +289,3 @@ main(int argc, char **argv)
     benchmark_finished(EXIT_SUCCESS);
     return 0;
 }
-

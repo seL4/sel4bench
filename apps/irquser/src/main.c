@@ -50,7 +50,7 @@ spinner_fn(int argc, char **argv)
 
     while (1) {
         /* just take the low bits so the reads are atomic */
-        SEL4BENCH_READ_CCNT(*current_time);    
+        SEL4BENCH_READ_CCNT(*current_time);
     }
 }
 
@@ -156,12 +156,12 @@ main(int argc, char **argv)
     /* stop spinner thread */
     error = seL4_TCB_Suspend(spinner.tcb.cptr);
     assert(error == seL4_NoError);
-    
+
     error = seL4_TCB_Suspend(ticker.tcb.cptr);
     assert(error == seL4_NoError);
-    
+
     /* now run the benchmark again, but run the spinner in another address space */
-    
+
     /* restart ticker */
     error = sel4utils_start_thread(&ticker,  (sel4utils_thread_entry_fn) ticker_fn, (void *) results->process_results,
                                    (void *) local_current_time, true);
@@ -189,4 +189,3 @@ main(int argc, char **argv)
     benchmark_finished(EXIT_SUCCESS);
     return 0;
 }
-

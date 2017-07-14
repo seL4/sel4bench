@@ -34,4 +34,3 @@
 #define DO_NOP_SIGNAL(ntfn)      DO_SIGNAL(ntfn, ".byte 0x66\n.byte 0x90")
 
 #endif /* __SEL4_ARCH_SIGNAL_H */
-

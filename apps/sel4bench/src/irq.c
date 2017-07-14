@@ -106,7 +106,6 @@ process(void *results) {
     return array;
 }
 
-
 static benchmark_t irq_benchmark = {
     .name = "irq",
     .enabled = config_set(CONFIG_APP_IRQBENCH) && CONFIG_MAX_NUM_TRACE_POINTS == 3,
@@ -169,8 +168,7 @@ static benchmark_t irquser_benchmark = {
 };
 
 benchmark_t *
-irquser_benchmark_new(void) 
+irquser_benchmark_new(void)
 {
    return &irquser_benchmark;
 }
-

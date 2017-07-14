@@ -31,4 +31,3 @@
 #define DO_NOP_SIGNAL(ntfn)      DO_SIGNAL(ntfn, "nop")
 
 #endif /* __ARCH_SIGNAL_H */
-

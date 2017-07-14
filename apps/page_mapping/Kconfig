@@ -20,4 +20,3 @@ config APP_PAGEMAPPINGBENCH
     depends on DANGEROUS_CODE_INJECTION || EXPORT_PMU_USER
     help
         Application to benchmark seL4 mapping a series of pages.
-

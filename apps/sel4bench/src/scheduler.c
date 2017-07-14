@@ -139,8 +139,7 @@ static benchmark_t sched_benchmark = {
 };
 
 benchmark_t *
-scheduler_benchmark_new(void) 
+scheduler_benchmark_new(void)
 {
     return &sched_benchmark;
 }
-

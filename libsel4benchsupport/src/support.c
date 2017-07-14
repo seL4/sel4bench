@@ -151,7 +151,6 @@ init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
     ipc_buffer_size = BYTES_TO_SIZE_BITS_PAGES(sizeof(seL4_IPCBuffer), seL4_PageBits);
     void *existing_frames[stack_pages + results_size + ipc_buffer_size];
 
-
     index = add_frames(existing_frames, 0, results_addr, results_size);
     index = add_frames(existing_frames, index, (uintptr_t) seL4_GetIPCBuffer(), ipc_buffer_size);
     index = add_frames(existing_frames, index, stack_vaddr, stack_pages);
@@ -352,7 +351,6 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     init_allocator_vspace(env.allocman, &env.vspace);
     parse_code_region(&env.region);
 
-
     /* In case we used any FPU during our setup we will attempt to put the system
      * back into a steady state before returning */
 #ifdef CONFIG_X86_FPU_MAX_RESTORES_SINCE_SWITCH
@@ -371,10 +369,8 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     /* get the timers */
     benchmark_arch_get_timers(&env);
 
-
     return &env;
 }
-
 
 void
 send_result(seL4_CPtr ep, ccnt_t result)
@@ -389,7 +385,6 @@ send_result(seL4_CPtr ep, ccnt_t result)
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, (seL4_Uint32)length);
     seL4_Send(ep, tag);
 }
-
 
 ccnt_t
 get_result(seL4_CPtr ep)
@@ -406,4 +401,3 @@ get_result(seL4_CPtr ep)
 
     return result;
 }
-
