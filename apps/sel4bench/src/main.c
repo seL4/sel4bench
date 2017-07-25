@@ -31,8 +31,8 @@
 #include <vka/object.h>
 #include <vka/capops.h>
 
-#include <cspace.h>
 #include <ipc.h>
+#include <benchmark_types.h>
 
 #include "benchmark.h"
 #include "env.h"
@@ -95,7 +95,7 @@ init_timers(env_t *env, sel4utils_process_t *process)
 }
 
 int
-run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
+run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, benchmark_args_t *args)
 {
     int error;
     sel4utils_process_t process;
@@ -113,33 +113,36 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     /* copy untyped to process */
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
-    UNUSED seL4_CPtr slot = sel4utils_copy_path_to_process(&process, path);
-    assert(slot == UNTYPED_SLOT);
+    args->untyped_cptr = sel4utils_copy_path_to_process(&process, path);
+    args->first_free = args->untyped_cptr + 1;
 
     vka_cspace_make_path(&env->vka, env->timer_untyped.cptr, &path);
     slot = sel4utils_copy_path_to_process(&process, path);
     assert(slot == TIMER_UNTYPED_SLOT);
 
-    seL4_Word stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
-    uintptr_t stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
+    args->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
+    args->stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
 
     NAME_THREAD(process.thread.tcb.cptr, benchmark->name);
 
     /* set up shared memory for results */
-    void *remote_results_vaddr = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr,
-                                                  benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
+    args->results = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr,
+                                    benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
 
     /* do benchmark specific init */
     benchmark->init(&env->vka, &env->simple, &process);
 
     /* set up arguments */
+    void *remote_args_vaddr = vspace_share_mem(&env->vspace, &process.vspace, args, 1,
+                                               seL4_PageBits, seL4_AllRights, true);
+    args->untyped_size_bits = env->untyped.size_bits;
+    args->nr_cores = simple_get_core_count(&env->simple);
+
     /* untyped size */
-    seL4_Word argc = 6;
-    char args[6][WORD_STRING_SIZE];
+    seL4_Word argc = 1;
+    char string_args[argc][WORD_STRING_SIZE];
     char *argv[argc];
-    sel4utils_create_word_args(args, argv, argc, env->untyped.size_bits, stack_vaddr,
-                               stack_pages, (seL4_Word) remote_results_vaddr,
-                               env->timer_paddr, simple_get_core_count(&env->simple));
+    sel4utils_create_word_args(string_args, argv, argc, remote_args_vaddr);
     /* start process */
     error = sel4utils_spawn_process_v(&process, &env->vka, &env->vspace, argc, argv, 1);
     ZF_LOGF_IF(error, "Failed to start benchmark process");
@@ -157,7 +160,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr)
     }
 
     /* free results in target vspace (they will still be in ours) */
-    vspace_unmap_pages(&process.vspace, remote_results_vaddr, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
+    vspace_unmap_pages(&process.vspace, args->results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
      /* clean up */
 
     /* revoke the untypeds so it's clean for the next benchmark */
@@ -181,8 +184,11 @@ launch_benchmark(benchmark_t *benchmark, env_t *env)
     void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark->results_pages, seL4_PageBits);
     ZF_LOGF_IF(results == NULL, "Failed to allocate pages for results");
 
+    /* reserve memory for args */
+    assert(sizeof(benchmark_args_t) < PAGE_SIZE_4K);
+    void *args = vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
     /* Run benchmark process */
-    int exit_code = run_benchmark(env, benchmark, results);
+    int exit_code = run_benchmark(env, benchmark, results, args);
 
     /* process & print results */
     json_t *json = NULL;

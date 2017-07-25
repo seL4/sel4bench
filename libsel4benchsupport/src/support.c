@@ -141,7 +141,7 @@ init_allocator_vspace(allocman_t *allocator, vspace_t *vspace)
 static void
 init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
             size_t stack_pages, uintptr_t stack_vaddr, uintptr_t results_addr,
-            size_t results_bytes)
+            size_t results_bytes, uintptr_t args_vaddr)
 {
     int index;
     size_t results_size, ipc_buffer_size;
@@ -154,6 +154,7 @@ init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
     index = add_frames(existing_frames, 0, results_addr, results_size);
     index = add_frames(existing_frames, index, (uintptr_t) seL4_GetIPCBuffer(), ipc_buffer_size);
     index = add_frames(existing_frames, index, stack_vaddr, stack_pages);
+    index = add_frames(existing_frames, index, (uintptr_t) args_vaddr, 1);
 
     if (sel4utils_bootstrap_vspace(vspace, data, SEL4UTILS_PD_SLOT, vka, NULL, NULL, existing_frames)) {
         ZF_LOGF("Failed to bootstrap vspace");
@@ -262,13 +263,14 @@ static uint8_t get_cnode_size(void *data)
 
 static seL4_CPtr get_nth_untyped(void *data, int n, size_t *size_bits, uintptr_t *paddr, bool *device)
 {
+    env_t *env = data;
     if (n != 0) {
         ZF_LOGE("Asked for untyped we don't have");
         return seL4_CapNull;
     }
 
     if (size_bits) {
-        *size_bits = ((env_t *) data)->untyped_size_bits;
+        *size_bits = env->args->untyped_size_bits;
     }
 
     if (device) {
@@ -278,24 +280,24 @@ static seL4_CPtr get_nth_untyped(void *data, int n, size_t *size_bits, uintptr_t
     if (paddr) {
         *paddr = 0;
     }
-    return UNTYPED_SLOT;
+    return env->args->untyped_cptr;
+}
+
+static int get_cap_count(void *data) {
+    return ((env_t *) data)->args->first_free;
 }
 
 static seL4_CPtr get_nth_cap(void *data, int n)
 {
-    if (n < FREE_SLOT) {
+    if (n < get_cap_count(data)) {
         return n;
     }
     return seL4_CapNull;
 }
 
-static int get_cap_count(void *data) {
-    return FREE_SLOT;
-}
-
 static int get_core_count(void *data)
 {
-    return ((env_t *) data)->nr_cores;
+    return ((env_t *) data)->args->nr_cores;
 }
 
 static void init_simple(env_t *env)
@@ -328,26 +330,19 @@ static void init_simple(env_t *env)
 env_t *
 benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
 {
-    size_t stack_pages;
-    uintptr_t stack_vaddr;
-
     /* parse arguments */
-    if (argc < 6) {
+    if (argc < 1) {
         ZF_LOGF("Insufficient arguments, expected 6, got %d\n", (int) argc);
     }
 
-    env.untyped_size_bits = (size_t) atol(argv[0]);
-    stack_vaddr = (uintptr_t) atol(argv[1]);
-    stack_pages = (size_t) atol(argv[2]);
-    env.results = (void *) atol(argv[3]);
-    env.timer_paddr = (uintptr_t) atol(argv[4]);
-    env.nr_cores = (int) atol(argv[5]);
+    env.args = (void *) atol(argv[0]);
+    env.results = env.args->results;
 
     init_simple(&env);
 
-    env.allocman = init_allocator(&env.simple, &env.delegate_vka, env.timer_paddr);
-    init_vspace(&env.delegate_vka, &env.vspace, &env.data, stack_pages, stack_vaddr,
-                (uintptr_t) env.results, results_size);
+    env.allocman = init_allocator(&env.simple, &env.delegate_vka, &env.args->to);
+    init_vspace(&env.delegate_vka, &env.vspace, &env.data, env.args->stack_pages, env.args->stack_vaddr,
+                (uintptr_t) env.results, results_size, (uintptr_t) env.args);
     init_allocator_vspace(env.allocman, &env.vspace);
     parse_code_region(&env.region);
 

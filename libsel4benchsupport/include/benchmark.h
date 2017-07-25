@@ -21,8 +21,7 @@
 #include <simple/simple.h>
 #include <vka/vka.h>
 #include <vspace/vspace.h>
-
-#include <cspace.h>
+#include <benchmark_types.h>
 
 /* average events = sel4bench generic events + the cycle counter */
 #define NUM_AVERAGE_EVENTS (SEL4BENCH_NUM_GENERIC_EVENTS + 1u)
@@ -53,10 +52,8 @@ typedef struct env {
     vka_object_t ntfn;
     /* paddr for timeout timer */
     uintptr_t timer_paddr;
-    /* size of untyped passed to benchmarks */
-    size_t untyped_size_bits;
-    /* number of core available for benchmark use */
-    int nr_cores;
+    /* args we started with */
+    benchmark_args_t *args;
 } env_t;
 
 /* initialise the benchmarking environment and return it */
