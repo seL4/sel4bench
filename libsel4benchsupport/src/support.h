@@ -7,15 +7,12 @@
  * the BSD 2-Clause license. Note that NO WARRANTY is provided.
  * See "LICENSE_BSD2.txt" for details.
  *
-   * @TAG(DATA61_BSD)
-   */
-#ifndef __BENCHMARK_SUPPORT_H
-#define __BENCHMARK_SUPPORT_H
+ * @TAG(DATA61_BSD)
+ */
+#pragma once
 
 #include <sel4utils/slab.h>
 #include <simple/arch/simple.h>
 
 void benchmark_arch_get_simple(arch_simple_t *simple);
 void benchmark_arch_get_timers(env_t *env, ps_io_ops_t ops);
-
-#endif /* __BENCHMARK_SUPPORT_H */

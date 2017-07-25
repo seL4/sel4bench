@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __BENCHMARK_H
-#define __BENCHMARK_H
+#pragma once
 
 #include <allocman/vka.h>
 #include <sel4bench/sel4bench.h>
@@ -137,5 +136,3 @@ void send_result(seL4_CPtr ep, ccnt_t result);
  * @param ep The endpoint the result will be received from
  */
 ccnt_t get_result(seL4_CPtr ep);
-
-#endif /* __BENCHMARK_H__ */
