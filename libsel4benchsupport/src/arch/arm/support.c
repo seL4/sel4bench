@@ -20,11 +20,10 @@
 #include "../../support.h"
 
 void
-benchmark_arch_get_timers(env_t *env)
+benchmark_arch_get_timers(env_t *env, ps_io_ops_t ops)
 {
-    env->timeout_timer = sel4platsupport_get_default_timer(&env->delegate_vka, &env->vspace, &env->simple,
-                                                           env->ntfn.cptr);
-    ZF_LOGF_IF(env->timeout_timer == NULL, "Failed to create timeout timer");
+    int error = ltimer_default_init(&env->timer.ltimer, ops);
+    ZF_LOGF_IF(error, "Failed to create timeout timer");
 }
 
 void

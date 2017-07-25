@@ -14,7 +14,6 @@
 #include <stdio.h>
 
 #include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/timer.h>
 #include <utils/time.h>
 
 #include <sel4bench/arch/sel4bench.h>
@@ -66,15 +65,14 @@ ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
 {
     seL4_Word start, end_low;
     ccnt_t end;
+    seL4_Word badge;
 
-    sel4_timer_handle_single_irq(timer);
-    seL4_Wait(timer_signal, NULL);
     for (int i = 0; i < N_RUNS; i++) {
-        sel4_timer_handle_single_irq(timer);
         /* wait for irq */
-        seL4_Wait(timer_signal, NULL);
+        seL4_Wait(timer_signal, &badge);
         /* record result */
         SEL4BENCH_READ_CCNT(end);
+        sel4platsupport_handle_timer_irq(timer, badge);
         end_low = (seL4_Word) end;
         start = (seL4_Word) *current_time;
         results[i] = end_low - start;
@@ -87,7 +85,6 @@ int
 main(int argc, char **argv)
 {
     env_t *env;
-    int error;
     irquser_results_t *results;
     vka_object_t endpoint = {0};
 
@@ -105,16 +102,14 @@ main(int argc, char **argv)
 
     /* set up globals */
     done_ep = endpoint.cptr;
-    timer = env->timeout_timer;
+    timer = &env->timer;
     timer_signal = env->ntfn.cptr;
 
-    if (timer_start(env->timeout_timer->timer) != 0) {
-        ZF_LOGF("Failed to start timer\n");
-    }
+    int error = ltimer_reset(&env->timer.ltimer);
+    ZF_LOGF_IF(error, "Failed to start timer");
 
-    if (timer_periodic(env->timeout_timer->timer, INTERRUPT_PERIOD_NS) != 0) {
-        ZF_LOGF("Failed to configure timer\n");
-    }
+    error = ltimer_set_timeout(&env->timer.ltimer, INTERRUPT_PERIOD_NS, TIMEOUT_PERIODIC);
+    ZF_LOGF_IF(error, "Failed to configure timer");
 
     sel4bench_init();
 

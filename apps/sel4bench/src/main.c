@@ -23,7 +23,7 @@
 #include <sel4debug/register_dump.h>
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
-#include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/timer.h>
 #include <sel4utils/stack.h>
 #include <stdio.h>
 #include <string.h>
@@ -83,15 +83,23 @@ setup_fault_handler(env_t *env)
 }
 
 static void
-init_timers(env_t *env, sel4utils_process_t *process)
+init_timers(env_t *env, sel4utils_process_t *process, benchmark_args_t *args)
 {
-    cspacepath_t path;
-    int error;
-    error = arch_init_timer_irq_cap(env, &path);
-    ZF_LOGF_IFERR(error, "Failed to get timer interrupt");
+    args->to = env->to;
 
-    UNUSED seL4_CPtr cap = sel4utils_move_cap_to_process(process, path, &env->vka);
-    assert(cap == TIMEOUT_TIMER_IRQ_SLOT);
+    /* copy the timer caps to the process - sequentially */
+    for (int i = 0; i < env->to.nirqs; i++) {
+        args->to.irqs[i].handler_path.capPtr = sel4utils_copy_path_to_process(process,
+                env->to.irqs[i].handler_path);
+        args->to.irqs[i].handler_path.root = SEL4UTILS_CNODE_SLOT;
+        args->to.irqs[i].handler_path.capDepth = seL4_WordBits;
+        args->first_free++;
+    }
+
+    for (int i = 0; i < env->to.nobjs; i++) {
+        args->to.objs[i].obj.cptr = sel4utils_copy_cap_to_process(process, &env->vka, env->to.objs[i].obj.cptr);
+        args->first_free++;
+    }
 }
 
 int
@@ -107,18 +115,14 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
     error = sel4utils_configure_process_custom(&process, &env->vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process for %s benchmark", benchmark->name);
 
-    /* initialise timers for benchmark environment */
-    init_timers(env, &process);
-
     /* copy untyped to process */
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
     args->untyped_cptr = sel4utils_copy_path_to_process(&process, path);
     args->first_free = args->untyped_cptr + 1;
 
-    vka_cspace_make_path(&env->vka, env->timer_untyped.cptr, &path);
-    slot = sel4utils_copy_path_to_process(&process, path);
-    assert(slot == TIMER_UNTYPED_SLOT);
+    /* initialise timers for benchmark environment */
+    init_timers(env, &process, args);
 
     args->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
     args->stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
@@ -165,8 +169,6 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
 
     /* revoke the untypeds so it's clean for the next benchmark */
     vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
-    vka_cnode_revoke(&path);
-    vka_cspace_make_path(&env->vka, env->timer_untyped.cptr, &path);
     vka_cnode_revoke(&path);
 
     /* destroy the process */
@@ -218,14 +220,12 @@ find_untyped(vka_t *vka, vka_object_t *untyped)
 }
 
 void
-find_timer_untyped(env_t *env)
+find_timer_caps(env_t *env)
 {
-
+    /* init the default caps */
+    int error = sel4platsupport_init_default_timer_caps(&env->vka, &env->vspace, &env->simple, &env->to);
     /* timer paddr */
-    env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka, &env->vspace);
-    int error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr,
-                                   &env->timer_untyped);
-    ZF_LOGF_IFERR(error, "Failed to find timer untyped");
+    ZF_LOGF_IFERR(error, "Failed to init default timer caps");
 }
 
 void *
@@ -236,7 +236,7 @@ main_continued(void *arg)
 
     /* find an untyped for the process to use */
     find_untyped(&global_env.vka, &global_env.untyped);
-    find_timer_untyped(&global_env);
+    find_timer_caps(&global_env);
 
     /* list of benchmarks */
     benchmark_t *benchmarks[] = {

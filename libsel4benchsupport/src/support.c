@@ -14,7 +14,8 @@
 
 #include <autoconf.h>
 
-#include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/timer.h>
+#include <sel4platsupport/io.h>
 #include <sel4utils/process.h>
 
 #include <stdarg.h>
@@ -58,6 +59,9 @@ benchmark_putchar(int c)
 NORETURN void
 benchmark_finished(int exit_code)
 {
+    /* stop the timer */
+    sel4platsupport_destroy_timer(&env.timer.ltimer, &env.slab_vka);
+
     /* send back exit code */
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, exit_code);
@@ -103,7 +107,7 @@ add_single_untyped(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
 }
 
 static allocman_t*
-init_allocator(simple_t *simple, vka_t *vka, uintptr_t timer_paddr)
+init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
 {
     /* set up malloc area */
     morecore_area = app_morecore_area;
@@ -116,8 +120,11 @@ init_allocator(simple_t *simple, vka_t *vka, uintptr_t timer_paddr)
     /* create vka backed by allocator */
     allocman_make_vka(vka, allocator);
 
-    add_single_untyped(allocator, vka, seL4_PageBits, &timer_paddr, TIMER_UNTYPED_SLOT,
-                       ALLOCMAN_UT_DEV);
+    for (int i = 0; i < to->nobjs; i++) {
+        uintptr_t addr = to->objs[i].region.base_addr;
+        add_single_untyped(allocator, vka, seL4_PageBits, &addr,
+                to->objs[i].obj.cptr, ALLOCMAN_UT_DEV);
+    }
     return allocator;
 }
 
@@ -164,10 +171,20 @@ init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
 static seL4_Error
 get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
-    assert(irq == DEFAULT_TIMER_INTERRUPT);
-    UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
-                                              SEL4UTILS_CNODE_SLOT, TIMEOUT_TIMER_IRQ_SLOT, seL4_WordBits);
-    assert(error == seL4_NoError);
+    env_t *env = data;
+    cspacepath_t path = {0};
+
+    for (int i = 0; i < env->args->to.nirqs; i++) {
+        if (irq == env->args->to.irqs[i].irq.irq.number) {
+             path = env->args->to.irqs[i].handler_path;
+             break;
+        }
+    }
+
+    ZF_LOGF_IF(path.capPtr == seL4_CapNull, "Failed to find irq cap");
+    seL4_Error error = seL4_CNode_Move(cnode, index, depth,
+                                       path.root, path.capPtr, path.capDepth);
+    ZF_LOGF_IF(error != seL4_NoError, "Failed to move irq cap");
 
     return seL4_NoError;
 }
@@ -323,6 +340,7 @@ static void init_simple(env_t *env)
     //env->simple.arch_info =
     //env->simple.extended_bootinfo =
 
+    env->simple.arch_simple.data = env;
     env->simple.arch_simple.irq = get_irq;
     benchmark_arch_get_simple(&env->simple.arch_simple);
 }
@@ -354,6 +372,10 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     }
 #endif
 
+    /* update object freq for timer objects */
+    object_freq[seL4_NotificationObject]++;
+    object_freq[seL4_ARCH_4KPage] += env.args->to.nobjs;
+
     /* set up slab allocator */
     if (slab_init(&env.slab_vka, &env.delegate_vka, object_freq) != 0) {
         ZF_LOGF("Failed to init slab allocator");
@@ -361,8 +383,15 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
 
     /* allocate a notification for timers */
     ZF_LOGF_IFERR(vka_alloc_notification(&env.slab_vka, &env.ntfn), "Failed to allocate ntfn");
+
+    /* set up irq caps */
+    int error = sel4platsupport_init_timer_irqs(&env.slab_vka, &env.simple, env.ntfn.cptr, &env.timer, &env.args->to);
+    ZF_LOGF_IF(error, "Failed to init timer irqs");
+
+    ps_io_ops_t ops;
+    error = sel4platsupport_new_io_ops(env.vspace, env.slab_vka, &ops);
     /* get the timers */
-    benchmark_arch_get_timers(&env);
+    benchmark_arch_get_timers(&env, ops);
 
     return &env;
 }

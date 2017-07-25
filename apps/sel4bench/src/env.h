@@ -13,6 +13,7 @@
 
 #include <platsupport/io.h>
 #include <sel4platsupport/io.h>
+#include <sel4platsupport/timer.h>
 #include <sel4utils/sel4_zf_logif.h>
 #include <simple/simple.h>
 #include <vka/vka.h>
@@ -28,11 +29,7 @@ typedef struct env {
     vspace_t vspace;
     /* regular untyped memory to pass to benchmark apps */
     vka_object_t untyped;
-    /* untyped memory for benchmark timer paddr */
-    vka_object_t timer_untyped;
-    vka_object_t clock_untyped;
-    /* physical address of the timeout timer device */
-    uintptr_t timer_paddr;
+    timer_objects_t to;
     ps_io_ops_t ops;
 } env_t;
 

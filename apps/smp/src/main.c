@@ -13,7 +13,6 @@
 #include <autoconf.h>
 
 #include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/timer.h>
 #include <utils/time.h>
 #include <benchmark.h>
 #include <smp.h>
@@ -45,8 +44,9 @@ struct _pp_threads {
 static inline void
 wait_for_benchmark(env_t *env)
 {
-    sel4_timer_handle_single_irq(env->timeout_timer);
-    seL4_Wait(env->ntfn.cptr, NULL);
+    seL4_Word badge;
+    seL4_Wait(env->ntfn.cptr, &badge);
+    sel4platsupport_handle_timer_irq(&env->timer, badge);
 }
 
 static inline void
@@ -182,8 +182,8 @@ main(int argc, char *argv[])
         zigset(i, ZIGSEED + i);
     }
 
-    ZF_LOGF_IF(timer_periodic(env->timeout_timer->timer, NS_IN_S) != 0, "Failed to configure timer\n");
-    ZF_LOGF_IF(timer_start(env->timeout_timer->timer) != 0, "Failed to start timer\n");
+    ZF_LOGF_IF(ltimer_reset(&env->timer.ltimer) != 0, "Failed to start timer\n");
+    ZF_LOGF_IF(ltimer_set_timeout(&env->timer.ltimer, NS_IN_S, true) != 0, "Failed to configure timer\n");
 
     for (int i = 0; i < nr_cores; i++) {
         size_t name_sz = strlen("ping") + WORD_STRING_SIZE + 1;
@@ -219,7 +219,7 @@ main(int argc, char *argv[])
     }
 
     benchmark_multicore_ipc_throughput(env, results);
-    ZF_LOGF_IF(timer_stop(env->timeout_timer->timer) != 0, "Failed to stop timer\n");
+    ZF_LOGF_IF(ltimer_reset(&env->timer.ltimer) != 0, "Failed to stop timer\n");
 
     benchmark_finished(EXIT_SUCCESS);
     return 0;

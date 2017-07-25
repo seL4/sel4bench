@@ -17,8 +17,6 @@
 
 #include <irq.h>
 #include <sel4platsupport/device.h>
-#include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/timer.h>
 #include <stdio.h>
 #include <utils/time.h>
 
