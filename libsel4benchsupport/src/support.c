@@ -60,7 +60,7 @@ NORETURN void
 benchmark_finished(int exit_code)
 {
     /* stop the timer */
-    sel4platsupport_destroy_timer(&env.timer.ltimer, &env.slab_vka);
+    sel4platsupport_destroy_timer(&env.timer, &env.slab_vka);
 
     /* send back exit code */
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
