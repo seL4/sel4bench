@@ -82,26 +82,6 @@ setup_fault_handler(env_t *env)
     ZF_LOGF_IFERR(error, "Failed to set prio for fault handler");
 }
 
-static void
-init_timers(env_t *env, sel4utils_process_t *process, benchmark_args_t *args)
-{
-    args->to = env->to;
-
-    /* copy the timer caps to the process - sequentially */
-    for (int i = 0; i < env->to.nirqs; i++) {
-        args->to.irqs[i].handler_path.capPtr = sel4utils_copy_path_to_process(process,
-                env->to.irqs[i].handler_path);
-        args->to.irqs[i].handler_path.root = SEL4UTILS_CNODE_SLOT;
-        args->to.irqs[i].handler_path.capDepth = seL4_WordBits;
-        args->first_free++;
-    }
-
-    for (int i = 0; i < env->to.nobjs; i++) {
-        args->to.objs[i].obj.cptr = sel4utils_copy_cap_to_process(process, &env->vka, env->to.objs[i].obj.cptr);
-        args->first_free++;
-    }
-}
-
 int
 run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, benchmark_args_t *args)
 {
@@ -115,14 +95,12 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
     error = sel4utils_configure_process_custom(&process, &env->vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process for %s benchmark", benchmark->name);
 
-    /* copy untyped to process */
-    cspacepath_t path;
-    vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
-    args->untyped_cptr = sel4utils_copy_path_to_process(&process, path);
-    args->first_free = args->untyped_cptr + 1;
-
     /* initialise timers for benchmark environment */
-    init_timers(env, &process, args);
+    sel4utils_copy_timer_caps_to_process(&args->to, &env->to, &env->vka, &process);
+    /* copy untyped to process */
+    args->untyped_cptr = sel4utils_copy_cap_to_process(&process, &env->vka, env->untyped.cptr);
+    /* this is the last cap we copy - initialise the first free cap */
+    args->first_free = args->untyped_cptr + 1;
 
     args->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / SIZE_BITS_TO_BYTES(seL4_PageBits);
     args->stack_vaddr = ((uintptr_t) process.thread.stack_top) - CONFIG_SEL4UTILS_STACK_SIZE;
@@ -168,6 +146,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
      /* clean up */
 
     /* revoke the untypeds so it's clean for the next benchmark */
+    cspacepath_t path;
     vka_cspace_make_path(&env->vka, env->untyped.cptr, &path);
     vka_cnode_revoke(&path);
 

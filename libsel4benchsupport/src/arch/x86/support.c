@@ -45,7 +45,9 @@ get_msi(void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
         UNUSED seL4_Word handle, seL4_Word vector)
 {
     assert(data != NULL);
-    seL4_CPtr irq = hpet_irq(data).handler_path.capPtr;
+    env_t *env = data;
+    seL4_CPtr irq = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, vector, PS_MSI);
+
     UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
                                               SEL4UTILS_CNODE_SLOT, irq, seL4_WordBits);
     assert(error == seL4_NoError);
@@ -59,7 +61,8 @@ get_ioapic(void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
         UNUSED seL4_Word level, seL4_Word vector)
 {
     assert(data != NULL);
-    seL4_CPtr irq = hpet_irq(data).handler_path.capPtr;
+    env_t *env = data;
+    seL4_CPtr irq = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, vector, PS_MSI);
     UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
                                               SEL4UTILS_CNODE_SLOT, irq, seL4_WordBits);
 

@@ -95,17 +95,6 @@ add_frames(void *frames[], size_t start, uintptr_t addr, size_t num_frames)
     return i;
 }
 
-static void
-add_single_untyped(allocman_t *allocator, vka_t *vka, size_t untyped_size_bits,
-                   uintptr_t *paddr, seL4_CPtr cap, int utType)
-{
-    cspacepath_t path;
-    vka_cspace_make_path(vka, cap, &path);
-    int error = allocman_utspace_add_uts(allocator, 1, &path, &untyped_size_bits, paddr,
-                                     utType);
-    ZF_LOGF_IF(error, "Failed to add untyped to allocator");
-}
-
 static allocman_t*
 init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
 {
@@ -120,11 +109,8 @@ init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
     /* create vka backed by allocator */
     allocman_make_vka(vka, allocator);
 
-    for (int i = 0; i < to->nobjs; i++) {
-        uintptr_t addr = to->objs[i].region.base_addr;
-        add_single_untyped(allocator, vka, seL4_PageBits, &addr,
-                to->objs[i].obj.cptr, ALLOCMAN_UT_DEV);
-    }
+    int error = allocman_add_untypeds_from_timer_objects(allocator, to);
+    ZF_LOGF_IF(error, "Failed to add untypeds from timer to allocator");
     return allocator;
 }
 
@@ -172,16 +158,9 @@ static seL4_Error
 get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
     env_t *env = data;
-    cspacepath_t path = {0};
-
-    for (int i = 0; i < env->args->to.nirqs; i++) {
-        if (irq == env->args->to.irqs[i].irq.irq.number) {
-             path = env->args->to.irqs[i].handler_path;
-             break;
-        }
-    }
-
-    ZF_LOGF_IF(path.capPtr == seL4_CapNull, "Failed to find irq cap");
+    seL4_CPtr cap = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, irq, PS_INTERRUPT);
+    cspacepath_t path;
+    vka_cspace_make_path(&env->slab_vka, cap, &path);
     seL4_Error error = seL4_CNode_Move(cnode, index, depth,
                                        path.root, path.capPtr, path.capDepth);
     ZF_LOGF_IF(error != seL4_NoError, "Failed to move irq cap");
