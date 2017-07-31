@@ -62,7 +62,7 @@ get_ioapic(void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
 {
     assert(data != NULL);
     env_t *env = data;
-    seL4_CPtr irq = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, vector, PS_MSI);
+    seL4_CPtr irq = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, pin, PS_IOAPIC);
     UNUSED seL4_Error error = seL4_CNode_Move(SEL4UTILS_CNODE_SLOT, index, depth,
                                               SEL4UTILS_CNODE_SLOT, irq, seL4_WordBits);
 
