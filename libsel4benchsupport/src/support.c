@@ -367,10 +367,13 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     ZF_LOGF_IF(error, "Failed to init timer irqs");
 
     ps_io_ops_t ops;
-    error = sel4platsupport_new_io_ops(env.vspace, env.slab_vka, &ops);
-    /* get the timers */
-    benchmark_arch_get_timers(&env, ops);
+    error = sel4platsupport_new_io_mapper(env.vspace, env.slab_vka, &ops.io_mapper);
+    ZF_LOGF_IF(error, "Failed to init io mapper");
 
+    error = sel4platsupport_new_malloc_ops(&ops.malloc_ops);
+    ZF_LOGF_IF(error, "Failed to init io mapper");
+
+    benchmark_arch_get_timers(&env, ops);
     return &env;
 }
 
