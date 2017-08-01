@@ -329,12 +329,11 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
 {
     /* parse arguments */
     if (argc < 1) {
-        ZF_LOGF("Insufficient arguments, expected 6, got %d\n", (int) argc);
+        ZF_LOGF("Insufficient arguments, expected 1, got %d\n", (int) argc);
     }
 
     env.args = (void *) atol(argv[0]);
     env.results = env.args->results;
-
     init_simple(&env);
 
     env.allocman = init_allocator(&env.simple, &env.delegate_vka, &env.args->to);
