@@ -18,7 +18,7 @@ TARGETS := $(notdir $(SOURCE_DIR)).bin
 LDFLAGS += -u __vsyscall_ptr
 
 # Source files required to build the target
-CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
+CFILES :=  $(sort $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c)))
 
 # Libraries
 LIBS := sel4 c elf cpio utils sel4utils sel4allocman sel4vspace sel4simple \
