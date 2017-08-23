@@ -106,6 +106,7 @@ init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
     allocman_t *allocator = bootstrap_new_1level_simple(simple, CONFIG_SEL4UTILS_CSPACE_SIZE_BITS, ALLOCATOR_STATIC_POOL_SIZE,
                                                         allocator_mem_pool);
 
+    ZF_LOGF_IF(!allocator, "Failed to initialize allocator");
     /* create vka backed by allocator */
     allocman_make_vka(vka, allocator);
 
