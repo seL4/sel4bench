@@ -281,12 +281,31 @@ static seL4_CPtr get_nth_untyped(void *data, int n, size_t *size_bits, uintptr_t
 }
 
 static int get_cap_count(void *data) {
-    return ((env_t *) data)->args->first_free;
+    /* Our parent only tells us our first free slot, so we have to work out from that how many
+       capabilities we actually have. We assume we have cspace layout from sel4utils_cspace_layout
+       and so we have 1 empty null slot, and if we're not on the RT kernel two more unused slots */
+    int last = ((env_t *) data)->args->first_free;
+    if (config_set(CONFIG_KERNEL_RT)) {
+        /* just skip the null slot */
+        return last - 1;
+    } else {
+        /* skip the null slot and the 2 RT only slots */
+        return last - 3;
+    }
 }
 
 static seL4_CPtr get_nth_cap(void *data, int n)
 {
     if (n < get_cap_count(data)) {
+        /* need to turn the contiguous index n into a potentially non contiguous set of
+           cptrs, in accordance with the holes discussed in get_cap_count. */
+        /* first convert our index that starts at 0, to one starting at 1, this removes the
+         the hole of the null slot */
+        n++;
+        /* now introduce a 2 cptr hole if we're not on the RT kernel */
+        if (!config_set(CONFIG_KERNEL_RT) && n >= SEL4UTILS_SCHED_CONTEXT_SLOT) {
+            n += 2;
+        }
         return n;
     }
     return seL4_CapNull;
