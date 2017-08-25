@@ -87,13 +87,6 @@ dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag)
 }
 
 static inline void
-dummy_seL4_Recv(seL4_CPtr ep, void *badge)
-{
-    (void)ep;
-    (void)badge;
-}
-
-static inline void
 dummy_seL4_Reply(seL4_MessageInfo_t tag)
 {
     (void)tag;
