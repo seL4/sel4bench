@@ -24,6 +24,7 @@
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
 #include <sel4platsupport/timer.h>
+#include <sel4utils/api.h>
 #include <sel4utils/stack.h>
 #include <stdio.h>
 #include <string.h>
@@ -67,7 +68,7 @@ setup_fault_handler(env_t *env)
     }
 
     /* set the fault endpoint for the current thread */
-    error = seL4_TCB_SetSpace(simple_get_tcb(&env->simple), fault_ep.cptr,
+    error = api_tcb_set_space(simple_get_tcb(&env->simple), fault_ep.cptr, seL4_CapNull,
                               simple_get_cnode(&env->simple), seL4_NilData, simple_get_pd(&env->simple),
                               seL4_NilData);
     ZF_LOGF_IFERR(error, "Failed to set fault ep for benchmark driver\n");
@@ -130,7 +131,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
     ZF_LOGF_IF(error, "Failed to start benchmark process");
 
     /* wait for it to finish */
-    seL4_MessageInfo_t info = seL4_Recv(process.fault_endpoint.cptr, NULL);
+    seL4_MessageInfo_t info = api_recv(process.fault_endpoint.cptr, NULL, process.thread.reply.cptr);
     int result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, benchmark->name);

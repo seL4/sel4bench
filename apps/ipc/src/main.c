@@ -133,7 +133,7 @@ static helper_func_t bench_funcs[] = {
     COMPILER_MEMORY_FENCE(); \
     send_result(result_ep, send_start_end); \
     send_func(ep, tag); \
-    seL4_Recv(ep, NULL);/* block so we don't run off the stack */ \
+    api_wait(ep, NULL);/* block so we don't run off the stack */ \
     return 0; \
 }
 
@@ -159,7 +159,7 @@ seL4_Word name(int argc, char *argv[]) { \
     COMPILER_MEMORY_FENCE(); \
     send_result(result_ep, send_start_end); \
     reply_func(tag); \
-    seL4_Recv(ep, NULL); /* block so we don't run off the stack */ \
+    api_wait(ep, NULL); /* block so we don't run off the stack */ \
     return 0; \
 }
 

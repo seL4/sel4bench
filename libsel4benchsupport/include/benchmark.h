@@ -14,6 +14,7 @@
 #include <allocman/vka.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4platsupport/timer.h>
+#include <sel4utils/api.h>
 #include <sel4utils/process.h>
 #include <sel4utils/slab.h>
 #include <simple/simple.h>

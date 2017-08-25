@@ -233,7 +233,7 @@ void
 benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
 {
     for (int i = 0; i < num_children; i++) {
-        seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);
+        seL4_MessageInfo_t tag = api_wait(ep, NULL);
         if (seL4_MessageInfo_get_label(tag) != seL4_Fault_NullFault) {
             /* failure - a thread we are waiting for faulted */
             sel4utils_print_fault_message(tag, name);
@@ -409,7 +409,7 @@ ccnt_t
 get_result(seL4_CPtr ep)
 {
     ccnt_t result = 0;
-    seL4_MessageInfo_t tag = seL4_Recv(ep, NULL);
+    seL4_MessageInfo_t tag = api_wait(ep, NULL);
     int length = seL4_MessageInfo_get_length(tag);
     unsigned int shift = length > 1u ? seL4_WordBits : 0;
 
