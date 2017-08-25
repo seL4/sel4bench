@@ -197,9 +197,7 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
                                                   env->region.reservation);
     ZF_LOGF_IF(error, "Failed to bootstrap clone into vspace for %s", name);
 
-#ifdef CONFIG_DEBUG_BUILD
-        seL4_DebugNameThread(process->thread.tcb.cptr, name);
-#endif
+    NAME_THREAD(process->thread.tcb.cptr, name);
 }
 
 void
@@ -215,9 +213,7 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
     error = sel4utils_configure_process_custom(thread, &env->slab_vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process %s", name);
 
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugNameThread(thread->thread.tcb.cptr, name);
-#endif
+    NAME_THREAD(thread->thread.tcb.cptr, name);
 }
 
 void
@@ -230,9 +226,7 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
 
     int error = sel4utils_configure_thread_config(&env->slab_vka, &env->vspace, &env->vspace, config, thread);
     ZF_LOGF_IF(error, "Failed to configure %s\n", name);
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugNameThread(thread->tcb.cptr, name);
-#endif
+    NAME_THREAD(thread->tcb.cptr, name);
 }
 
 void
