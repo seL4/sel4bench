@@ -26,6 +26,14 @@
 #define N_FAULTER_ARGS 3
 #define N_HANDLER_ARGS 4
 
+static char faulter_args[N_FAULTER_ARGS][WORD_STRING_SIZE];
+static char *faulter_argv[N_FAULTER_ARGS];
+static sel4utils_thread_t faulter;
+
+sel4utils_thread_t fault_handler;
+char handler_args[N_HANDLER_ARGS][WORD_STRING_SIZE];
+char *handler_argv[N_HANDLER_ARGS];
+
 void
 abort(void)
 {
@@ -190,6 +198,26 @@ measure_fault_roundtrip_handler_fn(int argc, char **argv)
     fault_handler_done(ep, ip, done_ep);
 }
 
+void run_benchmark(void *faulter_fn, void *handler_fn, seL4_CPtr done_ep)
+{
+    int error = sel4utils_start_thread(&faulter, (sel4utils_thread_entry_fn) faulter_fn,
+                                   (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
+    ZF_LOGF_IF(error, "Failed to start faulter");
+
+    error = sel4utils_start_thread(&fault_handler, (sel4utils_thread_entry_fn) handler_fn,
+                                   (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
+    ZF_LOGF_IF(error, "Failed to start handler");
+
+    /* benchmark runs */
+    benchmark_wait_children(done_ep, "faulter", 1);
+    benchmark_wait_children(done_ep, "fault handler", 1);
+
+    error = seL4_TCB_Suspend(faulter.tcb.cptr);
+    ZF_LOGF_IF(error, "Failed to suspend faulter");
+    error = seL4_TCB_Suspend(fault_handler.tcb.cptr);
+    ZF_LOGF_IF(error, "Failed to suspend fault handler");
+}
+
 static void
 run_fault_benchmark(env_t *env, fault_results_t *results)
 {
@@ -204,49 +232,25 @@ run_fault_benchmark(env_t *env, fault_results_t *results)
 
     /* create faulter */
     ccnt_t start = 0;
-    char faulter_args[N_FAULTER_ARGS][WORD_STRING_SIZE];
-    char *faulter_argv[N_FAULTER_ARGS];
-    sel4utils_thread_t faulter;
 
     sel4utils_create_word_args(faulter_args, faulter_argv, N_FAULTER_ARGS, (seL4_Word) &start,
                                (seL4_Word) results, done_ep.cptr);
     benchmark_configure_thread(env, fault_endpoint.cptr, seL4_MinPrio + 1, "faulter", &faulter);
 
     /* create fault handler */
-    sel4utils_thread_t fault_handler;
-    char handler_args[N_HANDLER_ARGS][WORD_STRING_SIZE];
-    char *handler_argv[N_HANDLER_ARGS];
     sel4utils_create_word_args(handler_args, handler_argv, N_HANDLER_ARGS,
                                fault_endpoint.cptr, (seL4_Word) &start,
                                (seL4_Word) results, done_ep.cptr);
     benchmark_configure_thread(env, seL4_CapNull, seL4_MinPrio, "fault handler", &fault_handler);
 
     /* benchmark fault */
-    error = sel4utils_start_thread(&faulter, (sel4utils_thread_entry_fn) measure_fault_fn,
-                                   (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
-    assert(error == 0);
-    error = sel4utils_start_thread(&fault_handler, (sel4utils_thread_entry_fn) measure_fault_handler_fn,
-                                   (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
-    assert(error == 0);
-    benchmark_wait_children(done_ep.cptr, "fault handler", 2);
+    run_benchmark(measure_fault_fn, measure_fault_handler_fn, done_ep.cptr);
 
     /* benchmark reply */
-    error = sel4utils_start_thread(&faulter, (sel4utils_thread_entry_fn) measure_fault_reply_fn,
-                                   (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
-    assert(error == 0);
-    error = sel4utils_start_thread(&fault_handler, (sel4utils_thread_entry_fn) measure_fault_reply_handler_fn,
-                                   (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
-    assert(error == 0);
-    benchmark_wait_children(done_ep.cptr, "fault handler", 2);
+    run_benchmark(measure_fault_reply_fn, measure_fault_reply_handler_fn, done_ep.cptr);
 
     /* benchmark round_trip */
-    error = sel4utils_start_thread(&faulter, (sel4utils_thread_entry_fn) measure_fault_roundtrip_fn,
-                                   (void *) N_FAULTER_ARGS, (void *) faulter_argv, true);
-    assert(error == 0);
-    error = sel4utils_start_thread(&fault_handler, (sel4utils_thread_entry_fn) measure_fault_roundtrip_handler_fn,
-                                   (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
-    assert(error == 0);
-    benchmark_wait_children(done_ep.cptr, "fault handler", 2);
+    run_benchmark(measure_fault_roundtrip_fn, measure_fault_roundtrip_handler_fn, done_ep.cptr);
 }
 
 void
