@@ -65,7 +65,7 @@ fault_handler_done(seL4_CPtr ep, seL4_Word ip, seL4_CPtr done_ep)
     /* tell benchmark we are done */
     seL4_Signal(done_ep);
     /* block */
-    seL4_Recv(ep, NULL);
+    seL4_Wait(ep, NULL);
 }
 
 static inline seL4_Word

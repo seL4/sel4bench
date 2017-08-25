@@ -67,7 +67,7 @@ dummy_bin_sem_post(sync_bin_sem_t *lock)
         sync_bin_sem_post(lock);\
         seL4_Yield();\
         seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));\
-        seL4_Recv(block_ep, NULL);\
+        seL4_Wait(block_ep, NULL);\
     }
 
 SYNC_WAITER_FUNC(waiter_func0, sync_cv_wait)
@@ -90,7 +90,7 @@ static helper_func_t bench_waiter_funcs[] = {
         *result = end-(*start);\
         post_fn(lock);\
         seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));\
-        seL4_Recv(block_ep, NULL);\
+        seL4_Wait(block_ep, NULL);\
     }
 
 SYNC_BROADCAST_FUNC(broadcast_func0, sync_cv_broadcast, sync_bin_sem_post);
@@ -172,7 +172,7 @@ benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t
             sync_bin_sem_post(lock); \
         } \
         seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0)); \
-        seL4_Recv(block_ep, NULL); \
+        seL4_Wait(block_ep, NULL); \
     }
 
 SYNC_PRODUCER_CONSUMER_FUNC(consumer_func0, (*fifo_head == 0), sync_cv_wait, (*fifo_head)--)
