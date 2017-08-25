@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __SEL4_ARCH_IPC_H
-#define __SEL4_ARCH_IPC_H
+#pragma once
 
 #include <autoconf.h>
 
@@ -155,5 +154,3 @@
 #else
 #error Only support benchmarking with syscall as sysenter is known to be slower
 #endif /* CONFIG_SYSCALL */
-
-#endif /* __SEL4_ARCH_IPC_H */

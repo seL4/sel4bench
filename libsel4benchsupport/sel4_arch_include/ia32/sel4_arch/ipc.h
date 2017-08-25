@@ -9,9 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-
-#ifndef __SEL4_ARCH_IPC_H
-#define __SEL4_ARCH_IPC_H
+#pragma once
 
 #include <sel4bench/arch/sel4bench.h>
 
@@ -145,5 +143,3 @@
 #define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_RECV(ep) DO_RECV(ep, "sysenter")
 #define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
-
-#endif /* __SEL4_ARCH_IPC_H */

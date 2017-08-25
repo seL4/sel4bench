@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __SEL4_ARCH_SIGNAL_H
-#define __SEL4_ARCH_SIGNAL_H
+#pragma once
 
 #define DO_NTFN_OP(ntfn, sys, syscall) do {\
     uint32_t ep_copy = ntfn; \
@@ -32,5 +31,3 @@
 #define DO_NOP_WAIT(ntfn)        DO_WAIT(ntfn, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_SIGNAL(ntfn)     DO_SIGNAL(ntfn, "sysenter")
 #define DO_NOP_SIGNAL(ntfn)      DO_SIGNAL(ntfn, ".byte 0x66\n.byte 0x90")
-
-#endif /* __SEL4_ARCH_SIGNAL_H */

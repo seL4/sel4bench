@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __ARCH_IPC_H
-#define __ARCH_IPC_H
+#pragma once
 
 #include <sel4bench/armv/sel4bench.h>
 
@@ -92,4 +91,3 @@
 #define DO_REAL_RECV(ep) DO_RECV(ep, "swi $0")
 #define DO_NOP_RECV(ep) DO_RECV(ep, "nop")
 
-#endif /* __ARCH_IPC_H */

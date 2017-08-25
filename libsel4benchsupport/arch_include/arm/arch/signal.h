@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __ARCH_SIGNAL_H
-#define __ARCH_SIGNAL_H
+#pragma once
 
 #define DO_NTFN_OP(ntfn, swi, syscall) do {\
     register seL4_Word dest asm("r0") = (seL4_Word) ntfn; \
@@ -29,5 +28,3 @@
 #define DO_NOP_WAIT(ntfn)        DO_WAIT(ntfn, "nop")
 #define DO_REAL_SIGNAL(ntfn)     DO_SIGNAL(ntfn, "swi $0")
 #define DO_NOP_SIGNAL(ntfn)      DO_SIGNAL(ntfn, "nop")
-
-#endif /* __ARCH_SIGNAL_H */
