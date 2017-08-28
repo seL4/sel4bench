@@ -64,7 +64,62 @@
             ); \
 } while (0)
 
-#define DO_REPLY_RECV(ep, tag, sys) do { \
+#ifdef CONFIG_KERNEL_RT
+#define DO_REPLY_RECV(ep, tag, ro, sys) do { \
+    uint64_t ep_copy = ep; \
+    register seL4_Word ro_copy asm("r12") = ro;\
+    asm volatile( \
+            "movq   %%rsp, %%rbx \n" \
+            sys "\n" \
+            "movq  %%rbx, %%rsp \n" \
+            : \
+            "+S" (tag), \
+            "+D" (ep_copy) \
+            : \
+            "d"((seL4_Word)seL4_SysReplyRecv), \
+            "r" (ro_copy) \
+            : \
+            "rcx", "rbx","r11" \
+            ); \
+} while (0)
+
+#define DO_REPLY_RECV_10(ep, tag, ro, sys) do { \
+    uint64_t ep_copy = ep;                      \
+    register seL4_Word ro_copy asm("r12") = ro;\
+    asm volatile(                               \
+            "movq   %%rsp, %%rbx \n"            \
+            sys" \n"                            \
+            "movq   %%rbx, %%rsp \n"            \
+            :                                   \
+            "+S" (tag),                         \
+            "+D" (ep_copy)                     \
+            :                                   \
+            "d" ((seL4_Word)seL4_SysReplyRecv), \
+            "r" (ro_copy) \
+            :                                   \
+            "rcx","rbx","r11","r10","r8", "r9", "r15"  \
+            );                                  \
+} while (0)
+
+#define DO_RECV(ep, ro, sys) do { \
+    uint64_t ep_copy = ep; \
+    uint64_t tag = 0; \
+    register seL4_Word ro_copy asm("r12") = ro;\
+    asm volatile( \
+            "movq   %%rsp, %%rbx \n" \
+            sys" \n" \
+            "movq   %%rbx, %%rsp \n" \
+            : \
+            "+S" (tag) ,\
+            "+D" (ep_copy) \
+            : \
+            "d" ((seL4_Word)seL4_SysRecv), \
+            "r" (ro_copy) \
+            :  "rcx", "rbx","r11" \
+            ); \
+} while (0)
+#else
+#define DO_REPLY_RECV(ep, tag, ro, sys) do { \
     uint64_t ep_copy = ep; \
     asm volatile( \
             "movq   %%rsp, %%rbx \n" \
@@ -80,7 +135,7 @@
             ); \
 } while (0)
 
-#define DO_REPLY_RECV_10(ep, tag, sys) do { \
+#define DO_REPLY_RECV_10(ep, tag, ro, sys) do { \
     uint64_t ep_copy = ep;                      \
     asm volatile(                               \
             "movq   %%rsp, %%rbx \n"            \
@@ -96,7 +151,7 @@
             );                                  \
 } while (0)
 
-#define DO_RECV(ep, sys) do { \
+#define DO_RECV(ep, ro, sys) do { \
     uint64_t ep_copy = ep; \
     uint64_t tag = 0; \
     asm volatile( \
@@ -111,6 +166,7 @@
             :  "rcx", "rbx","r11" \
             ); \
 } while (0)
+#endif /* CONFIG_KERNEL_RT */
 
 #define READ_COUNTER_BEFORE(var) do { \
     uint32_t low, high; \
@@ -140,16 +196,16 @@
 
 #define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "syscall")
 #define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, "syscall")
-#define DO_NOP_REPLY_RECV(ep, tag) DO_REPLY_RECV(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_CALL_10(ep, tag) DO_CALL_10(ep, tag, "syscall")
 #define DO_NOP_CALL_10(ep, tag) DO_CALL_10(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, "syscall")
-#define DO_NOP_REPLY_RECV_10(ep, tag) DO_REPLY_RECV_10(ep, tag, ".byte 0x66\n.byte 0x90")
 #define DO_REAL_SEND(ep, tag) DO_SEND(ep, tag, "syscall")
 #define DO_NOP_SEND(ep, tag) DO_SEND(ep, tag, ".byte 0x66\n.byte 0x90")
-#define DO_REAL_RECV(ep) DO_RECV(ep, "syscall")
-#define DO_NOP_RECV(ep) DO_RECV(ep, ".byte 0x66\n.byte 0x90")
+#define DO_REAL_REPLY_RECV(ep, tag, ro) DO_REPLY_RECV(ep, tag, ro, "syscall")
+#define DO_NOP_REPLY_RECV(ep, tag, ro) DO_REPLY_RECV(ep, tag, ro, ".byte 0x66\n.byte 0x90")
+#define DO_REAL_REPLY_RECV_10(ep, tag, ro) DO_REPLY_RECV_10(ep, tag, ro, "syscall")
+#define DO_NOP_REPLY_RECV_10(ep, tag, ro) DO_REPLY_RECV_10(ep, tag, ro, ".byte 0x66\n.byte 0x90")
+#define DO_REAL_RECV(ep, ro) DO_RECV(ep, ro, "syscall")
+#define DO_NOP_RECV(ep, ro) DO_RECV(ep, ro, ".byte 0x66\n.byte 0x90")
 
 #else
 #error Only support benchmarking with syscall as sysenter is known to be slower

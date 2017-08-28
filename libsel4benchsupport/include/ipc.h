@@ -70,6 +70,8 @@ typedef struct benchmark_params {
     bool dummy_thread;
     /* if so, what prio should the dummy thread be at? */
     uint8_t dummy_prio;
+    /* if CONFIG_KERNEL_RT, should the server be passive? */
+    bool passive;
 } benchmark_params_t;
 
 struct overhead_benchmark_params {
@@ -89,7 +91,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_OVERHEAD
+        .overhead_id = CALL_OVERHEAD,
+        .passive = true,
     },
     /* ReplyRecv fastpath between server and client in the same address space */
     {
@@ -101,7 +104,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD,
+        .passive = true,
     },
     /* Call faspath between client and server in different address spaces */
     {
@@ -113,7 +117,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_OVERHEAD
+        .overhead_id = CALL_OVERHEAD,
+        .passive = true,
     },
     /* ReplyRecv fastpath between server and client in different address spaces */
     {
@@ -125,7 +130,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD,
+        .passive = true,
     },
     /* Call fastpath, low prio client to high prio server in different address space */
     {
@@ -137,7 +143,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MinPrio,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = CALL_OVERHEAD
+        .overhead_id = CALL_OVERHEAD,
+        .passive = true,
     },
     /* ReplyRecv slowpath, high prio server to low prio client, different address space */
     {
@@ -149,7 +156,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MinPrio,
         .server_prio = seL4_MaxPrio - 1,
         .length = 0,
-        .overhead_id = REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD,
+        .passive = true,
     },
     /* Call slowpath, high prio client to low prio server, different address space */
     {
@@ -173,7 +181,8 @@ static const benchmark_params_t benchmark_params[] = {
         .client_prio = seL4_MaxPrio - 1,
         .server_prio = seL4_MinPrio,
         .length = 0,
-        .overhead_id = REPLY_RECV_OVERHEAD
+        .overhead_id = REPLY_RECV_OVERHEAD,
+        .passive = true,
     },
     /* ReplyRecv slowpath, high prio server to low prio client, different address space, with
      * low prio dummy thread also in scheduler */
