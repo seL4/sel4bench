@@ -352,6 +352,10 @@ main(int argc, char **argv)
 
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 6,
+#ifdef CONFIG_KERNEL_RT
+        [seL4_SchedContextObject] = 6,
+        [seL4_ReplyObject] = 6,
+#endif
         [seL4_EndpointObject] = 1,
         [seL4_NotificationObject] = 2,
     };
