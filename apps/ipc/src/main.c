@@ -396,7 +396,7 @@ main(int argc, char **argv)
 
             /* set up client for benchmark */
             int error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, params->client_prio);
-            assert(error == seL4_NoError);
+            ZF_LOGF_IF(error, "Failed to set client prio");
             client.process.entry_point = bench_funcs[params->client_fn];
 
             /* set up dummy for benchmark */
