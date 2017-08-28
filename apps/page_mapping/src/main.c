@@ -259,6 +259,10 @@ main(int argc, char *argv[])
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 1,
         [seL4_EndpointObject] = 1,
+#ifdef CONFIG_KERNEL_RT
+        [seL4_SchedContextObject] = 1,
+        [seL4_ReplyObject] = 1
+#endif
     };
 
     env = benchmark_get_env(argc, argv, sizeof(page_mapping_results_t),
