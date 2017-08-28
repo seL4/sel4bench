@@ -28,7 +28,11 @@
     ); \
 } while (0);
 
+#ifdef CONFIG_KERNEL_RT
+#define DO_WAIT(ntfn, swi) DO_NTFN_OP(ntfn, swi, seL4_SysWait)
+#else
 #define DO_WAIT(ntfn, swi) DO_NTFN_OP(ntfn, swi, seL4_SysRecv)
+#endif
 #define DO_SIGNAL(ntfn, swi) DO_NTFN_OP(ntfn, swi, seL4_SysSend)
 
 #define DO_REAL_WAIT(ntfn)       DO_WAIT(ntfn, "syscall")
