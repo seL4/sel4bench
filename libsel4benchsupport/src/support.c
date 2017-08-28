@@ -177,6 +177,10 @@ get_process_config(env_t *env, uint8_t prio, void *entry_point)
     config = process_config_create_cnode(config, CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
     config = process_config_create_vspace(config, &env->region, 1);
     config = process_config_priority(config, prio);
+#ifdef CONFIG_KERNEL_RT
+    config.sched_params = sched_params_round_robin(config.sched_params, &env->simple, 0,
+            CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
+#endif
     return process_config_mcp(config, prio);
 }
 
@@ -223,7 +227,11 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
     config = thread_config_fault_endpoint(config, fault_ep);
     config = thread_config_priority(config, prio);
     config = thread_config_mcp(config, prio);
-
+#ifdef CONFIG_KERNEL_RT
+    config.sched_params = sched_params_round_robin(config.sched_params, &env->simple, 0,
+            CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
+#endif
+    config = thread_config_create_reply(config);
     int error = sel4utils_configure_thread_config(&env->slab_vka, &env->vspace, &env->vspace, config, thread);
     ZF_LOGF_IF(error, "Failed to configure %s\n", name);
     NAME_THREAD(thread->tcb.cptr, name);
@@ -323,6 +331,11 @@ static int get_core_count(void *data)
     return ((env_t *) data)->args->nr_cores;
 }
 
+static seL4_CPtr sched_ctrl(void *data, int core)
+{
+    return ((env_t *) data)->args->sched_ctrl + core;
+}
+
 static void init_simple(env_t *env)
 {
     env->simple.data = env;
@@ -339,7 +352,7 @@ static void init_simple(env_t *env)
     env->simple.untyped_count = get_untyped_count;
     env->simple.nth_untyped = get_nth_untyped;
     env->simple.core_count = get_core_count;
-
+    env->simple.sched_ctrl = sched_ctrl;
     //env->simple.userimage_count =
     //env->simple.nth_userimage =
     //env->simple.print =

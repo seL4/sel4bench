@@ -25,5 +25,6 @@ typedef struct {
     int nr_cores;
     seL4_CPtr first_free;
     seL4_CPtr untyped_cptr;
+    seL4_CPtr sched_ctrl;
     timer_objects_t to;
 } benchmark_args_t;

@@ -81,6 +81,20 @@ setup_fault_handler(env_t *env)
 
     error = seL4_TCB_SetPriority(fault_handler.tcb.cptr, seL4_MaxPrio);
     ZF_LOGF_IFERR(error, "Failed to set prio for fault handler");
+
+    if (config_set(CONFIG_KERNEL_RT)) {
+        /* give it a sc */
+        error = vka_alloc_sched_context(&env->vka, &fault_handler.sched_context);
+        ZF_LOGF_IF(error, "Failed to allocate sc");
+
+        error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
+                                         fault_handler.sched_context.cptr,
+                                         100 * US_IN_S, 100 * US_IN_S, 0, 0);
+        ZF_LOGF_IF(error, "Failed to configure sc");
+
+        error = api_sc_bind(fault_handler.sched_context.cptr, fault_handler.tcb.cptr);
+        ZF_LOGF_IF(error, "Failed to bind sc to fault handler");
+    }
 }
 
 int
@@ -98,6 +112,15 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
 
     /* initialise timers for benchmark environment */
     sel4utils_copy_timer_caps_to_process(&args->to, &env->to, &env->vka, &process);
+    if (config_set(CONFIG_KERNEL_RT)) {
+        seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env->simple, 0);
+        args->sched_ctrl = sel4utils_copy_cap_to_process(&process, &env->vka, sched_ctrl);
+        for (int i = 1; i < CONFIG_MAX_NUM_NODES; i++) {
+            sched_ctrl = simple_get_sched_ctrl(&env->simple, i);
+            sel4utils_copy_cap_to_process(&process, &env->vka, sched_ctrl);
+        }
+    }
+
     /* copy untyped to process */
     args->untyped_cptr = sel4utils_copy_cap_to_process(&process, &env->vka, env->untyped.cptr);
     /* this is the last cap we copy - initialise the first free cap */
