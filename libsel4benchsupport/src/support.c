@@ -279,13 +279,21 @@ static int get_cap_count(void *data) {
        capabilities we actually have. We assume we have cspace layout from sel4utils_cspace_layout
        and so we have 1 empty null slot, and if we're not on the RT kernel two more unused slots */
     int last = ((env_t *) data)->args->first_free;
-    if (config_set(CONFIG_KERNEL_RT)) {
-        /* just skip the null slot */
-        return last - 1;
-    } else {
-        /* skip the null slot and the 2 RT only slots */
-        return last - 3;
+
+    /* skip the null slot */
+    last--;
+
+    if (config_set(CONFIG_X86_64)) {
+        /* skip the ASID pool slot */
+        last--;
     }
+
+    if (!config_set(CONFIG_KERNEL_RT)) {
+        /* skip the 2 RT only slots */
+        last -= 2;
+    }
+
+    return last;
 }
 
 static seL4_CPtr get_nth_cap(void *data, int n)
@@ -296,6 +304,11 @@ static seL4_CPtr get_nth_cap(void *data, int n)
         /* first convert our index that starts at 0, to one starting at 1, this removes the
          the hole of the null slot */
         n++;
+
+        /* introduce a 1 cptr hole if we on x86_64, as it does not have an ASID pool */
+        if (config_set(CONFIG_X86_64) && n >= SEL4UTILS_ASID_POOL_SLOT) {
+            n++;
+        }
         /* now introduce a 2 cptr hole if we're not on the RT kernel */
         if (!config_set(CONFIG_KERNEL_RT) && n >= SEL4UTILS_SCHED_CONTEXT_SLOT) {
             n += 2;
