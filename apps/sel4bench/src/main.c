@@ -291,6 +291,11 @@ main_continued(void *arg)
     return 0;
 }
 
+/* globals for malloc */
+extern vspace_t *muslc_this_vspace;
+extern reservation_t muslc_brk_reservation;
+extern void *muslc_brk_reservation_start;
+
 int main(void)
 {
     seL4_BootInfo *info;
@@ -312,6 +317,13 @@ int main(void)
     /* create vspace */
     error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&global_env.vspace, &data, simple_get_pd(&global_env.simple),
                                                            &global_env.vka, info);
+
+    /* set up malloc */
+    sel4utils_res_t malloc_res;
+    error = sel4utils_reserve_range_no_alloc(&global_env.vspace, &malloc_res, seL4_LargePageBits, seL4_AllRights, 1, &muslc_brk_reservation_start);
+    muslc_this_vspace = &global_env.vspace;
+    muslc_brk_reservation.res = &malloc_res;
+    ZF_LOGF_IF(error, "Failed to set up dynamic malloc");
 
     virtual_reservation = vspace_reserve_range(&global_env.vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights,
                                                1, &vaddr);
