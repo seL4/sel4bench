@@ -31,10 +31,9 @@ abort(void)
     benchmark_finished(EXIT_FAILURE);
 }
 
-void
-__arch_putchar(int c)
+size_t __arch_write(char *data, int count)
 {
-    benchmark_putchar(c);
+    return benchmark_write(data, count);
 }
 
 void

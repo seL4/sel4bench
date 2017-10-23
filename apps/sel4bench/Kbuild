@@ -14,7 +14,7 @@ apps-$(CONFIG_APP_SEL4BENCH) += sel4bench
 
 sel4bench-y = common libsel4 $(libc) libsel4vka libsel4allocman \
            libsel4utils libsel4platsupport libsel4muslcsys libsel4bench libplatsupport libelf libcpio libsel4debug \
-           libsel4benchsupport libsel4debug libjansson
+           libsel4serialserver libsel4test libsel4benchsupport libsel4debug libjansson
 
 sel4bench-$(CONFIG_LIB_SEL4_SIMPLE_DEFAULT) += libsel4simple-default
 

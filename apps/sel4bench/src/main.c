@@ -21,6 +21,7 @@
 #include <simple-default/simple-default.h>
 
 #include <sel4debug/register_dump.h>
+#include <serial_server/parent.h>
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
 #include <sel4platsupport/timer.h>
@@ -120,6 +121,10 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
             sel4utils_copy_cap_to_process(&process, &env->vka, sched_ctrl);
         }
     }
+
+    /* copy serial to process */
+    args->serial_ep = serial_server_parent_mint_endpoint_to_process(&process);
+    ZF_LOGF_IF(args->serial_ep == 0, "Failed to copy rpc serial ep to process");
 
     /* copy untyped to process */
     args->untyped_cptr = sel4utils_copy_cap_to_process(&process, &env->vka, env->untyped.cptr);
@@ -316,6 +321,10 @@ int main(void)
 
     /* init serial */
     platsupport_serial_setup_simple(NULL, &global_env.simple, &global_env.vka);
+
+    error = serial_server_parent_spawn_thread(&global_env.simple, &global_env.vka,
+            &global_env.vspace, seL4_MaxPrio);
+    ZF_LOGF_IF(error, "Failed to start serial server");
 
     /* Print welcome banner. */
     printf("\n");

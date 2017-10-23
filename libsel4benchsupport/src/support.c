@@ -17,7 +17,7 @@
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/io.h>
 #include <sel4utils/process.h>
-
+#include <serial_server/client.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -47,13 +47,12 @@ static char app_morecore_area[MORE_CORE_SIZE];
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 #define ALLOCMAN_VIRTUAL_SIZE BIT(20)
 
-void
-benchmark_putchar(int c)
+/* serial server */
+static serial_client_context_t context;
+
+size_t benchmark_write(char *data, int count)
 {
-    /* Benchmarks only print in debug mode */
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugPutChar(c);
-#endif
+    return (size_t) serial_server_write(&context, data, count);
 }
 
 NORETURN void
@@ -61,6 +60,9 @@ benchmark_finished(int exit_code)
 {
     /* stop the timer */
     sel4platsupport_destroy_timer(&env.timer, &env.slab_vka);
+
+    /* stop the serial */
+    serial_server_disconnect(&context);
 
     /* send back exit code */
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
@@ -382,6 +384,10 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     init_allocator_vspace(env.allocman, &env.vspace);
     parse_code_region(&env.region);
 
+    /* set up serial */
+    int error = serial_server_client_connect(env.args->serial_ep, &env.delegate_vka, &env.vspace, &context);
+    ZF_LOGF_IF(error, "Failed to set up serial");
+
     /* In case we used any FPU during our setup we will attempt to put the system
      * back into a steady state before returning */
 #ifdef CONFIG_X86_FPU_MAX_RESTORES_SINCE_SWITCH
@@ -403,7 +409,7 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     ZF_LOGF_IFERR(vka_alloc_notification(&env.slab_vka, &env.ntfn), "Failed to allocate ntfn");
 
     /* set up irq caps */
-    int error = sel4platsupport_init_timer_irqs(&env.slab_vka, &env.simple, env.ntfn.cptr, &env.timer, &env.args->to);
+    error = sel4platsupport_init_timer_irqs(&env.slab_vka, &env.simple, env.ntfn.cptr, &env.timer, &env.args->to);
     ZF_LOGF_IF(error, "Failed to init timer irqs");
 
     ps_io_ops_t ops;

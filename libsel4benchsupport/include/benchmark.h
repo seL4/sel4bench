@@ -57,8 +57,8 @@ typedef struct env {
 env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount]);
 /* signal to the benchmark driver process that we are done */
 NORETURN void benchmark_finished(int exit_code);
-/* put char for benchmarks, does not print if kernel is not a debug kernel */
-void benchmark_putchar(int c);
+ /* Write for benchmarks. prints via a serial server in the initial task */
+size_t benchmark_write(char *buf, int count);
 
 /* Child thread/process helper functions */
 

@@ -33,7 +33,7 @@ CFLAGS += -Os
 
 # Libraries required to build the target
 LIBS = c sel4 elf cpio sel4muslcsys sel4allocman sel4utils sel4platsupport sel4bench sel4simple \
-	    utils platsupport sel4vka sel4vspace sel4debug sel4benchsupport jansson
+	    utils platsupport sel4vka sel4vspace sel4debug sel4benchsupport jansson sel4serialserver
 LIBS += sel4simple-default
 
 include $(SEL4_COMMON)/common.mk

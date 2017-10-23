@@ -22,6 +22,6 @@ CFILES :=  $(sort $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c)
 
 # Libraries
 LIBS := sel4 c cpio elf sel4muslcsys utils sel4utils sel4allocman sel4vspace sel4simple \
-	    platsupport sel4platsupport sel4bench sel4vka sel4muslcsys sel4benchsupport sel4debug
+	    platsupport sel4platsupport sel4bench sel4vka sel4muslcsys sel4benchsupport sel4debug sel4serialserver
 
 include $(SEL4_COMMON)/common.mk
