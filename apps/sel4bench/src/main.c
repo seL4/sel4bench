@@ -268,23 +268,22 @@ main_continued(void *arg)
 
     json_t *output = json_array();
     assert(output != NULL);
+    int error;
 
     /* run the benchmarks */
     for (int i = 0; benchmarks[i] != NULL; i++) {
         if (benchmarks[i]->enabled) {
             json_t *result = launch_benchmark(benchmarks[i], &global_env);
             ZF_LOGF_IF(result == NULL, "Failed to run benchmark %s", benchmarks[i]->name);
-            UNUSED int error = json_array_extend(output, result);
-            assert(error == 0);
-
+            error = json_array_extend(output, result);
+            ZF_LOGF_IF(error != 0, "Failed to add benchmark results");
         }
     }
 
     printf("JSON OUTPUT\n");
-    int error = json_dumpf(output, stdout, JSON_PRESERVE_ORDER | JSON_INDENT(CONFIG_JSON_INDENT));
-    if (error) {
-        ZF_LOGF("Failed to dump output");
-    }
+    error = json_dumpf(output, stdout, JSON_PRESERVE_ORDER | JSON_INDENT(CONFIG_JSON_INDENT));
+    ZF_LOGF_IF(error, "Failed to dump output");
+
     printf("END JSON OUTPUT\n");
     printf("All is well in the universe.\n");
     printf("\n\nFin\n");
