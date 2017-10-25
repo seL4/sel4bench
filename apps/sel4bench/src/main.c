@@ -167,6 +167,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
 
     /* free results in target vspace (they will still be in ours) */
     vspace_unmap_pages(&process.vspace, args->results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
+    vspace_unmap_pages(&process.vspace, remote_args_vaddr, 1, seL4_PageBits, VSPACE_FREE);
      /* clean up */
 
     /* revoke the untypeds so it's clean for the next benchmark */
@@ -203,6 +204,7 @@ launch_benchmark(benchmark_t *benchmark, env_t *env)
 
     /* free results */
     vspace_unmap_pages(&env->vspace, results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
+    vspace_unmap_pages(&env->vspace, args, 1, seL4_PageBits, VSPACE_FREE);
 
     return json;
 }
