@@ -60,6 +60,9 @@ NORETURN void benchmark_finished(int exit_code);
  /* Write for benchmarks. prints via a serial server in the initial task */
 size_t benchmark_write(char *buf, int count);
 
+/* Initialise the timer for the benchmark to use */
+void benchmark_init_timer(env_t *env);
+
 /* Child thread/process helper functions */
 
 /* Create a new process that is a shallow clone of the current process.

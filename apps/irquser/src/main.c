@@ -97,6 +97,7 @@ main(int argc, char **argv)
     };
 
     env = benchmark_get_env(argc, argv, sizeof(irquser_results_t), object_freq);
+    benchmark_init_timer(env);
     results = (irquser_results_t *) env->results;
 
     if (vka_alloc_endpoint(&env->slab_vka, &endpoint) != 0) {

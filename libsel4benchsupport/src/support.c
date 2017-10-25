@@ -366,6 +366,23 @@ static void init_simple(env_t *env)
     benchmark_arch_get_simple(&env->simple.arch_simple);
 }
 
+void benchmark_init_timer(env_t *env)
+{
+    /* set up irq caps */
+    int error = sel4platsupport_init_timer_irqs(&env->slab_vka, &env->simple, env->ntfn.cptr,
+            &env->timer, &env->args->to);
+    ZF_LOGF_IF(error, "Failed to init timer irqs");
+
+    ps_io_ops_t ops;
+    error = sel4platsupport_new_io_mapper(env->vspace, env->slab_vka, &ops.io_mapper);
+    ZF_LOGF_IF(error, "Failed to init io mapper");
+
+    error = sel4platsupport_new_malloc_ops(&ops.malloc_ops);
+    ZF_LOGF_IF(error, "Failed to init io mapper");
+
+    benchmark_arch_get_timers(env, ops);
+}
+
 env_t *
 benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
 {
@@ -408,18 +425,6 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     /* allocate a notification for timers */
     ZF_LOGF_IFERR(vka_alloc_notification(&env.slab_vka, &env.ntfn), "Failed to allocate ntfn");
 
-    /* set up irq caps */
-    error = sel4platsupport_init_timer_irqs(&env.slab_vka, &env.simple, env.ntfn.cptr, &env.timer, &env.args->to);
-    ZF_LOGF_IF(error, "Failed to init timer irqs");
-
-    ps_io_ops_t ops;
-    error = sel4platsupport_new_io_mapper(env.vspace, env.slab_vka, &ops.io_mapper);
-    ZF_LOGF_IF(error, "Failed to init io mapper");
-
-    error = sel4platsupport_new_malloc_ops(&ops.malloc_ops);
-    ZF_LOGF_IF(error, "Failed to init io mapper");
-
-    benchmark_arch_get_timers(&env, ops);
     return &env;
 }
 

@@ -173,6 +173,7 @@ main(int argc, char *argv[])
         [seL4_EndpointObject] = CONFIG_MAX_NUM_NODES,
     };
     env = benchmark_get_env(argc, argv, sizeof(smp_results_t), object_freq);
+    benchmark_init_timer(env);
     results = (smp_results_t *) env->results;
     nr_cores = simple_get_core_count(&env->simple);
     overhead = smp_benchmark_check_overhead();
