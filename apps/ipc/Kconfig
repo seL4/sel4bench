@@ -10,7 +10,7 @@
 # @TAG(DATA61_BSD)
 #
 
-config APP_IPCBENCH
+menuconfig APP_IPCBENCH
     bool "IPC benchmarks"
     depends on APP_SEL4BENCH
     default y
@@ -20,3 +20,31 @@ config APP_IPCBENCH
     depends on DANGEROUS_CODE_INJECTION || EXPORT_PMU_USER
     help
         Application to benchmark seL4 IPC.
+
+    choice
+        depends on APP_IPCBENCH
+        prompt "Counter to measure"
+        default CYCLE_COUNT
+
+        config CYCLE_COUNT
+            bool "Cycle count"
+        config GENERIC_COUNTER
+            bool "Generic counter"
+    endchoice
+
+    config GENERIC_COUNTER_ID
+        depends on APP_IPCBENCH
+        depends on GENERIC_COUNTER
+        range 0 6
+        default 0
+        int "Generic counter id"
+        help
+            Select the generic counter to measure in the ipc benchmarks
+                0 - CACHE_L1I_MISS
+                1 - CACHE_L1D_MISS
+                2 - TLB_L1I_MISS
+                3 - TLB_L1D_MISS
+                4 - EXECUTE_INSTRUCTION
+                5 - BRANCH_MISPREDICT
+                6 - MEMORY_ACCESS
+                bool "memory access"

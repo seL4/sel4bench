@@ -39,6 +39,15 @@
 #define WARMUPS RUNS
 #define OVERHEAD_RETRIES 4
 
+#ifndef CONFIG_CYCLE_COUNT
+
+#define GENERIC_COUNTER_MASK (BIT(0))
+#undef READ_COUNTER_BEFORE
+#undef READ_COUNTER_AFTER
+#define READ_COUNTER_BEFORE(x) sel4bench_get_counters(GENERIC_COUNTER_MASK, &x);
+#define READ_COUNTER_AFTER(x) sel4bench_get_counters(GENERIC_COUNTER_MASK, &x)
+#endif
+
 typedef struct helper_thread {
     sel4utils_process_t process;
     seL4_CPtr ep;
@@ -63,13 +72,21 @@ static void
 timing_init(void)
 {
     sel4bench_init();
-
+#ifdef CONFIG_GENERIC_COUNTER
+    event_id_t event = GENERIC_EVENTS[CONFIG_GENERIC_COUNTER_ID];
+    sel4bench_set_count_event(0, event);
+    sel4bench_reset_counters();
+    sel4bench_start_counters(GENERIC_COUNTER_MASK);
+#endif
 }
 
 void
 timing_destroy(void)
 {
+#ifdef CONFIG_GENERIC_COUNTER
+    sel4bench_stop_counters(GENERIC_COUNTER_MASK);
     sel4bench_destroy();
+#endif
 }
 
 static inline void
