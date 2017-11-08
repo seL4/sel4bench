@@ -294,9 +294,9 @@ run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
     timing_init();
 
     /* start processes */
-    if (sel4utils_spawn_process(&server->process, &env->slab_vka, &env->vspace, NUM_ARGS, server->argv, 1)) {
-        ZF_LOGF("Failed to spawn server\n");
-    }
+    int error = sel4utils_spawn_process(&server->process, &env->slab_vka, &env->vspace, NUM_ARGS,
+                                           server->argv, 1);
+    ZF_LOGF_IF(error, "Failed to spawn server\n");
 
     if (config_set(CONFIG_KERNEL_RT) && params->server_fn != IPC_RECV_FUNC) {
         /* wait for server to tell us its initialised */
@@ -304,23 +304,22 @@ run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
 
         if (params->passive) {
             /* convert server to passive */
-            int error = api_sc_unbind_object(server->process.thread.sched_context.cptr,
-                                             server->process.thread.tcb.cptr);
+            error = api_sc_unbind_object(server->process.thread.sched_context.cptr,
+                                         server->process.thread.tcb.cptr);
             ZF_LOGF_IF(error, "Failed to convert server to passive");
         }
     }
 
-    if (sel4utils_spawn_process(&client->process, &env->slab_vka, &env->vspace, NUM_ARGS, client->argv, 1)) {
-        ZF_LOGF("Failed to spawn client\n");
-    }
+    error = sel4utils_spawn_process(&client->process, &env->slab_vka, &env->vspace, NUM_ARGS, client->argv, 1);
+    ZF_LOGF_IF(error, "Failed to spawn client\n");
 
     /* get results */
     *ret1 = get_result(result_ep_path.capPtr);
 
     if (config_set(CONFIG_KERNEL_RT) && params->server_fn != IPC_RECV_FUNC && params->passive) {
         /* convert server to active so it can send us the result */
-        int error = api_sc_bind(server->process.thread.sched_context.cptr,
-                                server->process.thread.tcb.cptr);
+        error = api_sc_bind(server->process.thread.sched_context.cptr,
+                            server->process.thread.tcb.cptr);
         ZF_LOGF_IF(error, "Failed to convert server to active");
     }
 
