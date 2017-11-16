@@ -18,7 +18,7 @@
 #include <sel4utils/slab.h>
 
 #include <benchmark.h>
-#include <signal.h>
+#include <sel4benchsupport/signal.h>
 
 #define NOPS ""
 

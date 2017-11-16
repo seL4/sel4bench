@@ -13,7 +13,7 @@
 #include "processing.h"
 #include "json.h"
 
-#include <signal.h>
+#include <sel4benchsupport/signal.h>
 #include <stdio.h>
 
 static json_t *
