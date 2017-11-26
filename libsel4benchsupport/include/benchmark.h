@@ -11,6 +11,7 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include <allocman/vka.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4platsupport/timer.h>
@@ -47,6 +48,8 @@ typedef struct env {
     void *results;
     /* seL4 ltimer wrapper */
     seL4_timer_t timer;
+    /* has the timer been initialised? */
+    bool timer_initialised;
     /* notification that is bound to both timer irq handlers */
     vka_object_t ntfn;
     /* args we started with */

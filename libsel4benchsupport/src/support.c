@@ -31,7 +31,7 @@
 #include "support.h"
 
 /* benchmarking environment */
-static env_t env;
+static env_t env = {{0}};
 
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
@@ -59,7 +59,9 @@ NORETURN void
 benchmark_finished(int exit_code)
 {
     /* stop the timer */
-    sel4platsupport_destroy_timer(&env.timer, &env.slab_vka);
+    if (env.timer_initialised) {
+        sel4platsupport_destroy_timer(&env.timer, &env.slab_vka);
+    }
 
     /* stop the serial */
     serial_server_disconnect(&context);
@@ -381,6 +383,7 @@ void benchmark_init_timer(env_t *env)
     ZF_LOGF_IF(error, "Failed to init io mapper");
 
     benchmark_arch_get_timers(env, ops);
+    env->timer_initialised = true;
 }
 
 env_t *
