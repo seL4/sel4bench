@@ -331,7 +331,7 @@ int main(void)
     bootstrap_configure_virtual_pool(allocman, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&global_env.simple));
 
     /* init serial */
-    platsupport_serial_setup_simple(NULL, &global_env.simple, &global_env.vka);
+    platsupport_serial_setup_simple(&global_env.vspace, &global_env.simple, &global_env.vka);
 
     error = serial_server_parent_spawn_thread(&global_env.simple, &global_env.vka,
             &global_env.vspace, seL4_MaxPrio);
