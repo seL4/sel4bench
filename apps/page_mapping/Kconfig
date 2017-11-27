@@ -14,6 +14,7 @@ config APP_PAGEMAPPINGBENCH
     bool "Page mapping benchmarks"
     depends on APP_SEL4BENCH
     depends on !PLAT_HIKEY
+    depends on !PLAT_TX1
     default y
     depends on LIB_SEL4 && HAVE_LIBC && LIB_SEL4_ALLOCMAN && LIB_UTILS && LIB_SEL4_UTILS && \
     LIB_SEL4_BENCH && LIB_ELF && LIB_SEL4_SIMPLE && LIB_CPIO && LIB_SEL4_VKA && LIB_SEL4_VSPACE && \
