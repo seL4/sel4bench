@@ -69,8 +69,7 @@ benchmark_finished(int exit_code)
     /* send back exit code */
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, exit_code);
-    seL4_Send(SEL4UTILS_ENDPOINT_SLOT, info);
-    /* we should not return */
+    seL4_Call(SEL4UTILS_ENDPOINT_SLOT, info);
     while (true);
 }
 
