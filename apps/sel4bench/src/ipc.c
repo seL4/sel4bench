@@ -54,8 +54,6 @@ process_ipc_results(void *r)
     json_int_t client_prios[n];
     json_int_t server_prios[n];
     bool same_vspace[n];
-    bool dummy_thread[n];
-    json_int_t dummy_thread_prio[n];
     json_int_t length[n];
 
     column_t extra_cols[] = {
@@ -83,16 +81,6 @@ process_ipc_results(void *r)
             .header = "Same vspace?",
             .type = JSON_TRUE,
             .bool_array = &same_vspace[0]
-        },
-        {
-            .header = "Dummy thread?",
-            .type = JSON_TRUE,
-            .bool_array = &dummy_thread[0]
-        },
-        {
-            .header = "Dummy prio",
-            .type = JSON_INTEGER,
-            .integer_array = &dummy_thread_prio[0]
         },
         {
             .header = "IPC length",
@@ -124,8 +112,6 @@ process_ipc_results(void *r)
         client_prios[i] = benchmark_params[i].client_prio;
         server_prios[i] = benchmark_params[i].server_prio;
         same_vspace[i] = benchmark_params[i].same_vspace;
-        dummy_thread[i] = benchmark_params[i].dummy_thread;
-        dummy_thread_prio[i] = benchmark_params[i].dummy_prio;
         length[i] = benchmark_params[i].length;
 
         results[i] = process_result(RUNS, raw_results->benchmarks[i], desc);

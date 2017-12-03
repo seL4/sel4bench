@@ -66,10 +66,6 @@ typedef struct benchmark_params {
     uint8_t length;
     /* id of overhead calculation for this function */
     enum overheads overhead_id;
-    /* should we put a dummy thread in the scheduler? */
-    bool dummy_thread;
-    /* if so, what prio should the dummy thread be at? */
-    uint8_t dummy_prio;
     /* if CONFIG_KERNEL_RT, should the server be passive? */
     bool passive;
 } benchmark_params_t;
@@ -183,36 +179,6 @@ static const benchmark_params_t benchmark_params[] = {
         .length = 0,
         .overhead_id = REPLY_RECV_OVERHEAD,
         .passive = true,
-    },
-    /* ReplyRecv slowpath, high prio server to low prio client, different address space, with
-     * low prio dummy thread also in scheduler */
-    {
-        .name        = "seL4_ReplyRecv",
-        .direction   = DIR_FROM,
-        .client_fn   = IPC_CALL_FUNC,
-        .server_fn   = IPC_REPLYRECV_FUNC,
-        .same_vspace = false,
-        .client_prio = seL4_MinPrio + 1,
-        .server_prio = seL4_MaxPrio - 1,
-        .length = 0,
-        .overhead_id = REPLY_RECV_OVERHEAD,
-        .dummy_thread = true,
-        .dummy_prio = seL4_MinPrio,
-    },
-    /* Call slowpath, high prio client to low prio server, different address space, with
-     * low prio dummy thread also in scheduler */
-    {
-        .name        = "seL4_Call",
-        .direction   = DIR_TO,
-        .client_fn   = IPC_CALL_FUNC2,
-        .server_fn   = IPC_REPLYRECV_FUNC2,
-        .same_vspace = false,
-        .client_prio = seL4_MaxPrio - 1,
-        .server_prio = seL4_MinPrio + 1,
-        .length = 0,
-        .overhead_id = CALL_OVERHEAD,
-        .dummy_thread = true,
-        .dummy_prio = seL4_MinPrio,
     },
     /* Send slowpath (no fastpath for send) same prio client-server, different address space */
     {

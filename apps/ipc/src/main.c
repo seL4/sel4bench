@@ -276,13 +276,6 @@ measure_overhead(ipc_results_t *results)
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
 }
 
-/* this function is never exeucted, it just lives in the scheduler queue */
-static NORETURN seL4_Word
-dummy_fn(int argc, char *argv[])
-{
-    while (1);
-}
-
 void
 run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
           const benchmark_params_t *params,
@@ -367,16 +360,11 @@ main(int argc, char **argv)
     /* measure benchmarking overhead */
     measure_overhead(results);
 
-    helper_thread_t client, server_thread, server_process, dummy;
+    helper_thread_t client, server_thread, server_process;
 
     benchmark_shallow_clone_process(env, &client.process, seL4_MinPrio, 0, "client");
     benchmark_shallow_clone_process(env, &server_process.process, seL4_MinPrio, 0, "server process");
     benchmark_configure_thread_in_process(env, &client.process, &server_thread.process, seL4_MinPrio, 0, "server thread");
-    benchmark_shallow_clone_process(env, &dummy.process, seL4_MinPrio, dummy_fn, "dummy");
-
-    if (sel4utils_spawn_process(&dummy.process, &env->slab_vka, &env->vspace, 0, NULL, 1)) {
-        ZF_LOGF("Failed to spawn dummy process\n");
-    }
 
     client.ep = sel4utils_copy_path_to_process(&client.process, ep_path);
     client.result_ep = sel4utils_copy_path_to_process(&client.process, result_ep_path);
@@ -413,12 +401,6 @@ main(int argc, char **argv)
             int error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, params->client_prio);
             ZF_LOGF_IF(error, "Failed to set client prio");
             client.process.entry_point = bench_funcs[params->client_fn];
-
-            /* set up dummy for benchmark */
-            if (params->dummy_thread) {
-                error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, params->dummy_prio);
-                assert(error == seL4_NoError);
-            }
 
             if (params->same_vspace) {
                 error = seL4_TCB_SetPriority(server_thread.process.thread.tcb.cptr, params->server_prio);
