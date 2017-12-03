@@ -142,6 +142,11 @@ benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t
             benchmark_wait_children(ep, "Broadcast bench waiters", N_WAITERS + 1);
         }
     }
+
+    seL4_TCB_Suspend(broadcaster.tcb.cptr);
+    for (int i = 0; i < N_WAITERS; i++) {
+        seL4_TCB_Suspend(waiters[i].tcb.cptr);
+    }
 }
 
 #define SYNC_PRODUCER_CONSUMER_FUNC(name, condition, wait_func, work) \
@@ -223,6 +228,9 @@ benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_b
 
         benchmark_wait_children(ep, "Broadcast bench waiters", 2);
     }
+
+    seL4_TCB_Suspend(producer.tcb.cptr);
+    seL4_TCB_Suspend(consumer.tcb.cptr);
 }
 
 int
