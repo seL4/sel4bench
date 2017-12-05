@@ -129,57 +129,6 @@ static const benchmark_params_t benchmark_params[] = {
         .overhead_id = REPLY_RECV_OVERHEAD,
         .passive = true,
     },
-    /* Call fastpath, low prio client to high prio server in different address space */
-    {
-        .name        = "seL4_Call",
-        .direction   = DIR_TO,
-        .client_fn   = IPC_CALL_FUNC2,
-        .server_fn   = IPC_REPLYRECV_FUNC2,
-        .same_vspace = false,
-        .client_prio = seL4_MaxPrio - 2,
-        .server_prio = seL4_MaxPrio - 1,
-        .length = 0,
-        .overhead_id = CALL_OVERHEAD,
-        .passive = true,
-    },
-    /* ReplyRecv slowpath, high prio server to low prio client, different address space */
-    {
-        .name        = "seL4_ReplyRecv",
-        .direction   = DIR_FROM,
-        .client_fn   = IPC_CALL_FUNC,
-        .server_fn   = IPC_REPLYRECV_FUNC,
-        .same_vspace = false,
-        .client_prio = seL4_MaxPrio - 2,
-        .server_prio = seL4_MaxPrio - 1,
-        .length = 0,
-        .overhead_id = REPLY_RECV_OVERHEAD,
-        .passive = true,
-    },
-    /* Call slowpath, high prio client to low prio server, different address space */
-    {
-        .name        = "seL4_Call",
-        .direction   = DIR_TO,
-        .client_fn   = IPC_CALL_FUNC2,
-        .server_fn   = IPC_REPLYRECV_FUNC2,
-        .same_vspace = false,
-        .client_prio = seL4_MaxPrio - 1,
-        .server_prio = seL4_MaxPrio - 2,
-        .length = 0,
-        .overhead_id = CALL_OVERHEAD
-    },
-    /* ReplyRecv fastpath, low prio server to high prio client, different address space */
-    {
-        .name        = "seL4_ReplyRecv",
-        .direction   = DIR_FROM,
-        .client_fn   = IPC_CALL_FUNC,
-        .server_fn   = IPC_REPLYRECV_FUNC,
-        .same_vspace = false,
-        .client_prio = seL4_MaxPrio - 1,
-        .server_prio = seL4_MaxPrio - 2,
-        .length = 0,
-        .overhead_id = REPLY_RECV_OVERHEAD,
-        .passive = true,
-    },
     /* Send slowpath (no fastpath for send) same prio client-server, different address space */
     {
         .name        = "seL4_Send",
