@@ -103,7 +103,7 @@ static const benchmark_params_t benchmark_params[] = {
         .overhead_id = REPLY_RECV_OVERHEAD,
         .passive = true,
     },
-    /* Call faspath between client and server in different address spaces */
+    /* Call fastpath between client and server in different address spaces */
     {
         .name        = "seL4_Call",
         .direction   = DIR_TO,
