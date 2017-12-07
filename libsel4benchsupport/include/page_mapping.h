@@ -18,7 +18,6 @@
 
 #define RUNS 16
 #define TESTS ARRAY_SIZE(page_mapping_benchmark_params)
-#define NPHASE ARRAY_SIZE(phase_name)
 
 typedef struct benchmark_params {
     /* name of the function we are benchmarking */
@@ -73,24 +72,27 @@ benchmark_params_t page_mapping_benchmark_params[] = {
                 .name   = "map 1024",
                 .npage  = 1024,
         },
-        {
-                .name   = "map 2048",
-                .npage  = 2048,
-        },
 };
 
-char *phase_name[] = {
-	"Prepare Page Tables",
-	"Allocate Pages",
-	"Mapping",
-	"Protect Pages as Read Only",
-	"Unprotect Pages"
+enum {
+    MAP,
+    PROTECT,
+    UNPROTECT,
+    UNMAP,
+    NPHASE
+};
+
+char *phase_name[NPHASE] = {
+    [MAP] = "Map Pages",
+    [PROTECT] = "Protect Pages",
+    [UNPROTECT] = "Unprotect Pages",
+    [UNMAP] = "Unmap Pages",
 };
 
 typedef struct page_mapping_results {
     /* Raw results from benchmarking. These get checked for sanity */
     ccnt_t overhead_benchmarks[RUNS];
-	ccnt_t benchmarks_result[TESTS][NPHASE][RUNS];
+    ccnt_t benchmarks_result[TESTS][NPHASE][RUNS];
 } page_mapping_results_t;
 
 #endif /* __BENCH_MAPPING_H_H */

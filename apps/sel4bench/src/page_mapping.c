@@ -8,7 +8,7 @@
  * See "LICENSE_BSD2.txt" for details.
  *
  * @TAG(DATA61_BSD)
- */
+ */ 
 #include <autoconf.h>
 #include <jansson.h>
 #include <sel4bench/sel4bench.h>
@@ -21,71 +21,71 @@
 #include "printing.h"
 #include "processing.h"
 
+
+static void
+process_phase(json_t *array, int phase, ccnt_t overhead, 
+              json_int_t npage_col[TESTS], page_mapping_results_t *raw_results)
+{
+    result_t results[TESTS];
+
+    column_t extra_cols[] = {
+        {
+            .header = "Number of Pages",
+            .type = JSON_INTEGER,
+            .integer_array = npage_col,
+        },
+    };
+
+    result_set_t result_set = {
+        .name = phase_name[phase],
+        .extra_cols = extra_cols,
+        .n_extra_cols = ARRAY_SIZE(extra_cols),
+        .results = (result_t *)results,
+        .n_results = TESTS,
+    };
+
+    /* now calculate the results */
+    for (int i = 0; i < TESTS; i++) {
+        result_desc_t desc = {
+            .name = page_mapping_benchmark_params[i].name,
+            .overhead = overhead,
+            .stable = false,
+        };
+        results[i] =
+            process_result(RUNS,raw_results->benchmarks_result[i][phase],desc);
+    }
+
+    json_array_append_new(array, result_set_to_json(result_set));
+}
+
+
 static json_t *
 process_mapping_results(void *r)
 {
     page_mapping_results_t *raw_results = r;
-    ccnt_t overhead;
+    json_t *array;
 
     /* check overheads */
     result_desc_t desc = {
-            .stable = false,
-            .name = "overhead",
-            .ignored = 0,
-            .overhead = 0
+        .stable =   false,
+        .name =     "overhead",
+        .ignored =  0,
+        .overhead = 0
     };
     result_t overhead_result = process_result(RUNS,
                                               raw_results->overhead_benchmarks,
                                               desc);
 
-    overhead = overhead_result.min;
-
-    int nline = TESTS * NPHASE;
-
-	char *phase_col[nline];
-	json_int_t npage_col[nline];
-	for (int i = 0; i < nline; i++) {
-		phase_col[i] = phase_name[i % NPHASE];
-		npage_col[i] = page_mapping_benchmark_params[i/NPHASE].npage;
-	}
-
-    column_t extra_cols[] = {
-            {
-                    .header = "Num of Page Mapped",
-                    .type = JSON_INTEGER,
-                    .integer_array = npage_col,
-            },
-			{
-					.header = "Phase",
-					.type = JSON_STRING,
-					.string_array = phase_col,
-			},
-    };
-
-    result_t results[TESTS][NPHASE];
-
-    result_set_t result_set = {
-            .name = "Mapping Benchmark",
-            .extra_cols = extra_cols,
-            .n_extra_cols = ARRAY_SIZE(extra_cols),
-            .results = (result_t *)results,
-            .n_results = nline,
-    };
-
-    /* now calculate the results */
+    json_int_t npage_col[TESTS];
     for (int i = 0; i < TESTS; i++) {
-		for (int j = 0; j < NPHASE; j++){
-	        result_desc_t desc = {
-					.name = page_mapping_benchmark_params[i].name,
-					.overhead = overhead,
-	        };
-			results[i][j] =
-				process_result(RUNS,raw_results->benchmarks_result[i][j],desc);
-		}
+        npage_col[i] = page_mapping_benchmark_params[i].npage;
     }
 
-    json_t *array = json_array();
-    json_array_append_new(array, result_set_to_json(result_set));
+    array = json_array();
+    for (int i = 0; i < NPHASE; i++) {
+        process_phase(array, i, overhead_result.min, npage_col, raw_results);
+    }
+
     return array;
 }
 
@@ -103,3 +103,5 @@ page_mapping_benchmark_new(void)
 {
     return &page_mapping_benchmark;
 }
+
+

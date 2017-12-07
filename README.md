@@ -44,6 +44,10 @@ This benchmark also measures `seL4_Yield`
 
 This is a hot cache benchmark of the signal path in the kernel, measured from user level.
 
+## page_mapping
+
+This is a benchmark measuring mapping, unmapping, protecting and unprotecting a series of pages.
+
 ## smp
 
 This is an intra-core ipc round-trip benchmark to check overhead of the kernel synchronization on ipc throughput.
