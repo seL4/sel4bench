@@ -18,8 +18,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 set(configure_string "")
 config_option(AppFaultBench APP_FAULTBENCH
     "Application to benchmark seL4 faults without modification to the kernel."
-    DEFAULT ON
-    DEPENDS "NOT KernelArchArmV6 AND (KernelDangerousCodeInjection OR KernelArmExportPMUUser)")
+    DEFAULT OFF
+    DEPENDS "NOT KernelArchArmV6;KernelDangerousCodeInjection OR KernelArmExportPMUUser")
 add_config_library(sel4benchfaultconfig "${configure_string}")
 
 file(GLOB deps src/*.c)

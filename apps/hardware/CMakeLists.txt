@@ -19,7 +19,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 set(configure_string "")
 config_option(AppHardwareBench APP_HARDWAREBENCH
     "Application to benchmark hardware-related operations."
-    DEFAULT ON
+    DEFAULT OFF
     DEPENDS "KernelEnableBenchmarks;KernelDangerousCodeInjection OR KernelArmExportPMUUser")
 add_config_library(hardware "${configure_string}")
 
