@@ -25,4 +25,4 @@ target_include_directories(sel4benchsupport PUBLIC
     "include/"
     "arch_include/${KernelArch}/"
     "sel4_arch_include/${KernelSel4Arch}/")
-target_link_libraries(sel4benchsupport Configuration muslc sel4allocman sel4bench)
+target_link_libraries(sel4benchsupport Configuration muslc sel4allocman sel4bench sel4muslcsys sel4serialserver)
