@@ -42,8 +42,8 @@ set(Sel4benchAllowSettingsOverride OFF CACHE BOOL "Allow user to override config
 # Users should initialize a build directory by doing something like
 # mkdir build_sabre
 # cd build_sabre
-# ../init-build.sh -DARM=TRUE -DPLATFORM=sabre -DHARDWARE=TRUE
-# You need -DARM=TRUE if you need to use the ARM cross-compiler (see kernel cmake
+# ../init-build.sh -DAARCH32=TRUE -DPLATFORM=sabre -DHARDWARE=TRUE
+# You need -DAARCH32=TRUE if you need to use the (32-bit) ARM cross-compiler (see kernel cmake
 # files for more info).
 set(RELEASE OFF CACHE BOOL "Performance optimized build")
 set(VERIFICATION OFF CACHE BOOL "Only verification friendly kernel features")
