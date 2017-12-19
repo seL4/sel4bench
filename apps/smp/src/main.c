@@ -19,7 +19,7 @@
 
 #include "rnorrexp.h"
 
-#define N_ARGS 2
+#define N_ARGS 3
 #define ZIGSEED 12345678
 
 static double current_delay_cycle;
@@ -96,10 +96,11 @@ pong_fn(int argc, char **argv, void *x)
     assert(argc == N_ARGS);
     seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
     int thread_id = (int) atol(argv[1]);
+    seL4_CPtr reply = (seL4_CPtr) atol(argv[2]);
 
     sel4bench_init();
     while (1) {
-        smp_benchmark_pong(ep);
+        smp_benchmark_pong(ep, reply);
         ipc_normal_delay(thread_id);
     }
 
@@ -202,7 +203,8 @@ main(int argc, char *argv[])
         assert(error == seL4_NoError);
 
         sel4utils_create_word_args(pp_threads[i].thread_args_strings,
-                                   pp_threads[i].thread_argv, N_ARGS, pp_threads[i].ep.cptr, i);
+                                   pp_threads[i].thread_argv, N_ARGS, pp_threads[i].ep.cptr, i,
+                                   pp_threads[i].ping.reply.cptr);
 
         /* prepare ping and pong threads... */
         error = sel4utils_start_thread(&pp_threads[i].ping, (sel4utils_thread_entry_fn) ping_fn,

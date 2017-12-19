@@ -13,6 +13,8 @@
 #ifndef __SELBENCH_SEL4_ARCH_SMP_H
 #define __SELBENCH_SEL4_ARCH_SMP_H
 
+#include <autoconf.h>
+
 static inline void
 smp_benchmark_ping(seL4_CPtr ep)
 {
@@ -20,9 +22,13 @@ smp_benchmark_ping(seL4_CPtr ep)
 }
 
 static inline void
-smp_benchmark_pong(seL4_CPtr ep)
+smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
 {
+#ifdef CONFIG_KERNEL_RT
+    seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, reply);
+#else
     seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL);
+#endif
 }
 
 #endif /* __SELBENCH_SEL4_ARCH_SMP_H */

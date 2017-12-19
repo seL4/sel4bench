@@ -13,6 +13,7 @@
 #ifndef __SELBENCH_ARCH_SMP_H
 #define __SELBENCH_ARCH_SMP_H
 
+#include <autoconf.h>
 #include <benchmark.h>
 
 #define CACHE_LN_SZ 32
@@ -34,9 +35,13 @@ smp_benchmark_ping(seL4_CPtr ep)
 }
 
 static inline void
-smp_benchmark_pong(seL4_CPtr ep)
+smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
 {
+#if CONFIG_KERNEL_RT
+    seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL, NULL, reply);
+#else
     seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL, NULL);
+#endif
 }
 
 static inline ccnt_t
