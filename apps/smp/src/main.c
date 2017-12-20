@@ -213,9 +213,16 @@ main(int argc, char *argv[])
         assert(error == seL4_NoError);
 
         /* prepare thread for pp_ipcs on different cores */
-        error = seL4_TCB_SetAffinity(pp_threads[i].ping.tcb.cptr, i);
+        sched_params_t params = {0};
+#ifdef CONFIG_KERNEL_RT
+        params = sched_params_round_robin(params, &env->simple, i, CONFIG_BOOT_THREAD_TIME_SLICE * US_IN_MS);
+#else
+        params.core = i;
+#endif
+
+        error = sel4utils_set_sched_affinity(&pp_threads[i].ping, params);
         assert(!error);
-        error = seL4_TCB_SetAffinity(pp_threads[i].pong.tcb.cptr, i);
+        error = sel4utils_set_sched_affinity(&pp_threads[i].pong, params);
         assert(!error);
     }
 
