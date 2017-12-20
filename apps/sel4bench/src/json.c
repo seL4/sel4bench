@@ -13,6 +13,15 @@
 #include <benchmark.h>
 #include "json.h"
 
+static inline json_t *json_real_check(double val)
+{
+    json_t *real = json_real(val);
+    if (!real) {
+        return json_string(isnan(val) ? "nan" : "inf");
+    }
+    return real;
+}
+
 static void
 result_to_json(result_t result, json_t *j)
 {
@@ -22,25 +31,25 @@ result_to_json(result_t result, json_t *j)
    error = json_object_set_new(j, "Max", json_integer(result.max));
    assert(error == 0);
 
-   error = json_object_set_new(j, "Mean", json_real(result.mean));
+   error = json_object_set_new(j, "Mean", json_real_check(result.mean));
    assert(error == 0);
 
-   error = json_object_set_new(j, "Stddev", json_real(result.stddev));
+   error = json_object_set_new(j, "Stddev", json_real_check(result.stddev));
    assert(error == 0);
 
-   error = json_object_set_new(j, "Variance", json_real(result.variance));
+   error = json_object_set_new(j, "Variance", json_real_check(result.variance));
    assert(error == 0);
 
-   error = json_object_set_new(j, "Mode", json_real(result.mode));
+   error = json_object_set_new(j, "Mode", json_real_check(result.mode));
    assert(error == 0);
 
-   error = json_object_set_new(j, "Median", json_real(result.median));
+   error = json_object_set_new(j, "Median", json_real_check(result.median));
    assert(error == 0);
 
-   error = json_object_set_new(j, "1st quantile", json_real(result.first_quantile));
+   error = json_object_set_new(j, "1st quantile", json_real_check(result.first_quantile));
    assert(error == 0);
 
-   error = json_object_set_new(j, "3rd quantile", json_real(result.third_quantile));
+   error = json_object_set_new(j, "3rd quantile", json_real_check(result.third_quantile));
    assert(error == 0);
 
    error = json_object_set_new(j, "Samples", json_integer(result.samples));
@@ -68,7 +77,7 @@ get_json_cell(column_t column, size_t index)
     case JSON_INTEGER:
         return json_integer(column.integer_array[index]);
     case JSON_REAL:
-        return json_real(column.real_array[index]);
+        return json_real_check(column.real_array[index]);
     case JSON_TRUE:
     case JSON_FALSE:
         return json_boolean(column.bool_array[index]);
