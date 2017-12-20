@@ -33,6 +33,7 @@ typedef struct _per_core_data {
 struct _pp_threads {
     vka_object_t ep;
     sel4utils_thread_t ping, pong;
+    sel4utils_checkpoint_t ping_cp, pong_cp;
 
     /* arguments to pass to thread's main */
     char thread_args_strings[N_ARGS][WORD_STRING_SIZE];
@@ -114,6 +115,9 @@ benchmark_multicore_reset_test(int nr_cores)
         seL4_TCB_Suspend(pp_threads[i].ping.tcb.cptr);
         seL4_TCB_Suspend(pp_threads[i].pong.tcb.cptr);
         pp_threads[i].pp_ipcs.calls_completed = 0;
+        /* restore ping and pong to start of benchmark */
+        sel4utils_checkpoint_restore(&pp_threads[i].pong_cp, &pp_threads[i].pong, false);
+        sel4utils_checkpoint_restore(&pp_threads[i].ping_cp, &pp_threads[i].ping, false);
     }
 }
 
@@ -149,7 +153,12 @@ benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
         for (int core_idx = 0; core_idx < nr_cores; core_idx++) {
             seL4_TCB_Resume(pp_threads[core_idx].ping.tcb.cptr);
             seL4_TCB_Resume(pp_threads[core_idx].pong.tcb.cptr);
+            /* checkpoint pong */
+            sel4utils_checkpoint_thread(&pp_threads[core_idx].pong,
+                    &pp_threads[core_idx].pong_cp, false);
 
+            /* checkpoint ping */
+            sel4utils_checkpoint_thread(&pp_threads[core_idx].ping, &pp_threads[core_idx].ping_cp, false);
             for (int it = 0; it < RUNS; it++) {
                 results->benchmarks_result[nr_test][core_idx][it] =
                     benchmark_multicore_do_ping_pong(env, core_idx + 1);
