@@ -100,6 +100,12 @@ pong_fn(int argc, char **argv, void *x)
     seL4_CPtr reply = (seL4_CPtr) atol(argv[2]);
 
     sel4bench_init();
+
+    if (config_set(CONFIG_KERNEL_RT)) {
+        /* signal that we are ready to be converted to passive */
+        api_nbsend_recv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, reply);
+    }
+
     while (1) {
         smp_benchmark_pong(ep, reply);
         ipc_normal_delay(thread_id);
@@ -111,10 +117,26 @@ pong_fn(int argc, char **argv, void *x)
 static inline void
 benchmark_multicore_reset_test(int nr_cores)
 {
+    int error;
     for (int i = 0; i < nr_cores; i++) {
         seL4_TCB_Suspend(pp_threads[i].ping.tcb.cptr);
         seL4_TCB_Suspend(pp_threads[i].pong.tcb.cptr);
         pp_threads[i].pp_ipcs.calls_completed = 0;
+
+        /* rebind ping's sc */
+        if (config_set(CONFIG_KERNEL_RT)) {
+            error = api_sc_unbind(pp_threads[i].ping.sched_context.cptr);
+            ZF_LOGF_IF(error, "Failed to unbind pings sc");
+
+            error = api_sc_bind(pp_threads[i].ping.sched_context.cptr,
+                                pp_threads[i].ping.tcb.cptr);
+            ZF_LOGF_IF(error, "Failed to rebind pings sc");
+
+            /* give pong back it's sc */
+            error = api_sc_bind(pp_threads[i].pong.sched_context.cptr,
+                                pp_threads[i].pong.tcb.cptr);
+            ZF_LOGF_IF(error, "Failed to rebind pong's sc");
+        }
         /* restore ping and pong to start of benchmark */
         sel4utils_checkpoint_restore(&pp_threads[i].pong_cp, &pp_threads[i].pong, false);
         sel4utils_checkpoint_restore(&pp_threads[i].ping_cp, &pp_threads[i].ping, false);
@@ -146,18 +168,27 @@ static void
 benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
 {
     int nr_cores = simple_get_core_count(&env->simple);
+    int error;
 
     for (int nr_test = 0; nr_test < TESTS; nr_test++) {
         current_delay_cycle = smp_benchmark_params[nr_test].delay;
 
         for (int core_idx = 0; core_idx < nr_cores; core_idx++) {
-            seL4_TCB_Resume(pp_threads[core_idx].ping.tcb.cptr);
             seL4_TCB_Resume(pp_threads[core_idx].pong.tcb.cptr);
+            if (config_set(CONFIG_KERNEL_RT)) {
+                /* wait for pong */
+                seL4_Wait(pp_threads[core_idx].ep.cptr, NULL);
+                /* convert pong to passive */
+                error = api_sc_unbind(pp_threads[core_idx].pong.sched_context.cptr);
+                ZF_LOGF_IF(error, "failed to unbind pong's sc");
+            }
+
             /* checkpoint pong */
             sel4utils_checkpoint_thread(&pp_threads[core_idx].pong,
                     &pp_threads[core_idx].pong_cp, false);
 
             /* checkpoint ping */
+            seL4_TCB_Resume(pp_threads[core_idx].ping.tcb.cptr);
             sel4utils_checkpoint_thread(&pp_threads[core_idx].ping, &pp_threads[core_idx].ping_cp, false);
             for (int it = 0; it < RUNS; it++) {
                 results->benchmarks_result[nr_test][core_idx][it] =
