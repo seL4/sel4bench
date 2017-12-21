@@ -71,8 +71,8 @@ ipc_normal_delay(int id)
     }
 }
 
-void
-ping_fn(int argc, char **argv)
+void *
+ping_fn(int argc, char **argv, void *x)
 {
     assert(argc == N_ARGS);
     seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
@@ -90,8 +90,8 @@ ping_fn(int argc, char **argv)
     /* we would never return... */
 }
 
-void
-pong_fn(int argc, char **argv)
+void *
+pong_fn(int argc, char **argv, void *x)
 {
     assert(argc == N_ARGS);
     seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
