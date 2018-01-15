@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Mon Nov 27 10:49:13 2017
+# Mon Jan 15 15:11:59 2018
 #
 
 #
@@ -177,7 +177,6 @@ CONFIG_APP_SIGNALBENCH=y
 CONFIG_APP_FAULTBENCH=y
 CONFIG_APP_HARDWAREBENCH=y
 CONFIG_APP_SYNCBENCH=y
-# CONFIG_APP_PAGEMAPPINGBENCH is not set
 
 #
 # Tools
