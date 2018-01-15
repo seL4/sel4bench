@@ -30,7 +30,7 @@ config_string(JsonIndent JSON_INDENT
 config_option(Sel4Bench SEL4_BENCH
     "Enable seL4 benchmarking"
     DEFAULT ON
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+)
 
 if(Sel4Bench)
     add_config_library(sel4benchappconfig "${configure_string}")
