@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Mon Jan 15 15:11:45 2018
+# Mon Jan 15 15:57:42 2018
 #
 
 #
@@ -50,7 +50,7 @@ CONFIG_PLAT_SABRE=y
 # CONFIG_PLAT_HIKEY is not set
 # CONFIG_PLAT_BCM2837 is not set
 # CONFIG_ENABLE_A9_PREFETCHER is not set
-# CONFIG_EXPORT_PMU_USER is not set
+CONFIG_EXPORT_PMU_USER=y
 # CONFIG_IPC_BUF_GLOBALS_FRAME is not set
 CONFIG_IPC_BUF_TPIDRURW=y
 

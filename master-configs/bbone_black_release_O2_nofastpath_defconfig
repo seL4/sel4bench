@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Mon Jan 15 15:10:37 2018
+# Mon Jan 15 15:56:37 2018
 #
 
 #
@@ -49,7 +49,6 @@ CONFIG_PLAT_AM335X=y
 # CONFIG_PLAT_TK1 is not set
 # CONFIG_PLAT_HIKEY is not set
 # CONFIG_PLAT_BCM2837 is not set
-# CONFIG_EXPORT_PMU_USER is not set
 # CONFIG_IPC_BUF_GLOBALS_FRAME is not set
 CONFIG_IPC_BUF_TPIDRURW=y
 

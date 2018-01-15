@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Mon Jan 15 15:11:04 2018
+# Mon Jan 15 15:57:03 2018
 #
 
 #
@@ -51,7 +51,7 @@ CONFIG_PLAT_APQ8064=y
 # CONFIG_PLAT_BCM2837 is not set
 # CONFIG_ARM_HYPERVISOR_SUPPORT is not set
 CONFIG_HAVE_ARCH_TIMER=y
-# CONFIG_EXPORT_PMU_USER is not set
+CONFIG_EXPORT_PMU_USER=y
 CONFIG_EXPORT_PCNT_USER=y
 CONFIG_EXPORT_VCNT_USER=y
 # CONFIG_IPC_BUF_GLOBALS_FRAME is not set

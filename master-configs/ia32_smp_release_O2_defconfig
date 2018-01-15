@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Mon Jan 15 15:10:59 2018
+# Mon Jan 15 15:56:58 2018
 #
 
 #
@@ -60,7 +60,7 @@ CONFIG_MULTIBOOT2_HEADER=y
 CONFIG_MULTIBOOT_GRAPHICS_MODE_NONE=y
 # CONFIG_MULTIBOOT_GRAPHICS_MODE_TEXT is not set
 # CONFIG_MULTIBOOT_GRAPHICS_MODE_LINEAR is not set
-# CONFIG_EXPORT_PMC_USER is not set
+CONFIG_EXPORT_PMC_USER=y
 
 #
 # seL4 System Parameters
