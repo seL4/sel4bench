@@ -16,7 +16,7 @@ include(${KERNEL_HELPERS_PATH})
 
 # Default dependencies on kernel benchmarking features. Declared here so that
 # all the benchmark applications can use it
-if( (KernelArchX86 AND KernelExportPMCUser AND KernelDangerousCodeInjection) OR
+if( (KernelArchX86 AND KernelExportPMCUser AND KernelX86DangerousMSR) OR
     (KernelArchARM AND KernelArmExportPMUUser) OR
     (KernelArchArmV6 AND KernelDangerousCodeInjection) OR
     (KernelArchArmCortexA8 AND KernelDangerousCodeInjection) )
@@ -161,7 +161,7 @@ if (NOT Sel4benchAllowSettingsOverride)
     endif()
     if (KernelArchX86)
         set(KernelExportPMCUser ON CACHE BOOL "" FORCE)
-        set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
+        set(KernelX86DangerousMSR ON CACHE BOOL "" FORCE)
     endif()
     set(KernelRootCNodeSizeBits 13 CACHE STRING "" FORCE)
     set(LibSel4MuslcSysMorecoreBytes 0 CACHE STRING "" FORCE)
