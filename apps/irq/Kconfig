@@ -19,7 +19,8 @@ config APP_IRQBENCH
     LIB_SEL4_PLAT_SUPPORT && LIB_PLATSUPPORT && LIB_SEL4_BENCHSUPPORT
     depends on (ARCH_X86 && EXPORT_PMC_USER && DANGEROUS_CODE_INJECTION) || \
         (ARCH_ARM && EXPORT_PMU_USER) || \
-        (ARCH_ARM_V6 && DANGEROUS_CODE_INJECTION)
+        (ARCH_ARM_V6 && DANGEROUS_CODE_INJECTION) || \
+        (ARM_CORTEX_A8 && DANGEROUS_CODE_INJECTION)
     help
         Application to benchmark seL4 IRQs from inside the kernel.
         Requires tracepoints (see irq-tracepoint branch or kernel.

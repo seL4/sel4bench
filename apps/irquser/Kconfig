@@ -20,6 +20,7 @@ config APP_IRQUSERBENCH
     && LIB_SEL4_MUSLC_SYS
     depends on (ARCH_X86 && EXPORT_PMC_USER && DANGEROUS_CODE_INJECTION) || \
         (ARCH_ARM && EXPORT_PMU_USER) || \
-        (ARCH_ARM_V6 && DANGEROUS_CODE_INJECTION)
+        (ARCH_ARM_V6 && DANGEROUS_CODE_INJECTION) || \
+        (ARM_CORTEX_A8 && DANGEROUS_CODE_INJECTION)
     help
         Application to benchmark seL4 IRQs without modification to the kernel.

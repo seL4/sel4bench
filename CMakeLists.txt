@@ -18,7 +18,8 @@ include(${KERNEL_HELPERS_PATH})
 # all the benchmark applications can use it
 if( (KernelArchX86 AND KernelExportPMCUser AND KernelDangerousCodeInjection) OR
     (KernelArchARM AND KernelArmExportPMUUser) OR
-    (KernelArchArmV6 AND KernelDangerousCodeInjection) )
+    (KernelArchArmV6 AND KernelDangerousCodeInjection) OR
+    (KernelArchArmCortexA8 AND KernelDangerousCodeInjection) )
     set(DefaultBenchDeps TRUE)
 else()
     set(DefaultBenchDeps FALSE)
