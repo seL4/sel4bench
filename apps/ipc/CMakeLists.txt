@@ -19,7 +19,7 @@ set(configure_string "")
 config_option(AppIpcBench APP_IPCBENCH
     "Application to benchmark seL4 IPC."
     DEFAULT ON
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "DefaultBenchDeps")
 config_choice(CounterToMeasure COUNTER_TO_MEASURE "Counter to measure"
     "Cycle count;Ipc_CycleCount;CYCLE_COUNT;AppIpcBench"
     "Generic counter;Ipc_GenericCounter;GENERIC_COUNTER;AppIpcBench"

@@ -19,7 +19,7 @@ set(configure_string "")
 config_option(AppPageMappingBench APP_PAGEMAPPINGBENCH
     "Application to benchmark seL4 mapping a series of pages."
     DEFAULT ON
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "DefaultBenchDeps")
 add_config_library(sel4benchpagemappingconfig "${configure_string}")
 
 file(GLOB deps src/*.c)

@@ -14,6 +14,16 @@ cmake_minimum_required(VERSION 3.7.2)
 
 include(${KERNEL_HELPERS_PATH})
 
+# Default dependencies on kernel benchmarking features. Declared here so that
+# all the benchmark applications can use it
+if( (KernelArchX86 AND KernelExportPMCUser AND KernelDangerousCodeInjection) OR
+    (KernelArchARM AND KernelArmExportPMUUser) OR
+    (KernelArchArmV6 AND KernelDangerousCodeInjection) )
+    set(DefaultBenchDeps TRUE)
+else()
+    set(DefaultBenchDeps FALSE)
+endif()
+
 add_subdirectory(apps/fault)
 add_subdirectory(apps/hardware)
 add_subdirectory(apps/ipc)
@@ -135,13 +145,14 @@ if (NOT Sel4benchAllowSettingsOverride)
     endif()
 
     # Configuration that applies to all apps
-    set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
-    if (KernelArch STREQUAL "arm")
-        if ((KernelArmArmV STREQUAL "armv7-a" OR KernelArmArmV STREQUAL "armv8-a") AND
-            NOT (${PLATFORM} STREQUAL "beagle" OR ${PLATFORM} STREQUAL "bbone" OR ${PLATFORM} STREQUAL "bboneblack"))
+    if (KernelArchARM)
+        if (KernelArmCortexA8 OR KernelArchArmV6)
+            set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
+        else()
             set(KernelArmExportPMUUser ON CACHE BOOL "" FORCE)
         endif()
-        if (KernelArmArmV STREQUAL "armv6")
+
+        if (KernelArchArmV6)
             set(KernelDangerousCodeInjectionOnUndefInstr ON CACHE BOOL "" FORCE)
         endif()
     else()
@@ -149,6 +160,7 @@ if (NOT Sel4benchAllowSettingsOverride)
     endif()
     if (KernelArchX86)
         set(KernelExportPMCUser ON CACHE BOOL "" FORCE)
+        set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
     endif()
     set(KernelRootCNodeSizeBits 13 CACHE STRING "" FORCE)
     set(LibSel4MuslcSysMorecoreBytes 0 CACHE STRING "" FORCE)

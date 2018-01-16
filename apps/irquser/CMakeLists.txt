@@ -19,7 +19,7 @@ set(configure_string "")
 config_option(AppIrqUserBench APP_IRQUSERBENCH
     "Application to benchmark seL4 IRQs without modification to the kernel."
     DEFAULT ON
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "DefaultBenchDeps")
 add_config_library(sel4benchirquserconfig "${configure_string}")
 
 file(GLOB deps src/*.c)

@@ -20,7 +20,7 @@ set(configure_string "")
 config_option(AppHardwareBench APP_HARDWAREBENCH
     "Application to benchmark hardware-related operations."
     DEFAULT OFF
-    DEPENDS "KernelEnableBenchmarks;KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "KernelEnableBenchmarks;DefaultBenchDeps")
 add_config_library(hardware "${configure_string}")
 
 file(GLOB deps src/*.c)

@@ -19,7 +19,7 @@ set(configure_string "")
 config_option(AppSchedulerBench APP_SCHEDULERBENCH
     "Application to benchmark seL4 scheduler without modification to the kernel."
     DEFAULT ON
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "DefaultBenchDeps")
 add_config_library(sel4benchschedulerconfig "${configure_string}")
 
 file(GLOB deps src/*.c)

@@ -21,7 +21,7 @@ config_option(AppIrqBench APP_IRQBENCH
     Requires tracepoints (see irq-tracepoint branch or kernel.\
     This app currently doesn't build."
     DEFAULT OFF
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "DefaultBenchDeps")
 add_config_library(sel4benchirqconfig "${configure_string}")
 
 file(GLOB deps src/*.c)

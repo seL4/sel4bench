@@ -19,7 +19,7 @@ set(configure_string "")
 config_option(AppSignalBench APP_SIGNALBENCH
     "Application to benchmark seL4 signals without modification to the kernel."
     DEFAULT ON
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "DefaultBenchDeps")
 add_config_library(sel4benchsignalconfig "${configure_string}")
 
 file(GLOB deps src/*.c)

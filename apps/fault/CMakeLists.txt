@@ -19,7 +19,7 @@ set(configure_string "")
 config_option(AppFaultBench APP_FAULTBENCH
     "Application to benchmark seL4 faults without modification to the kernel."
     DEFAULT OFF
-    DEPENDS "NOT KernelArchArmV6;KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "NOT KernelArchArmV6;DefaultBenchDeps")
 add_config_library(sel4benchfaultconfig "${configure_string}")
 
 file(GLOB deps src/*.c)

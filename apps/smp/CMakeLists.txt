@@ -19,7 +19,7 @@ set(KernelMaxNumNodesGreaterThan1 (KernelMaxNumNodes GREATER \"1\"))
 set(configure_string "")
 config_option(AppSmpBench APP_SMPBENCH "Enable SMP benchmarks"
     DEFAULT OFF
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser;KernelMaxNumNodesGreaterThan1")
+    DEPENDS "DefaultBenchDeps;KernelMaxNumNodesGreaterThan1")
 add_config_library(smp "${configure_string}")
 
 file(GLOB deps src/*.c)

@@ -19,7 +19,7 @@ set(configure_string "")
 config_option(AppSyncBench APP_SYNCBENCH
     "Application to benchmark seL4 sync."
     DEFAULT ON
-    DEPENDS "KernelDangerousCodeInjection OR KernelArmExportPMUUser")
+    DEPENDS "DefaultBenchDeps")
 add_config_library(sel4benchsyncconfig "${configure_string}")
 
 file(GLOB deps src/*.c)
