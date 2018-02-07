@@ -134,6 +134,7 @@ if (NOT Sel4benchAllowSettingsOverride)
     set(KernelTimeSlice 500 CACHE STRING "" FORCE)
     set(KernelTimerTickMS 1000 CACHE STRING "" FORCE)
     set(LibSel4MuslcSysMorecoreBytes 0 CACHE STRING "" FORCE)
+    set(KernelVerificationBuild OFF CACHE BOOL "" FORCE)
 
     # App-specific configuration
     if (FAULT)
