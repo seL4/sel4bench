@@ -143,6 +143,7 @@ if (NOT Sel4benchAllowSettingsOverride)
         set(KernelPrinting ON CACHE BOOL "" FORCE)
     else()
         set(KernelDebugBuild OFF CACHE BOOL "" FORCE)
+        set(KernelPrinting OFF CACHE BOOL "" FORCE)
     endif()
 
     # Configuration that applies to all apps
