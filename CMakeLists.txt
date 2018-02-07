@@ -56,7 +56,7 @@ set(Sel4benchAllowSettingsOverride OFF CACHE BOOL "Allow user to override config
 # ../init-build.sh -DAARCH32=TRUE -DPLATFORM=sabre -DHARDWARE=TRUE
 # You need -DAARCH32=TRUE if you need to use the (32-bit) ARM cross-compiler (see kernel cmake
 # files for more info).
-set(RELEASE OFF CACHE BOOL "Performance optimized build")
+set(RELEASE ON CACHE BOOL "Performance optimized build")
 set(VERIFICATION OFF CACHE BOOL "Only verification friendly kernel features")
 set(HARDWARE OFF CACHE BOOL "Configuration for sel4bench hardware app")
 set(FAULT OFF CACHE BOOL "Configuration sel4bench fault app")
