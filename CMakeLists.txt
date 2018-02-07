@@ -165,6 +165,8 @@ if (NOT Sel4benchAllowSettingsOverride)
         set(KernelX86DangerousMSR ON CACHE BOOL "" FORCE)
     endif()
     set(KernelRootCNodeSizeBits 13 CACHE STRING "" FORCE)
+    set(KernelTimeSlice 500 CACHE STRING "" FORCE)
+    set(KernelTimerTickMS 1000 CACHE STRING "" FORCE)
     set(LibSel4MuslcSysMorecoreBytes 0 CACHE STRING "" FORCE)
 
     # App-specific configuration
