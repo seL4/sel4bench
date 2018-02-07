@@ -129,6 +129,7 @@ if (NOT Sel4benchAllowSettingsOverride)
     # VERIFICATION (verification friendly features) builds
     if (RELEASE)
         set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+        set(KernelFWholeProgram ON CACHE BOOL "" FORCE)
     else()
         set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
     endif()
