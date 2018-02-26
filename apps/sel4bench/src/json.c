@@ -11,6 +11,7 @@
  */
 #include <autoconf.h>
 #include <benchmark.h>
+#include <math.h>
 #include "json.h"
 
 static inline json_t *json_real_check(double val)
