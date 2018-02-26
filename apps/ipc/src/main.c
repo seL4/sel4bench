@@ -382,6 +382,7 @@ main(int argc, char **argv)
                                 server_thread.ep, server_thread.result_ep, SEL4UTILS_REPLY_SLOT);
 
     /* run the benchmark */
+    seL4_CPtr auth = simple_get_tcb(&env->simple);
     ccnt_t start, end;
     for (int i = 0; i < RUNS; i++) {
         int j;
@@ -398,16 +399,16 @@ main(int argc, char **argv)
                     (config_set(CONFIG_KERNEL_RT) && params->passive) ? "passive" : "active", params->length);
 
             /* set up client for benchmark */
-            int error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, params->client_prio);
+            int error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, auth, params->client_prio);
             ZF_LOGF_IF(error, "Failed to set client prio");
             client.process.entry_point = bench_funcs[params->client_fn];
 
             if (params->same_vspace) {
-                error = seL4_TCB_SetPriority(server_thread.process.thread.tcb.cptr, params->server_prio);
+                error = seL4_TCB_SetPriority(server_thread.process.thread.tcb.cptr, auth, params->server_prio);
                 assert(error == seL4_NoError);
                 server_thread.process.entry_point = bench_funcs[params->server_fn];
             } else {
-                error = seL4_TCB_SetPriority(server_process.process.thread.tcb.cptr, params->server_prio);
+                error = seL4_TCB_SetPriority(server_process.process.thread.tcb.cptr, auth, params->server_prio);
                 assert(error == seL4_NoError);
                 server_process.process.entry_point = bench_funcs[params->server_fn];
             }

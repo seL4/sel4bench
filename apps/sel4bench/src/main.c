@@ -80,7 +80,7 @@ setup_fault_handler(env_t *env)
                                           "sel4bench-fault-handler", &fault_handler);
     ZF_LOGF_IFERR(error, "Failed to start fault handler");
 
-    error = seL4_TCB_SetPriority(fault_handler.tcb.cptr, seL4_MaxPrio);
+    error = seL4_TCB_SetPriority(fault_handler.tcb.cptr, simple_get_tcb(&env->simple), seL4_MaxPrio);
     ZF_LOGF_IFERR(error, "Failed to set prio for fault handler");
 
     if (config_set(CONFIG_KERNEL_RT)) {

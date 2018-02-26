@@ -190,15 +190,16 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
 
     stop_threads(&signal, &wait);
 
+    seL4_CPtr auth = simple_get_tcb(&env->simple);
     /* now benchmark signalling to a lower prio thread */
-    error = seL4_TCB_SetPriority(wait.thread.tcb.cptr, seL4_MaxPrio - 1);
+    error = seL4_TCB_SetPriority(wait.thread.tcb.cptr, auth, seL4_MaxPrio - 1);
     assert(error == seL4_NoError);
 
-    error = seL4_TCB_SetPriority(signal.thread.tcb.cptr, seL4_MaxPrio);
+    error = seL4_TCB_SetPriority(signal.thread.tcb.cptr, auth, seL4_MaxPrio);
     assert(error == seL4_NoError);
 
     /* set our prio down so the waiting thread can get on the endpoint */
-    seL4_TCB_SetPriority(SEL4UTILS_TCB_SLOT, seL4_MaxPrio - 2);
+    seL4_TCB_SetPriority(SEL4UTILS_TCB_SLOT, auth, seL4_MaxPrio - 2);
 
     /* change params for high prio signaller */
     signal.fn = (sel4utils_thread_entry_fn) high_prio_signal_fn;

@@ -186,7 +186,7 @@ benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr co
 
     for (int i = 0; i < N_PRIOS; i++) {
         uint8_t prio = gen_next_prio(i);
-        error = seL4_TCB_SetPriority(high.tcb.cptr, prio);
+        error = seL4_TCB_SetPriority(high.tcb.cptr, simple_get_tcb(&env->simple), prio);
         assert(error == seL4_NoError);
 
         sel4utils_create_word_args(low_args_strings, low_argv, N_LOW_ARGS, produce,
@@ -251,7 +251,7 @@ benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr 
 
     for (int i = 0; i < N_PRIOS; i++) {
         uint8_t prio = gen_next_prio(i);
-        error = seL4_TCB_SetPriority(high.thread.tcb.cptr, prio);
+        error = seL4_TCB_SetPriority(high.thread.tcb.cptr, simple_get_tcb(&env->simple), prio);
         assert(error == 0);
 
         sel4utils_create_word_args(low_args_strings, low_argv, N_LOW_ARGS, produce,
@@ -294,7 +294,7 @@ measure_yield_overhead(ccnt_t *results)
 }
 
 void
-benchmark_set_prio_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS])
+benchmark_set_prio_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS], seL4_CPtr auth)
 {
     seL4_Word n_counters = sel4bench_get_num_counters();
     ccnt_t start = 0;
@@ -307,7 +307,7 @@ benchmark_set_prio_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS])
             SEL4BENCH_READ_CCNT(start);
             for (int i = 0; i < AVERAGE_RUNS; i++) {
                 /* set prio on self always triggers a reschedule */
-                seL4_TCB_SetPriority(SEL4UTILS_TCB_SLOT, seL4_MaxPrio);
+                seL4_TCB_SetPriority(SEL4UTILS_TCB_SLOT, auth, seL4_MaxPrio);
             }
             SEL4BENCH_READ_CCNT(end);
             sel4bench_read_and_stop_counters(mask, chunk, n_counters, results[j]);
@@ -381,7 +381,7 @@ main(int argc, char **argv)
                                results->thread_results);
     benchmark_prio_processes(env, done_ep.cptr, produce.cptr, consume.cptr,
                                  results->process_results);
-    benchmark_set_prio_average(results->set_prio_average);
+    benchmark_set_prio_average(results->set_prio_average, simple_get_tcb(&env->simple));
 
     /* thread yield benchmarks */
     benchmark_yield_thread(env, done_ep.cptr, results->thread_yield);

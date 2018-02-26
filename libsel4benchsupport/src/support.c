@@ -230,6 +230,7 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
     config = thread_config_fault_endpoint(config, fault_ep);
     config = thread_config_priority(config, prio);
     config = thread_config_mcp(config, prio);
+    config = thread_config_auth(config, simple_get_tcb(&env->simple));
 #ifdef CONFIG_KERNEL_RT
     config.sched_params = sched_params_round_robin(config.sched_params, &env->simple, 0,
             CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
