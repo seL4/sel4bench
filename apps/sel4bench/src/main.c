@@ -69,7 +69,7 @@ setup_fault_handler(env_t *env)
     }
 
     /* set the fault endpoint for the current thread */
-    error = api_tcb_set_space(simple_get_tcb(&env->simple), fault_ep.cptr, seL4_CapNull,
+    error = api_tcb_set_space(simple_get_tcb(&env->simple), fault_ep.cptr,
                               simple_get_cnode(&env->simple), seL4_NilData, simple_get_pd(&env->simple),
                               seL4_NilData);
     ZF_LOGF_IFERR(error, "Failed to set fault ep for benchmark driver\n");
