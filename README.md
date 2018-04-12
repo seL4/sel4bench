@@ -29,7 +29,7 @@ This is a hot cache benchmark of the IPC path.
 
 ## irq
 
-This is a hot cache benchmark of the irq path, measured from inside the kernel. It requires [tracepoints](https://wiki.sel4.systems/Benchmarking%20guide#In_kernel_log-buffer) to be placed on the irq path where the meaurements are to be taken from.
+This is a hot cache benchmark of the irq path, measured from inside the kernel. It requires [tracepoints](https://docs.sel4.systems/BenchmarkingGuide.html#in-kernel-log-buffer) to be placed on the irq path where the meaurements are to be taken from.
 
 ## irquser
 
