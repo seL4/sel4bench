@@ -91,9 +91,9 @@ if (NOT Sel4benchAllowSettingsOverride)
         else()
             set(KernelArmSel4Arch "aarch32" CACHE STRING "" FORCE)
         endif()
+        # Elfloader settings that correspond to how Data61 sets its boards up.
+        ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelArmSel4Arch})
     endif()
-    # Elfloader settings that correspond to how Data61 sets its boards up.
-    ApplyData61ElfLoaderSettings()
 
     # Setup flags for RELEASE (performance optimized builds)
     if (RELEASE)
