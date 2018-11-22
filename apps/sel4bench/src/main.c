@@ -343,7 +343,9 @@ int main(void)
     printf("%s==============%s\n", A_FG_G, A_FG_W);
     printf("\n");
 
-    plat_setup(&global_env);
+    if(plat_setup) {
+        plat_setup(&global_env);
+    }
 
     /* Switch to a bigger stack with a guard page! */
     printf("Switching to a safer, bigger stack... ");
