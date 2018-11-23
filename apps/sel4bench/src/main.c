@@ -61,7 +61,7 @@ setup_fault_handler(env_t *env)
     sel4utils_thread_t fault_handler;
     vka_object_t fault_ep = {0};
 
-    printf("Setting up global fault handler...");
+    printf("Setting up global fault handler...\n");
 
     /* create an endpoint */
     if (vka_alloc_endpoint(&env->vka, &fault_ep) != 0) {
@@ -348,7 +348,7 @@ int main(void)
     }
 
     /* Switch to a bigger stack with a guard page! */
-    printf("Switching to a safer, bigger stack... ");
+    printf("Switching to a safer, bigger stack... \n");
     error = sel4utils_run_on_stack(&global_env.vspace, main_continued, NULL, NULL);
     assert(error == 0);
 
