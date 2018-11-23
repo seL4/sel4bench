@@ -235,7 +235,7 @@ find_timer_caps(env_t *env)
     /* init the default caps */
     int error = sel4platsupport_init_default_timer_caps(&env->vka, &env->vspace, &env->simple, &env->to);
     /* timer paddr */
-    ZF_LOGF_IFERR(error, "Failed to init default timer caps");
+    ZF_LOGF_IF(error, "Failed to init default timer caps");
 }
 
 void *
