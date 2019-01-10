@@ -10,6 +10,26 @@
  * @TAG(DATA61_BSD)
  */
 
+/** @file VCPU benchmark VMM.
+ *
+ * This file acts as a VMM for VCPU threads which it will manage and support.
+ * These VCPU threads will execute and perform various operations and record the
+ * cycle counts for them, and then report the results back to this VMM.
+ *
+ * The reason why multiple guests are supported is because eventually we want to
+ * update this app to launch the guest VCPU threads in their own IPA address
+ * spaces so that we can benchmark a full world switch between two (or more)
+ * guests.
+ *
+ * Multi-guest support is already supported but the actual benchmarks for the
+ * world switch between VCPU threads aren't implemented since there's currently
+ * no trivial way to launch a child process within an sel4bench subapp.
+ *
+ * This app also inherently documents several "interesting" (?) cache and other
+ * issues when IPC-ing and doing unorthodox things between a native thread and a
+ * VCPU thread within the same IPA address space.
+ */
+
 #include <autoconf.h>
 #include <allocman/vka.h>
 #include <allocman/bootstrap.h>
