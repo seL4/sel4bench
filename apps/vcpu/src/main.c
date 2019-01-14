@@ -589,12 +589,12 @@ get_ccnt_read_overhead_avg(void)
     max_overhead = 0;
     total_overhead = 0;
 
-    prev_stamp = vcpu_bm_get_current_timestamp();
+    SEL4BENCH_READ_CCNT(prev_stamp);
 
     for (int i = 0; i < N_ITERATIONS; i++) {
         ccnt_t curr_stamp, curr_overhead;
 
-        curr_stamp = vcpu_bm_get_current_timestamp();
+        SEL4BENCH_READ_CCNT(curr_stamp);
         curr_overhead = curr_stamp - prev_stamp;
 
 
