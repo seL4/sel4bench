@@ -117,6 +117,7 @@ typedef struct _vcpu_benchmark_results {
 } vcpu_benchmark_results_t;
 
 typedef struct vcpu_benchmark_overall_results_ {
+    ccnt_t ccnt_read_overhead;
     vcpu_benchmark_results_t results[VCPU_BENCHMARK_N_BENCHMARKS];
 } vcpu_benchmark_overall_results_t;
 

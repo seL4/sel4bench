@@ -573,12 +573,55 @@ vcpu_bench_setup_log_buffer_frame(env_t *env)
     return 0;
 }
 
+static ccnt_t
+get_ccnt_read_overhead_avg(void)
+{
+    ccnt_t prev_stamp, min_overhead, max_overhead, total_overhead, avg_overhead;
+
+    /* This is separate from the N_ITERATIONS defined for the main benchmark
+     * loops.
+     */
+    const int N_ITERATIONS = 10;
+
+    /* Guarantees that the first use of MIN() will find this too large */
+    min_overhead = 100000;
+    /* Guarantees that the first use of MAX() will find this too small */
+    max_overhead = 0;
+    total_overhead = 0;
+
+    prev_stamp = vcpu_bm_get_current_timestamp();
+
+    for (int i = 0; i < N_ITERATIONS; i++) {
+        ccnt_t curr_stamp, curr_overhead;
+
+        curr_stamp = vcpu_bm_get_current_timestamp();
+        curr_overhead = curr_stamp - prev_stamp;
+
+
+        total_overhead += curr_overhead;
+
+        min_overhead = MIN(min_overhead, curr_overhead);
+        max_overhead = MAX(max_overhead, curr_overhead);
+
+        prev_stamp = curr_stamp;
+    }
+
+    avg_overhead = total_overhead / N_ITERATIONS;
+
+    ZF_LOGI("CCNT read op overheads: "
+            "min %lu, max %lu, avg %lu.\n",
+            min_overhead, max_overhead, avg_overhead);
+
+    return avg_overhead;
+}
+
 int
 main(int argc, char **argv)
 {
     int err, n_guests_exited;
     env_t *env;
     cspacepath_t ep_path, result_ep_path;
+    vcpu_benchmark_overall_results_t *overall_results;
 
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 4,
@@ -592,6 +635,8 @@ main(int argc, char **argv)
     env = benchmark_get_env(argc, argv,
                             sizeof(vcpu_benchmark_overall_results_t),
                             object_freq);
+    overall_results = env->results;
+
     sel4bench_init();
 
     err = vka_alloc_endpoint(&env->delegate_vka, &all_guests_fault_ep_vkao);
@@ -602,6 +647,9 @@ main(int argc, char **argv)
                 VCPU_BENCH_MAX_N_GUESTS, VCPU_BENCH_MAX_N_GUESTS);
         return -1;
     }
+
+    /* Measure CCNT read operation overhead */
+    overall_results->ccnt_read_overhead = get_ccnt_read_overhead_avg();
 
     ZF_LOGD("About to setup PL2 cycle counters.\n");
     vcpu_bm_toggle_cycle_counting_in_pl2(true);

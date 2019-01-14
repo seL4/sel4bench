@@ -88,7 +88,11 @@ process_vcpu_results(void *r)
         /* We already check for outlier results in the benchmark app. */
         .stable = false,
         .name = "VCPU benchmark",
-        .overhead = 0,
+        /* The overhead here is the overhead of the cycle counter register
+         * read operation and not the overhead of the extra code paths which
+         * are enabled in the kernel by BENCHMARK_TRACK_KERNEL_ENTRIES.
+         */
+        .overhead = raw_results->ccnt_read_overhead,
         .ignored = VCPU_BENCH_N_ITERATIONS_IGNORED
     };
 
