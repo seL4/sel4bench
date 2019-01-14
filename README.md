@@ -50,7 +50,7 @@ This is an intra-core ipc round-trip benchmark to check overhead of the kernel s
 
 ## vcpu
 
-In order to run this benchmark, you must compile the kernel to run in EL2 (by passing `-DARM_HYP=true` on the command line) and also notify the build system that you wish to enable this benchmark by passing `-DVCPU=true` on the command line.
+In order to run this benchmark, you must notify the build system that you wish to enable this benchmark by passing `-DVCPU=true` on the command line, which will cause the kernel to be compiled to run in EL2. You must also ensure that you pass `-DHARDWARE=false` to disable the hardware tests.
 
 Since this benchmark will cause the kernel image to be an EL2 image, it will have an impact on the observed numbers for the other benchmark applications as well since they'll be using an unexpected kernel build.
 
