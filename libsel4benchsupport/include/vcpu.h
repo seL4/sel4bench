@@ -52,8 +52,11 @@
 typedef struct vcpu_bm_shared_globals_ {
     /* This is given to the kernel for use as the log buffer for timestamps */
     vka_object_t log_buffer_frame_vkao;
+
+#ifdef CONFIG_BENCHMARK_TRACK_KERNEL_ENTRIES
     /* This is our mapping of the log buffer so we can read the timestamps. */
     volatile benchmark_track_kernel_entry_t *sel4_log_buffer;
+#endif
 } vcpu_bm_shared_globals_t;
 
 extern vcpu_bm_shared_globals_t sg;
