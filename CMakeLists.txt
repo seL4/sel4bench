@@ -88,6 +88,8 @@ if (NOT Sel4benchAllowSettingsOverride)
 
         if (VCPU)
             set(ARM_HYP ON CACHE BOOL "ARM EL2 hypervisor features on or off" FORCE)
+        else()
+            set(AppVcpuBench OFF CACHE BOOL "" FORCE)
         endif()
 
         if(AARCH64)
@@ -164,6 +166,7 @@ if (NOT Sel4benchAllowSettingsOverride)
         set(AppHardwareBench ON CACHE BOOL "" FORCE)
     elseif(VCPU)
         # The VCPU benchmarks require the kernel entry and exit timestamp feature.
+        set(AppVcpuBench ON CACHE BOOL "" FORCE)
         set(KernelBenchmarks "track_kernel_entries" CACHE STRING "" FORCE)
     else()
         set(KernelBenchmarks "none" CACHE STRING "" FORCE)

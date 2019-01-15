@@ -18,7 +18,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 set(configure_string "")
 config_option(AppVcpuBench APP_VCPU_BENCH
     "Application to benchmark seL4 VCPU performance."
-    DEFAULT ON
+    DEFAULT OFF
     DEPENDS "DefaultBenchDeps;KernelSel4ArchAarch64;KernelArmHypervisorSupport;KernelBenchmarksTrackKernelEntries")
 add_config_library(sel4benchvcpuconfig "${configure_string}")
 
