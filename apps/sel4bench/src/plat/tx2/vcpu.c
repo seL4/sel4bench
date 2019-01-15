@@ -112,6 +112,7 @@ process_vcpu_results(void *r)
     return array;
 }
 
+#ifdef CONFIG_APP_VCPU_BENCH
 static benchmark_t vcpu_benchmark = {
     .name = "vcpu",
     .enabled = config_set(CONFIG_APP_VCPU_BENCH),
@@ -127,3 +128,4 @@ vcpu_benchmark_new(void)
 {
    return &vcpu_benchmark;
 }
+#endif
