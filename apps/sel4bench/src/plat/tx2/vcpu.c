@@ -15,11 +15,11 @@
 #include <sel4bench/sel4bench.h>
 #include <utils/util.h>
 
-#include "benchmark.h"
-#include "json.h"
-#include "math.h"
-#include "printing.h"
-#include "processing.h"
+#include "../../benchmark.h"
+#include "../../json.h"
+#include "../../math.h"
+#include "../../printing.h"
+#include "../../processing.h"
 
 #define VCPU_BENCHMARK_N_PARAMS     (0)
 
