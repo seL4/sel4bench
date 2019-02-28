@@ -33,8 +33,9 @@
 /* benchmarking environment */
 static env_t env = {{0}};
 
-/* dummy global for libsel4muslcsys */
+/* dummy globals for libsel4muslcsys */
 char _cpio_archive[1];
+char _cpio_archive_end[1];
 
 /* so malloc works */
 #define MORE_CORE_SIZE 3000000
