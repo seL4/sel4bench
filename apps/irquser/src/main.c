@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 
     /* start the spinner process */
     sel4utils_create_word_args(strings, spinner_argv, 1, (seL4_Word) current_time_remote);
-    error = sel4utils_spawn_process(&spinner_process, &env->slab_vka, &env->vspace, 1, spinner_argv, 1);
+    error = benchmark_spawn_process(&spinner_process, &env->slab_vka, &env->vspace, 1, spinner_argv, 1);
     if (error) {
         ZF_LOGF("Failed to start spinner process");
     }

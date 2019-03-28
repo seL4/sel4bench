@@ -9,6 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
+
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
 
@@ -16,6 +17,8 @@
 
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/io.h>
+#include <sel4runtime.h>
+#include <sel4utils/helpers.h>
 #include <sel4utils/process.h>
 #include <serial_server/client.h>
 #include <stdarg.h>
@@ -242,6 +245,88 @@ void benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
             abort();
         }
     }
+}
+
+/*
+ * We use sel4runtime to create the TLS for the thread as though it
+ * were in our address space and then copy the contents into the
+ * remote address space.
+ *
+ * This causes a few fields (the TLS references to itself and the
+ * other TLS data) to use the incorrect addresses.
+ *
+ * Only the reference to self needs to be recorded correctly, so we
+ * calculate what the value should be for the remote address space
+ * before copying it along with the rest of the TLS into place.
+ *
+ * We then determine the tp value for the remote address space before
+ * and set the TLS base before starting the process as normal.
+ */
+int benchmark_spawn_process(sel4utils_process_t *process, vka_t *vka, vspace_t *vspace, int argc,
+                            char *argv[], int resume)
+{
+    size_t tls_size = sel4runtime_get_tls_size();
+    if (tls_size > PAGE_SIZE_4K) {
+        ZF_LOGE("TLS requires more than one page. (%zu/%zu)", tls_size, PAGE_SIZE_4K);
+        return -1;
+    }
+
+    // Create local copy of TLS, limited to 4K.
+    unsigned char local_tls[PAGE_SIZE_4K] = {};
+    uintptr_t local_tp = (uintptr_t)sel4runtime_write_tls_image(&local_tls);
+    size_t tp_offset = local_tp - (uintptr_t) &local_tls[0];
+    sel4runtime_set_tls_variable(
+        local_tp,
+        __sel4_ipc_buffer,
+        (seL4_IPCBuffer *)process->thread.ipc_buffer_addr
+    );
+
+    // Get the relevant addresses for the destination.
+    uintptr_t initial_stack_pointer = (uintptr_t)process->thread.stack_top - sizeof(seL4_Word);
+    uintptr_t dest_tls_addr = initial_stack_pointer - tls_size;
+    uintptr_t dest_tp = dest_tls_addr + tp_offset;
+
+#if defined(CONFIG_ARCH_X86)
+    // Overwrite the self reference for x86 (needed to dereference TLS).
+    *(void **)(local_tp) = (void *) dest_tp;
+#endif
+
+    // Copy TLS onto thread stack.
+    int error = sel4utils_stack_write(
+        vspace,
+        &process->vspace,
+        vka,
+        local_tls,
+        tls_size,
+        &initial_stack_pointer
+    );
+    if (error) {
+        return -1;
+    }
+
+    assert(dest_tls_addr == initial_stack_pointer);
+
+    /* move the stack pointer down to a place we can write to.
+     * to be compatible with as many architectures as possible
+     * we need to ensure double word alignment */
+    process->thread.stack_top = (void *) ALIGN_DOWN(initial_stack_pointer - sizeof(seL4_Word), STACK_CALL_ALIGNMENT);
+
+    error = sel4utils_spawn_process(process, vka, vspace, argc, argv, false);
+    if (error) {
+        return error;
+    }
+
+    // Configure TLS base for the thread.
+    error = seL4_TCB_SetTLSBase(process->thread.tcb.cptr, dest_tp);
+    if (error) {
+        return error;
+    }
+
+    if (resume) {
+        error = seL4_TCB_Resume(process->thread.tcb.cptr);
+    }
+
+    return error;
 }
 
 static int get_untyped_count(void *data)

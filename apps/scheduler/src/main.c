@@ -153,7 +153,7 @@ static void benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
 
     sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, remote_ep, (seL4_Word) remote_start);
 
-    error = sel4utils_spawn_process(&process, &env->slab_vka, &env->vspace, N_YIELD_ARGS, argv, 1);
+    error = benchmark_spawn_process(&process, &env->slab_vka, &env->vspace, N_YIELD_ARGS, argv, 1);
     assert(error == seL4_NoError);
 
     benchmark_yield(ep, results, (volatile ccnt_t *) start);
@@ -252,7 +252,7 @@ static void benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce
         error = sel4utils_start_thread(&low, (sel4utils_thread_entry_fn) low_fn, (void *) N_LOW_ARGS, (void *) low_argv, 1);
         assert(error == seL4_NoError);
 
-        error = sel4utils_spawn_process(&high, &env->slab_vka, &env->vspace, N_HIGH_ARGS, high_argv, 1);
+        error = benchmark_spawn_process(&high, &env->slab_vka, &env->vspace, N_HIGH_ARGS, high_argv, 1);
         assert(error == seL4_NoError);
 
         benchmark_wait_children(ep, "children of scheduler benchmark", 2);

@@ -115,6 +115,16 @@ void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, ch
                                 sel4utils_thread_t *thread);
 
 /*
+ * Spawn a thread or process within a shallow address space.
+ *
+ * This ensures that TLS is configured correctly within the address space
+ * when it executes. This is needed to allow the thread to determine the
+ * address of its IPC buffer.
+ */
+int benchmark_spawn_process(sel4utils_process_t *process, vka_t *vka, vspace_t *vspace, int argc,
+                            char *argv[], int resume);
+
+/*
  * Wait for n child threads/processes to terminate successfully.
  *
  * The child thread/processes must signal on ep when finished, *and* have ep also

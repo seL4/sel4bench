@@ -211,7 +211,7 @@ static void run_bench_child_proc(env_t *env,
                                 )
 {
 
-    if (sel4utils_spawn_process(&proc->process, &env->delegate_vka, &env->vspace,
+    if (benchmark_spawn_process(&proc->process, &env->delegate_vka, &env->vspace,
                                 NUM_ARGS, proc->argv, 1) != 0) {
         ZF_LOGF("Failed to spawn client\n");
     }

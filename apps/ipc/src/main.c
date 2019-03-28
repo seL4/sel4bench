@@ -277,7 +277,7 @@ void run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
     timing_init();
 
     /* start processes */
-    int error = sel4utils_spawn_process(&server->process, &env->slab_vka, &env->vspace, NUM_ARGS,
+    int error = benchmark_spawn_process(&server->process, &env->slab_vka, &env->vspace, NUM_ARGS,
                                         server->argv, 1);
     ZF_LOGF_IF(error, "Failed to spawn server\n");
 
@@ -293,7 +293,7 @@ void run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
         }
     }
 
-    error = sel4utils_spawn_process(&client->process, &env->slab_vka, &env->vspace, NUM_ARGS, client->argv, 1);
+    error = benchmark_spawn_process(&client->process, &env->slab_vka, &env->vspace, NUM_ARGS, client->argv, 1);
     ZF_LOGF_IF(error, "Failed to spawn client\n");
 
     /* get results */
