@@ -26,6 +26,7 @@ target_link_libraries(
     sel4benchsupport
     Configuration
     muslc
+    sel4runtime
     sel4allocman
     sel4bench
     sel4muslcsys
