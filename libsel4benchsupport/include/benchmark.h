@@ -36,7 +36,7 @@ typedef struct env {
     vka_t delegate_vka;
     /* vspace interface for managing virtual memory in the benchmark */
     vspace_t vspace;
-    /* intialised allocman that backs the vka interface */
+    /* initialised allocman that backs the vka interface */
     allocman_t *allocman;
     /* minimal simple implementation that backs the default timer */
     simple_t simple;

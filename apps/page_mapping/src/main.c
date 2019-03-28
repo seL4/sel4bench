@@ -304,11 +304,11 @@ int main(int argc, char *argv[])
             }
             vka_cnode_revoke(&untyped_path);
 
-            /* Mannually set next free slot to make sure untyped cap is set
+            /* Manually set next free slot to make sure untyped cap is set
              * at the same slot every time*/
             proc.process.cspace_next_free--;
 
-            /* suspend proc to be resued */
+            /* suspend proc to be reused */
             seL4_TCB_Suspend(proc.process.thread.tcb.cptr);
         }
     }
