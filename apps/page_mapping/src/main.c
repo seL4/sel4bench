@@ -27,8 +27,8 @@
 
 #define PAGE_PER_TABLE BIT(seL4_PageTableBits - seL4_WordSizeBits)
 #define untyped_retype_root(a,b,c,e)\
-		seL4_Untyped_Retype(a,b,c,SEL4UTILS_CNODE_SLOT,\
-						SEL4UTILS_CNODE_SLOT,DEFAULT_DEPTH,e,1)
+        seL4_Untyped_Retype(a,b,c,SEL4UTILS_CNODE_SLOT,\
+                        SEL4UTILS_CNODE_SLOT,DEFAULT_DEPTH,e,1)
 #define NUM_PAGE_TABLE(npage) DIV_ROUND_UP((npage), PAGE_PER_TABLE)
 
 typedef struct helper_thread {
@@ -40,9 +40,8 @@ typedef struct helper_thread {
     char argv_strings[NUM_ARGS][WORD_STRING_SIZE];
 } helper_thread_t;
 
-static void inline
-prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped,
-                   seL4_CPtr *free_slot)
+static void inline prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped,
+                                      seL4_CPtr *free_slot)
 {
     long err UNUSED;
     for (int i = 0; i < NUM_PAGE_TABLE(npage); i++) {
@@ -87,9 +86,8 @@ prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyped,
     }
 }
 
-static void inline
-prepare_pages(int npage, seL4_CPtr untyped,
-              seL4_CPtr *free_slot)
+static void inline prepare_pages(int npage, seL4_CPtr untyped,
+                                 seL4_CPtr *free_slot)
 {
     long err UNUSED;
     for (int i = 0; i < npage; i++) {
@@ -101,8 +99,7 @@ prepare_pages(int npage, seL4_CPtr untyped,
     }
 }
 
-static void inline
-map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
+static void inline map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
 {
     long err UNUSED;
     for (int i = 0; i < npage; i++) {
@@ -115,15 +112,15 @@ map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
 }
 
 #define PROT_UNPROT_NPAGE(func, right)\
-	static void inline func(seL4_CPtr page_cap, int npage){\
-		long err UNUSED;\
-		for(int i = 0; i < npage; i++){\
-			err = seL4_ARCH_Page_Remap(page_cap, SEL4UTILS_PD_SLOT, right,\
-							seL4_ARCH_Default_VMAttributes);\
-			assert(err == 0);\
-			page_cap++;\
-		}\
-	}
+    static void inline func(seL4_CPtr page_cap, int npage){\
+        long err UNUSED;\
+        for(int i = 0; i < npage; i++){\
+            err = seL4_ARCH_Page_Remap(page_cap, SEL4UTILS_PD_SLOT, right,\
+                            seL4_ARCH_Default_VMAttributes);\
+            assert(err == 0);\
+            page_cap++;\
+        }\
+    }
 PROT_UNPROT_NPAGE(prot_pages, seL4_CanRead)
 PROT_UNPROT_NPAGE(unprot_pages, seL4_AllRights)
 
@@ -208,12 +205,11 @@ bench_proc(int argc UNUSED, char *argv[])
     sel4bench_destroy();
 }
 
-static void
-run_bench_child_proc(env_t *env,
-                     cspacepath_t *result_ep_path,
-                     ccnt_t result[NPHASE],
-                     helper_thread_t *proc
-                    )
+static void run_bench_child_proc(env_t *env,
+                                 cspacepath_t *result_ep_path,
+                                 ccnt_t result[NPHASE],
+                                 helper_thread_t *proc
+                                )
 {
 
     if (sel4utils_spawn_process(&proc->process, &env->delegate_vka, &env->vspace,
@@ -227,8 +223,7 @@ run_bench_child_proc(env_t *env,
     }
 }
 
-static void
-measure_overhead(page_mapping_results_t *results)
+static void measure_overhead(page_mapping_results_t *results)
 {
     ccnt_t start, end;
 
@@ -247,8 +242,7 @@ measure_overhead(page_mapping_results_t *results)
     sel4bench_destroy();
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     env_t *env;
     page_mapping_results_t *results;

@@ -56,8 +56,7 @@ size_t benchmark_write(char *data, int count)
     return (size_t) serial_server_write(&context, data, count);
 }
 
-NORETURN void
-benchmark_finished(int exit_code)
+NORETURN void benchmark_finished(int exit_code)
 {
     /* stop the timer */
     if (env.timer_initialised) {
@@ -74,8 +73,7 @@ benchmark_finished(int exit_code)
     while (true);
 }
 
-static void
-parse_code_region(sel4utils_elf_region_t *region)
+static void parse_code_region(sel4utils_elf_region_t *region)
 {
     extern char __executable_start[];
     extern char _etext[];
@@ -87,8 +85,7 @@ parse_code_region(sel4utils_elf_region_t *region)
     region->cacheable = true;
 }
 
-static size_t
-add_frames(void *frames[], size_t start, uintptr_t addr, size_t num_frames)
+static size_t add_frames(void *frames[], size_t start, uintptr_t addr, size_t num_frames)
 {
     size_t i;
     for (i = start; i < (num_frames + start); i++) {
@@ -99,15 +96,15 @@ add_frames(void *frames[], size_t start, uintptr_t addr, size_t num_frames)
     return i;
 }
 
-static allocman_t*
-init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
+static allocman_t *init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
 {
     /* set up malloc area */
     morecore_area = app_morecore_area;
     morecore_size = MORE_CORE_SIZE;
 
     /* set up allocator */
-    allocman_t *allocator = bootstrap_new_1level_simple(simple, CONFIG_SEL4UTILS_CSPACE_SIZE_BITS, ALLOCATOR_STATIC_POOL_SIZE,
+    allocman_t *allocator = bootstrap_new_1level_simple(simple, CONFIG_SEL4UTILS_CSPACE_SIZE_BITS,
+                                                        ALLOCATOR_STATIC_POOL_SIZE,
                                                         allocator_mem_pool);
 
     ZF_LOGF_IF(!allocator, "Failed to initialize allocator");
@@ -119,8 +116,7 @@ init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
     return allocator;
 }
 
-static void
-init_allocator_vspace(allocman_t *allocator, vspace_t *vspace)
+static void init_allocator_vspace(allocman_t *allocator, vspace_t *vspace)
 {
     int error;
     /* Create virtual pool */
@@ -136,10 +132,9 @@ init_allocator_vspace(allocman_t *allocator, vspace_t *vspace)
     bootstrap_configure_virtual_pool(allocator, vaddr, ALLOCMAN_VIRTUAL_SIZE, SEL4UTILS_PD_SLOT);
 }
 
-static void
-init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
-            size_t stack_pages, uintptr_t stack_vaddr, uintptr_t results_addr,
-            size_t results_bytes, uintptr_t args_vaddr)
+static void init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
+                        size_t stack_pages, uintptr_t stack_vaddr, uintptr_t results_addr,
+                        size_t results_bytes, uintptr_t args_vaddr)
 {
     int index;
     size_t results_size, ipc_buffer_size;
@@ -159,8 +154,7 @@ init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *data,
     }
 }
 
-static seL4_Error
-get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
+static seL4_Error get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
     env_t *env = data;
     seL4_CPtr cap = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, irq, PS_INTERRUPT);
@@ -173,8 +167,7 @@ get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
     return seL4_NoError;
 }
 
-static inline sel4utils_process_config_t
-get_process_config(env_t *env, uint8_t prio, void *entry_point)
+static inline sel4utils_process_config_t get_process_config(env_t *env, uint8_t prio, void *entry_point)
 {
     sel4utils_process_config_t config = process_config_new(&env->simple);
     config = process_config_noelf(config, entry_point, 0);
@@ -183,14 +176,13 @@ get_process_config(env_t *env, uint8_t prio, void *entry_point)
     config = process_config_priority(config, prio);
 #ifdef CONFIG_KERNEL_RT
     config.sched_params = sched_params_round_robin(config.sched_params, &env->simple, 0,
-            CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
+                                                   CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
 #endif
     return process_config_mcp(config, prio);
 }
 
-void
-benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point,
-                                char *name)
+void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio, void *entry_point,
+                                     char *name)
 {
     int error;
     sel4utils_process_config_t config = get_process_config(env, prio, entry_point);
@@ -208,10 +200,9 @@ benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_
     NAME_THREAD(process->thread.tcb.cptr, name);
 }
 
-void
-benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
-                                      sel4utils_process_t *thread, uint8_t prio, void *entry_point,
-                                      char *name)
+void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
+                                           sel4utils_process_t *thread, uint8_t prio, void *entry_point,
+                                           char *name)
 {
     int error;
     sel4utils_process_config_t config = get_process_config(env, prio, entry_point);
@@ -224,8 +215,7 @@ benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
     NAME_THREAD(thread->thread.tcb.cptr, name);
 }
 
-void
-benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread)
+void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *name, sel4utils_thread_t *thread)
 {
     sel4utils_thread_config_t config = thread_config_new(&env->simple);
     config = thread_config_fault_endpoint(config, fault_ep);
@@ -234,7 +224,7 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
     config = thread_config_auth(config, simple_get_tcb(&env->simple));
 #ifdef CONFIG_KERNEL_RT
     config.sched_params = sched_params_round_robin(config.sched_params, &env->simple, 0,
-            CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
+                                                   CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
 #endif
     config = thread_config_create_reply(config);
     int error = sel4utils_configure_thread_config(&env->slab_vka, &env->vspace, &env->vspace, config, thread);
@@ -242,8 +232,7 @@ benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, char *n
     NAME_THREAD(thread->tcb.cptr, name);
 }
 
-void
-benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
+void benchmark_wait_children(seL4_CPtr ep, char *name, int num_children)
 {
     for (int i = 0; i < num_children; i++) {
         seL4_MessageInfo_t tag = api_wait(ep, NULL);
@@ -287,7 +276,8 @@ static seL4_CPtr get_nth_untyped(void *data, int n, size_t *size_bits, uintptr_t
     return env->args->untyped_cptr;
 }
 
-static int get_cap_count(void *data) {
+static int get_cap_count(void *data)
+{
     /* Our parent only tells us our first free slot, so we have to work out from that how many
        capabilities we actually have. We assume we have cspace layout from sel4utils_cspace_layout
        and so we have 1 empty null slot, and if we're not on the RT kernel two more unused slots */
@@ -373,7 +363,7 @@ void benchmark_init_timer(env_t *env)
 {
     /* set up irq caps */
     int error = sel4platsupport_init_timer_irqs(&env->slab_vka, &env->simple, env->ntfn.cptr,
-            &env->timer, &env->args->to);
+                                                &env->timer, &env->args->to);
     ZF_LOGF_IF(error, "Failed to init timer irqs");
 
     ps_io_ops_t ops;
@@ -387,8 +377,7 @@ void benchmark_init_timer(env_t *env)
     env->timer_initialised = true;
 }
 
-env_t *
-benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
+env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
 {
     /* parse arguments */
     if (argc < 1) {
@@ -432,8 +421,7 @@ benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq
     return &env;
 }
 
-void
-send_result(seL4_CPtr ep, ccnt_t result)
+void send_result(seL4_CPtr ep, ccnt_t result)
 {
     int length = sizeof(ccnt_t) / sizeof(seL4_Word);
     unsigned int shift = length > 1u ? seL4_WordBits : 0;
@@ -446,8 +434,7 @@ send_result(seL4_CPtr ep, ccnt_t result)
     seL4_Send(ep, tag);
 }
 
-ccnt_t
-get_result(seL4_CPtr ep)
+ccnt_t get_result(seL4_CPtr ep)
 {
     ccnt_t result = 0;
     seL4_MessageInfo_t tag = api_wait(ep, NULL);

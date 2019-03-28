@@ -14,15 +14,21 @@ cmake_minimum_required(VERSION 3.7.2)
 
 project(libsel4benchsupport C)
 
-file(GLOB deps
-    src/*.c
-    src/arch/${KernelArch}/*.c)
+file(GLOB deps src/*.c src/arch/${KernelArch}/*.c)
 
 list(SORT deps)
 
 add_library(sel4benchsupport EXCLUDE_FROM_ALL ${deps})
-target_include_directories(sel4benchsupport PUBLIC
-    "include/"
-    "arch_include/${KernelArch}/"
-    "sel4_arch_include/${KernelSel4Arch}/")
-target_link_libraries(sel4benchsupport Configuration muslc sel4allocman sel4bench sel4muslcsys sel4serialserver)
+target_include_directories(
+    sel4benchsupport
+    PUBLIC "include/" "arch_include/${KernelArch}/" "sel4_arch_include/${KernelSel4Arch}/"
+)
+target_link_libraries(
+    sel4benchsupport
+    Configuration
+    muslc
+    sel4allocman
+    sel4bench
+    sel4muslcsys
+    sel4serialserver
+)

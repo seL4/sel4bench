@@ -26,8 +26,7 @@
 #define N_HIGH_ARGS 4
 #define N_YIELD_ARGS 2
 
-void
-abort(void)
+void abort(void)
 {
     benchmark_finished(EXIT_FAILURE);
 }
@@ -37,8 +36,8 @@ size_t __arch_write(char *data, int count)
     return benchmark_write(data, count);
 }
 
-void
-high_fn(int argc, char **argv) {
+void high_fn(int argc, char **argv)
+{
 
     assert(argc == N_HIGH_ARGS);
     seL4_CPtr produce = (seL4_CPtr) atol(argv[0]);
@@ -59,8 +58,7 @@ high_fn(int argc, char **argv) {
     seL4_Wait(produce, NULL);
 }
 
-void
-low_fn(int argc, char **argv)
+void low_fn(int argc, char **argv)
 {
     assert(argc == N_LOW_ARGS);
     seL4_CPtr produce = (seL4_CPtr) atol(argv[0]);
@@ -83,24 +81,23 @@ low_fn(int argc, char **argv)
     seL4_Wait(produce, NULL);
 }
 
-static void
-yield_fn(int argc, char **argv) {
+static void yield_fn(int argc, char **argv)
+{
 
-   assert(argc == N_YIELD_ARGS);
+    assert(argc == N_YIELD_ARGS);
 
-   seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
-   volatile ccnt_t *end = (volatile ccnt_t *) atol(argv[1]);
+    seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
+    volatile ccnt_t *end = (volatile ccnt_t *) atol(argv[1]);
 
-   for (int i = 0; i < N_RUNS; i++) {
-       SEL4BENCH_READ_CCNT(*end);
-       seL4_Yield();
-   }
+    for (int i = 0; i < N_RUNS; i++) {
+        SEL4BENCH_READ_CCNT(*end);
+        seL4_Yield();
+    }
 
-   seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
-static void
-benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
+static void benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
 {
     ccnt_t start;
     /* run the benchmark */
@@ -113,8 +110,7 @@ benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
     benchmark_wait_children(ep, "yielder", 1);
 }
 
-static void
-benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
+static void benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
 {
     sel4utils_thread_t thread;
     volatile ccnt_t end;
@@ -129,8 +125,7 @@ benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
     seL4_TCB_Suspend(thread.tcb.cptr);
 }
 
-static void
-benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
+static void benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
 {
     sel4utils_process_t process;
     void *start;
@@ -149,7 +144,7 @@ benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
 
     /* share memory for shared variable */
     remote_start = vspace_share_mem(&env->vspace, &process.vspace, start, 1, seL4_PageBits,
-                                  seL4_AllRights, 1);
+                                    seL4_AllRights, 1);
     assert(remote_start != NULL);
 
     /* copy ep cap */
@@ -166,9 +161,8 @@ benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
     seL4_TCB_Suspend(process.thread.tcb.cptr);
 }
 
-static void
-benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume,
-                       ccnt_t results[N_PRIOS][N_RUNS])
+static void benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume,
+                                   ccnt_t results[N_PRIOS][N_RUNS])
 {
     sel4utils_thread_t high, low;
     char high_args_strings[N_HIGH_ARGS][WORD_STRING_SIZE];
@@ -190,7 +184,7 @@ benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr co
         assert(error == seL4_NoError);
 
         sel4utils_create_word_args(low_args_strings, low_argv, N_LOW_ARGS, produce,
-                               (seL4_Word) &start, (seL4_Word) &results[i], ep, consume);
+                                   (seL4_Word) &start, (seL4_Word) &results[i], ep, consume);
 
         error = sel4utils_start_thread(&low, (sel4utils_thread_entry_fn) low_fn, (void *) N_LOW_ARGS, (void *) low_argv, 1);
         assert(error == seL4_NoError);
@@ -204,9 +198,8 @@ benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr co
     seL4_TCB_Suspend(low.tcb.cptr);
 }
 
-static void
-benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume,
-                         ccnt_t results[N_PRIOS][N_RUNS])
+static void benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume,
+                                     ccnt_t results[N_PRIOS][N_RUNS])
 {
     sel4utils_process_t high;
     sel4utils_thread_t low;
@@ -255,7 +248,7 @@ benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr 
         assert(error == 0);
 
         sel4utils_create_word_args(low_args_strings, low_argv, N_LOW_ARGS, produce,
-                               (seL4_Word) start, (seL4_Word) &results[i], ep, consume);
+                                   (seL4_Word) start, (seL4_Word) &results[i], ep, consume);
 
         error = sel4utils_start_thread(&low, (sel4utils_thread_entry_fn) low_fn, (void *) N_LOW_ARGS, (void *) low_argv, 1);
         assert(error == seL4_NoError);
@@ -270,8 +263,7 @@ benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr 
     seL4_TCB_Suspend(low.tcb.cptr);
 }
 
-void
-measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
+void measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
 {
     ccnt_t start, end;
     for (int i = 0; i < N_RUNS; i++) {
@@ -282,8 +274,7 @@ measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
     }
 }
 
-void
-measure_yield_overhead(ccnt_t *results)
+void measure_yield_overhead(ccnt_t *results)
 {
     ccnt_t start, end;
     for (int i = 0; i < N_RUNS; i++) {
@@ -293,8 +284,7 @@ measure_yield_overhead(ccnt_t *results)
     }
 }
 
-void
-benchmark_set_prio_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS], seL4_CPtr auth)
+void benchmark_set_prio_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS], seL4_CPtr auth)
 {
     seL4_Word n_counters = sel4bench_get_num_counters();
     ccnt_t start = 0;
@@ -318,8 +308,7 @@ benchmark_set_prio_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS], seL4_CPtr
 
 }
 
-void
-benchmark_yield_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS])
+void benchmark_yield_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS])
 {
     seL4_Word n_counters = sel4bench_get_num_counters();
     ccnt_t start = 0;
@@ -341,8 +330,7 @@ benchmark_yield_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS])
     }
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     env_t *env;
     UNUSED int error;
@@ -378,9 +366,9 @@ main(int argc, char **argv)
     measure_yield_overhead(results->overhead_ccnt);
 
     benchmark_prio_threads(env, done_ep.cptr, produce.cptr, consume.cptr,
-                               results->thread_results);
+                           results->thread_results);
     benchmark_prio_processes(env, done_ep.cptr, produce.cptr, consume.cptr,
-                                 results->process_results);
+                             results->process_results);
     benchmark_set_prio_average(results->set_prio_average, simple_get_tcb(&env->simple));
 
     /* thread yield benchmarks */

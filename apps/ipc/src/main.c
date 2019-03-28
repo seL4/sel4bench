@@ -56,8 +56,7 @@ typedef struct helper_thread {
     char argv_strings[NUM_ARGS][WORD_STRING_SIZE];
 } helper_thread_t;
 
-void
-abort(void)
+void abort(void)
 {
     benchmark_finished(EXIT_FAILURE);
 }
@@ -67,8 +66,7 @@ size_t __arch_write(char *data, int count)
     return benchmark_write(data, count);
 }
 
-static void
-timing_init(void)
+static void timing_init(void)
 {
     sel4bench_init();
 #ifdef CONFIG_GENERIC_COUNTER
@@ -79,8 +77,7 @@ timing_init(void)
 #endif
 }
 
-void
-timing_destroy(void)
+void timing_destroy(void)
 {
 #ifdef CONFIG_GENERIC_COUNTER
     sel4bench_stop_counters(GENERIC_COUNTER_MASK);
@@ -88,22 +85,19 @@ timing_destroy(void)
 #endif
 }
 
-static inline void
-dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
+static inline void dummy_seL4_Send(seL4_CPtr ep, seL4_MessageInfo_t tag)
 {
     (void)ep;
     (void)tag;
 }
 
-static inline void
-dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag)
+static inline void dummy_seL4_Call(seL4_CPtr ep, seL4_MessageInfo_t tag)
 {
     (void)ep;
     (void)tag;
 }
 
-static inline void
-dummy_seL4_Reply(UNUSED seL4_CPtr reply, seL4_MessageInfo_t tag)
+static inline void dummy_seL4_Reply(UNUSED seL4_CPtr reply, seL4_MessageInfo_t tag)
 {
     (void)tag;
 }
@@ -210,8 +204,7 @@ ipc_recv_func(int argc, char *argv[])
     return 0;
 }
 
-seL4_Word
-ipc_send_func(int argc, char *argv[])
+seL4_Word ipc_send_func(int argc, char *argv[])
 {
     uint32_t i;
     ccnt_t start UNUSED, end UNUSED;
@@ -253,8 +246,7 @@ ipc_send_func(int argc, char *argv[])
     timing_destroy(); \
 } while(0)
 
-static void
-measure_overhead(ipc_results_t *results)
+static void measure_overhead(ipc_results_t *results)
 {
     MEASURE_OVERHEAD(DO_NOP_CALL(0, tag),
                      results->overhead_benchmarks[CALL_OVERHEAD],
@@ -276,18 +268,17 @@ measure_overhead(ipc_results_t *results)
                      seL4_MessageInfo_t tag10 = seL4_MessageInfo_new(0, 0, 0, 10));
 }
 
-void
-run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
-          const benchmark_params_t *params,
-          ccnt_t *ret1, ccnt_t *ret2,
-          helper_thread_t *client, helper_thread_t *server)
+void run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
+               const benchmark_params_t *params,
+               ccnt_t *ret1, ccnt_t *ret2,
+               helper_thread_t *client, helper_thread_t *server)
 {
 
     timing_init();
 
     /* start processes */
     int error = sel4utils_spawn_process(&server->process, &env->slab_vka, &env->vspace, NUM_ARGS,
-                                           server->argv, 1);
+                                        server->argv, 1);
     ZF_LOGF_IF(error, "Failed to spawn server\n");
 
     if (config_set(CONFIG_KERNEL_RT) && params->server_fn != IPC_RECV_FUNC) {
@@ -324,8 +315,7 @@ run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
     timing_destroy();
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     env_t *env;
     vka_object_t ep, result_ep;
@@ -377,9 +367,9 @@ main(int argc, char **argv)
 
     sel4utils_create_word_args(client.argv_strings, client.argv, NUM_ARGS, client.ep, client.result_ep, 0);
     sel4utils_create_word_args(server_process.argv_strings, server_process.argv, NUM_ARGS,
-                                server_process.ep, server_process.result_ep, SEL4UTILS_REPLY_SLOT);
+                               server_process.ep, server_process.result_ep, SEL4UTILS_REPLY_SLOT);
     sel4utils_create_word_args(server_thread.argv_strings, server_thread.argv, NUM_ARGS,
-                                server_thread.ep, server_thread.result_ep, SEL4UTILS_REPLY_SLOT);
+                               server_thread.ep, server_thread.result_ep, SEL4UTILS_REPLY_SLOT);
 
     /* run the benchmark */
     seL4_CPtr auth = simple_get_tcb(&env->simple);
@@ -390,7 +380,7 @@ main(int argc, char **argv)
         ZF_LOGI("Doing iteration %d\n", i);
         ZF_LOGI("--------------------------------------------------\n");
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
-            const struct benchmark_params* params = &benchmark_params[j];
+            const struct benchmark_params *params = &benchmark_params[j];
             ZF_LOGI("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, %s, length %2d\n",
                     params->name,
                     params->direction == DIR_TO ? "client --> server" : "server --> client",

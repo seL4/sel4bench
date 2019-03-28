@@ -60,7 +60,7 @@ typedef struct env {
 env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount]);
 /* signal to the benchmark driver process that we are done */
 NORETURN void benchmark_finished(int exit_code);
- /* Write for benchmarks. prints via a serial server in the initial task */
+/* Write for benchmarks. prints via a serial server in the initial task */
 size_t benchmark_write(char *buf, int count);
 
 /* Initialise the timer for the benchmark to use */
@@ -86,7 +86,7 @@ void benchmark_init_timer(env_t *env);
  * @param fault_ep fault endpoint for the thread
  */
 void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, uint8_t prio,
-                                    void *entry_point, char *name);
+                                     void *entry_point, char *name);
 
 /*
  * Create a new thread in a shallow processes address space.
@@ -99,8 +99,8 @@ void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, u
  * @param name a name for the thread for debugging (this will be passed to seL4_DebugNameThread)
  */
 void benchmark_configure_thread_in_process(env_t *env, sel4utils_process_t *process,
-                                          sel4utils_process_t *thread, uint8_t prio,
-                                          void *entry_point, char *name);
+                                           sel4utils_process_t *thread, uint8_t prio,
+                                           void *entry_point, char *name);
 
 /*
  * Configure a thread in the address space of the current environment.

@@ -25,8 +25,7 @@
 
 #define INTERRUPT_PERIOD_NS (10 * NS_IN_MS)
 
-void
-abort(void)
+void abort(void)
 {
     benchmark_finished(EXIT_FAILURE);
 }
@@ -36,8 +35,7 @@ size_t __arch_write(char *data, int count)
     return benchmark_write(data, count);
 }
 
-void
-spinner_fn(int argc, char **argv)
+void spinner_fn(int argc, char **argv)
 {
     sel4bench_init();
     if (argc != 1) {
@@ -59,8 +57,7 @@ static seL4_CPtr timer_signal;
 /* timer */
 seL4_timer_t *timer;
 
-void
-ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
+void ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
 {
     seL4_Word start, end_low;
     ccnt_t end;
@@ -73,15 +70,14 @@ ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
         SEL4BENCH_READ_CCNT(end);
         sel4platsupport_handle_timer_irq(timer, badge);
         end_low = (seL4_Word) end;
-        start = (seL4_Word) *current_time;
+        start = (seL4_Word) * current_time;
         results[i] = end_low - start;
     }
 
     seL4_Signal(done_ep);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     env_t *env;
     irquser_results_t *results;
@@ -147,7 +143,8 @@ main(int argc, char **argv)
     char *spinner_argv[1];
 
     sel4utils_create_word_args(strings, spinner_argv, 1, (seL4_Word) local_current_time);
-    error = sel4utils_start_thread(&spinner, (sel4utils_thread_entry_fn) spinner_fn, (void *) 1, (void *) spinner_argv, true);
+    error = sel4utils_start_thread(&spinner, (sel4utils_thread_entry_fn) spinner_fn, (void *) 1, (void *) spinner_argv,
+                                   true);
     assert(!error);
 
     benchmark_wait_children(endpoint.cptr, "child of irq-user", 1);
@@ -162,7 +159,7 @@ main(int argc, char **argv)
     /* now run the benchmark again, but run the spinner in another address space */
 
     /* restart ticker */
-    error = sel4utils_start_thread(&ticker,  (sel4utils_thread_entry_fn) ticker_fn, (void *) results->process_results,
+    error = sel4utils_start_thread(&ticker, (sel4utils_thread_entry_fn) ticker_fn, (void *) results->process_results,
                                    (void *) local_current_time, true);
     assert(!error);
 
