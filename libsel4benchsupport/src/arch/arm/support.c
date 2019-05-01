@@ -26,8 +26,21 @@ benchmark_arch_get_timers(env_t *env, ps_io_ops_t ops)
     ZF_LOGF_IF(error, "Failed to create timeout timer");
 }
 
-void
-benchmark_arch_get_simple(arch_simple_t *simple)
+static seL4_Error get_irq_trigger(void *data, int irq, int trigger, seL4_CNode cnode,
+                                  seL4_Word index, uint8_t depth)
 {
-    /* nothing to do */
+    env_t *env = data;
+    seL4_CPtr cap = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, irq, PS_TRIGGER);
+    cspacepath_t path;
+    vka_cspace_make_path(&env->slab_vka, cap, &path);
+    seL4_Error error = seL4_CNode_Move(cnode, index, depth,
+                                       path.root, path.capPtr, path.capDepth);
+    ZF_LOGF_IF(error != seL4_NoError, "Failed to move irq cap");
+
+    return seL4_NoError;
+}
+
+void benchmark_arch_get_simple(arch_simple_t *simple)
+{
+    simple->irq_trigger = get_irq_trigger;
 }
