@@ -21,10 +21,7 @@
 #define READ_CYCLE_COUNTER(_r) do {                                 \
     SEL4BENCH_READ_CCNT(_r);                                        \
 } while(0)
-#define RESET_CYCLE_COUNTER do {                                    \
-    sel4bench_private_write_pmcr(SEL4BENCH_ARMV7A_PMCR_RESET_CCNT | \
-        SEL4BENCH_ARMV7A_PMCR_ENABLE);                              \
-} while(0)
+#define RESET_CYCLE_COUNTER SEL4BENCH_RESET_CCNT
 #define OVERHEAD_FIXUP(_c, _o) ((_c) - (_o))
 
 static inline void smp_benchmark_ping(seL4_CPtr ep)
