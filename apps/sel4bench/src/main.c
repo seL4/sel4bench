@@ -215,8 +215,8 @@ void find_untyped(vka_t *vka, vka_object_t *untyped)
 {
     int error = 0;
 
-    /* find the largest untyped */
-    for (uint8_t size_bits = seL4_WordBits - 1; size_bits > seL4_PageBits; size_bits--) {
+    /* find  a large untyped */
+    for (uint8_t size_bits = seL4_MaxUntypedBits; size_bits > seL4_PageBits; size_bits--) {
         error = vka_alloc_untyped(vka, size_bits, untyped);
         if (error == 0) {
             break;
