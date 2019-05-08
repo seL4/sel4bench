@@ -10,8 +10,7 @@
  * @TAG(DATA61_GPL)
  */
 
-#ifndef __SELBENCH_ARCH_SMP_H
-#define __SELBENCH_ARCH_SMP_H
+#pragma once
 
 #include <sel4_arch/smp.h>
 
@@ -23,10 +22,7 @@
 #define RESET_CYCLE_COUNTER
 #define OVERHEAD_FIXUP(_c, _o) (_c)
 
-static inline ccnt_t
-smp_benchmark_check_overhead(void)
+static inline ccnt_t smp_benchmark_check_overhead(void)
 {
     return 0;
 }
-
-#endif /* __SELBENCH_ARCH_SMP_H */

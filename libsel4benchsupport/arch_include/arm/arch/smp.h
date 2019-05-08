@@ -10,8 +10,7 @@
  * @TAG(DATA61_GPL)
  */
 
-#ifndef __SELBENCH_ARCH_SMP_H
-#define __SELBENCH_ARCH_SMP_H
+#pragma once
 
 #include <autoconf.h>
 #include <benchmark.h>
@@ -28,14 +27,12 @@
 } while(0)
 #define OVERHEAD_FIXUP(_c, _o) ((_c) - (_o))
 
-static inline void
-smp_benchmark_ping(seL4_CPtr ep)
+static inline void smp_benchmark_ping(seL4_CPtr ep)
 {
     seL4_CallWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL);
 }
 
-static inline void
-smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
+static inline void smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
 {
 #if CONFIG_KERNEL_RT
     seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL, NULL, reply);
@@ -44,8 +41,7 @@ smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
 #endif
 }
 
-static inline ccnt_t
-smp_benchmark_check_overhead(void)
+static inline ccnt_t smp_benchmark_check_overhead(void)
 {
     uint32_t ccnt_overhead;
     uint32_t begin, end, total = 0;
@@ -73,5 +69,3 @@ smp_benchmark_check_overhead(void)
 
     return total / OVERHEAD_MEAS_RUNS;
 }
-
-#endif /* __SELBENCH_ARCH_SMP_H */

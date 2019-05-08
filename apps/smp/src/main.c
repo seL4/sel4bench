@@ -42,24 +42,21 @@ struct _pp_threads {
     per_core_data_t pp_ipcs ALIGN(CACHE_LN_SZ);
 } pp_threads[CONFIG_MAX_NUM_NODES];
 
-static inline void
-wait_for_benchmark(env_t *env)
+static inline void wait_for_benchmark(env_t *env)
 {
     seL4_Word badge;
     seL4_Wait(env->ntfn.cptr, &badge);
     sel4platsupport_handle_timer_irq(&env->timer, badge);
 }
 
-static inline void
-delay_warmup_period(env_t *env)
+static inline void delay_warmup_period(env_t *env)
 {
-    for (int i = 0; i < WARMUPS; i++ ) {
+    for (int i = 0; i < WARMUPS; i++) {
         wait_for_benchmark(env);
     }
 }
 
-static inline void
-ipc_normal_delay(int id)
+static inline void ipc_normal_delay(int id)
 {
     ccnt_t start, now, delay;
 
@@ -72,8 +69,7 @@ ipc_normal_delay(int id)
     }
 }
 
-void *
-ping_fn(int argc, char **argv, void *x)
+void *ping_fn(int argc, char **argv, void *x)
 {
     assert(argc == N_ARGS);
     seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
@@ -91,8 +87,7 @@ ping_fn(int argc, char **argv, void *x)
     /* we would never return... */
 }
 
-void *
-pong_fn(int argc, char **argv, void *x)
+void *pong_fn(int argc, char **argv, void *x)
 {
     assert(argc == N_ARGS);
     seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
@@ -114,8 +109,7 @@ pong_fn(int argc, char **argv, void *x)
     /* we would never return... */
 }
 
-static inline void
-benchmark_multicore_reset_test(int nr_cores)
+static inline void benchmark_multicore_reset_test(int nr_cores)
 {
     int error;
     for (int i = 0; i < nr_cores; i++) {
@@ -143,8 +137,7 @@ benchmark_multicore_reset_test(int nr_cores)
     }
 }
 
-static inline ccnt_t
-benchmark_multicore_do_ping_pong(env_t *env, int nr_cores)
+static inline ccnt_t benchmark_multicore_do_ping_pong(env_t *env, int nr_cores)
 {
     ccnt_t total = 0;
     uint32_t start[nr_cores], end[nr_cores];
@@ -164,8 +157,7 @@ benchmark_multicore_do_ping_pong(env_t *env, int nr_cores)
     return total;
 }
 
-static void
-benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
+static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
 {
     int nr_cores = simple_get_core_count(&env->simple);
     int error;
@@ -185,7 +177,7 @@ benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
 
             /* checkpoint pong */
             sel4utils_checkpoint_thread(&pp_threads[core_idx].pong,
-                    &pp_threads[core_idx].pong_cp, false);
+                                        &pp_threads[core_idx].pong_cp, false);
 
             /* checkpoint ping */
             seL4_TCB_Resume(pp_threads[core_idx].ping.tcb.cptr);
@@ -201,8 +193,7 @@ benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
     }
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     env_t *env;
     UNUSED int error;

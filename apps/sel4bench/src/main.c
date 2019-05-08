@@ -54,8 +54,7 @@ static sel4utils_alloc_data_t data;
 /* environment for the benchmark runner, set up in main() */
 static env_t global_env;
 
-static void
-setup_fault_handler(env_t *env)
+static void setup_fault_handler(env_t *env)
 {
     int error;
     sel4utils_thread_t fault_handler;
@@ -98,15 +97,14 @@ setup_fault_handler(env_t *env)
     }
 }
 
-int
-run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, benchmark_args_t *args)
+int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, benchmark_args_t *args)
 {
     int error;
     sel4utils_process_t process;
 
     /* configure benchmark process */
     sel4utils_process_config_t config = process_config_default_simple(&env->simple, benchmark->name,
-            seL4_MaxPrio);
+                                                                      seL4_MaxPrio);
     config = process_config_mcp(config, seL4_MaxPrio);
     error = sel4utils_configure_process_custom(&process, &env->vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process for %s benchmark", benchmark->name);
@@ -138,7 +136,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
 
     /* set up shared memory for results */
     args->results = vspace_share_mem(&env->vspace, &process.vspace, local_results_vaddr,
-                                    benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
+                                     benchmark->results_pages, seL4_PageBits, seL4_AllRights, true);
 
     /* do benchmark specific init */
     benchmark->init(&env->vka, &env->simple, &process);
@@ -173,7 +171,7 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
     /* free results in target vspace (they will still be in ours) */
     vspace_unmap_pages(&process.vspace, args->results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
     vspace_unmap_pages(&process.vspace, remote_args_vaddr, 1, seL4_PageBits, VSPACE_FREE);
-     /* clean up */
+    /* clean up */
 
     /* revoke the untypeds so it's clean for the next benchmark */
     cspacepath_t path;
@@ -183,11 +181,10 @@ run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr, ben
     /* destroy the process */
     sel4utils_destroy_process(&process, &env->vka);
 
-   return result;
+    return result;
 }
 
-json_t *
-launch_benchmark(benchmark_t *benchmark, env_t *env)
+json_t *launch_benchmark(benchmark_t *benchmark, env_t *env)
 {
     printf("\n%s Benchmarks\n==============\n\n", benchmark->name);
 
@@ -214,8 +211,7 @@ launch_benchmark(benchmark_t *benchmark, env_t *env)
     return json;
 }
 
-void
-find_untyped(vka_t *vka, vka_object_t *untyped)
+void find_untyped(vka_t *vka, vka_object_t *untyped)
 {
     int error = 0;
 
@@ -229,8 +225,7 @@ find_untyped(vka_t *vka, vka_object_t *untyped)
     ZF_LOGF_IF(error, "Failed to find free untyped\n");
 }
 
-void
-find_timer_caps(env_t *env)
+void find_timer_caps(env_t *env)
 {
     /* init the default caps */
     int error = sel4platsupport_init_default_timer_caps(&env->vka, &env->vspace, &env->simple, &env->to);
@@ -238,8 +233,7 @@ find_timer_caps(env_t *env)
     ZF_LOGF_IF(error, "Failed to init default timer caps");
 }
 
-void *
-main_continued(void *arg)
+void *main_continued(void *arg)
 {
 
     setup_fault_handler(&global_env);
@@ -321,7 +315,8 @@ int main(void)
 
     /* set up malloc */
     sel4utils_res_t malloc_res;
-    error = sel4utils_reserve_range_no_alloc(&global_env.vspace, &malloc_res, seL4_LargePageBits, seL4_AllRights, 1, &muslc_brk_reservation_start);
+    error = sel4utils_reserve_range_no_alloc(&global_env.vspace, &malloc_res, seL4_LargePageBits, seL4_AllRights, 1,
+                                             &muslc_brk_reservation_start);
     muslc_this_vspace = &global_env.vspace;
     muslc_brk_reservation.res = &malloc_res;
     ZF_LOGF_IF(error, "Failed to set up dynamic malloc");
@@ -335,7 +330,7 @@ int main(void)
     platsupport_serial_setup_simple(&global_env.vspace, &global_env.simple, &global_env.vka);
 
     error = serial_server_parent_spawn_thread(&global_env.simple, &global_env.vka,
-            &global_env.vspace, seL4_MaxPrio);
+                                              &global_env.vspace, seL4_MaxPrio);
     ZF_LOGF_IF(error, "Failed to start serial server");
 
     /* Print welcome banner. */
@@ -344,7 +339,7 @@ int main(void)
     printf("%s==============%s\n", A_FG_G, A_FG_W);
     printf("\n");
 
-    if(plat_setup) {
+    if (plat_setup) {
         plat_setup(&global_env);
     }
 
