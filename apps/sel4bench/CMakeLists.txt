@@ -43,7 +43,24 @@ if(Sel4Bench)
     MakeCPIO(archive.o "${sel4benchapps}")
     add_executable(sel4benchapp EXCLUDE_FROM_ALL ${static} archive.o)
 
-    target_link_libraries(sel4benchapp Configuration jansson sel4bench sel4 sel4muslcsys)
+    target_link_libraries(sel4benchapp
+        jansson
+        sel4bench
+        sel4
+        sel4muslcsys
+        sel4benchappconfig_Config
+        sel4benchfaultconfig_Config
+        hardware_Config
+        sel4benchipcconfig_Config
+        sel4benchirqconfig_Config
+        sel4benchirquserconfig_Config
+        sel4benchpagemappingconfig_Config
+        sel4benchschedulerconfig_Config
+        sel4benchsignalconfig_Config
+        smp_Config
+        sel4benchsyncconfig_Config
+        sel4benchvcpuconfig_Config
+    )
 
     DeclareRootserver(sel4benchapp)
 endif()

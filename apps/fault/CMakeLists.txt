@@ -28,7 +28,7 @@ add_executable(fault EXCLUDE_FROM_ALL ${deps})
 if("${PLATFORM}" STREQUAL "sabre")
     target_compile_options(fault PRIVATE -O1)
 endif()
-target_link_libraries(fault Configuration sel4 sel4bench muslc sel4vka utils elf sel4allocman
+target_link_libraries(fault sel4benchfaultconfig_Config sel4 sel4bench muslc sel4vka utils elf sel4allocman
     sel4utils sel4simple sel4muslcsys sel4platsupport platsupport sel4vspace sel4benchsupport
     sel4debug)
 

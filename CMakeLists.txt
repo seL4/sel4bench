@@ -39,5 +39,6 @@ add_subdirectory(libsel4benchsupport)
 
 # This needs to be after the applications so that sel4bench can grab all the elf files.
 add_subdirectory(apps/sel4bench)
+link_libraries(kernel_autoconf)
 
 GenerateSimulateScript()

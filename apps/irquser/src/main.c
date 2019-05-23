@@ -10,6 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
+#include <sel4benchirquserconfig/gen_config.h>
 #include <stdio.h>
 
 #include <sel4platsupport/timer.h>

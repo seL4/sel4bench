@@ -25,7 +25,7 @@ add_config_library(sel4benchsignalconfig "${configure_string}")
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(signal EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(signal Configuration sel4benchsupport sel4muslcsys)
+target_link_libraries(signal sel4benchsignalconfig_Config sel4benchsupport sel4muslcsys)
 
 if(AppSignalBench)
     set_property(GLOBAL APPEND PROPERTY sel4benchapps_property "$<TARGET_FILE:signal>")

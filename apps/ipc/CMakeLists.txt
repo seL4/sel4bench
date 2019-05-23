@@ -39,7 +39,7 @@ add_config_library(sel4benchipcconfig "${configure_string}")
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(ipc EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(ipc Configuration sel4 muslc cpio sel4vka sel4vspace sel4allocman
+target_link_libraries(ipc sel4benchipcconfig_Config sel4 muslc cpio sel4vka sel4vspace sel4allocman
     sel4utils elf sel4simple sel4benchsupport sel4debug platsupport sel4platsupport
     sel4muslcsys)
 

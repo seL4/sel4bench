@@ -25,7 +25,7 @@ add_config_library(sel4benchvcpuconfig "${configure_string}")
 file(GLOB deps src/*.c src/guest_asm.S)
 list(SORT deps)
 add_executable(vcpu EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(vcpu Configuration sel4 muslc cpio sel4vka sel4vspace sel4allocman
+target_link_libraries(vcpu sel4benchvcpuconfig_Config sel4 muslc cpio sel4vka sel4vspace sel4allocman
     sel4utils elf sel4simple sel4benchsupport sel4debug platsupport sel4platsupport
     sel4muslcsys)
 

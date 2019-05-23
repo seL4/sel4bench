@@ -24,7 +24,7 @@ add_config_library(smp "${configure_string}")
 
 file(GLOB deps src/*.c)
 add_executable(smp EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(smp Configuration muslc sel4 sel4benchsupport sel4platsupport
+target_link_libraries(smp smp_Config muslc sel4 sel4benchsupport sel4platsupport
     sel4muslcsys jansson sel4sync sel4debug sel4allocman utils sel4utils sel4bench elf
     sel4simple cpio sel4vka sel4vspace)
 

@@ -25,7 +25,7 @@ add_config_library(sel4benchschedulerconfig "${configure_string}")
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(scheduler EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(scheduler Configuration sel4 muslc sel4vka sel4allocman sel4utils
+target_link_libraries(scheduler sel4benchschedulerconfig_Config sel4 muslc sel4vka sel4allocman sel4utils
     sel4simple sel4muslcsys sel4platsupport platsupport sel4vspace sel4benchsupport sel4debug)
 
 if(AppSchedulerBench)

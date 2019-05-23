@@ -11,6 +11,7 @@
  */
 
 #include <autoconf.h>
+#include <smp/gen_config.h>
 
 #include <sel4platsupport/timer.h>
 #include <utils/time.h>
