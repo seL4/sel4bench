@@ -33,7 +33,7 @@ config_option(Sel4Bench SEL4_BENCH
 )
 
 if(Sel4Bench)
-    add_config_library(sel4benchappconfig "${configure_string}")
+    add_config_library(sel4benchapp "${configure_string}")
 
     file(GLOB static
         src/*.c
@@ -48,18 +48,18 @@ if(Sel4Bench)
         sel4bench
         sel4
         sel4muslcsys
-        sel4benchappconfig_Config
-        sel4benchfaultconfig_Config
+        sel4benchapp_Config
+        sel4benchfault_Config
         hardware_Config
-        sel4benchipcconfig_Config
-        sel4benchirqconfig_Config
-        sel4benchirquserconfig_Config
-        sel4benchpagemappingconfig_Config
-        sel4benchschedulerconfig_Config
-        sel4benchsignalconfig_Config
+        sel4benchipc_Config
+        sel4benchirq_Config
+        sel4benchirquser_Config
+        sel4benchpagemapping_Config
+        sel4benchscheduler_Config
+        sel4benchsignal_Config
         smp_Config
-        sel4benchsyncconfig_Config
-        sel4benchvcpuconfig_Config
+        sel4benchsync_Config
+        sel4benchvcpu_Config
     )
 
     DeclareRootserver(sel4benchapp)

@@ -14,7 +14,7 @@
    happening in this app with just what we need */
 
 #include <autoconf.h>
-#include <sel4benchipcconfig/gen_config.h>
+#include <sel4benchipc/gen_config.h>
 #include <allocman/vka.h>
 #include <allocman/bootstrap.h>
 #include <stdbool.h>

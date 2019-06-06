@@ -34,12 +34,12 @@ config_choice(GenericCounterID GENERIC_COUNTER_ID
     "5;Ipc_BranchMispredict;BRANCH_MISPREDICT;Ipc_GenericCounter;AppIpcBench"
     "6;Ipc_MemoryAccess;MEMORY_ACCESS;Ipc_GenericCounter;AppIpcBench"
 )
-add_config_library(sel4benchipcconfig "${configure_string}")
+add_config_library(sel4benchipc "${configure_string}")
 
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(ipc EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(ipc sel4benchipcconfig_Config sel4 muslc cpio sel4vka sel4vspace sel4allocman
+target_link_libraries(ipc sel4benchipc_Config sel4 muslc cpio sel4vka sel4vspace sel4allocman
     sel4utils elf sel4simple sel4benchsupport sel4debug platsupport sel4platsupport
     sel4muslcsys)
 

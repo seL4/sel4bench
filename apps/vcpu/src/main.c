@@ -31,7 +31,7 @@
  */
 
 #include <autoconf.h>
-#include <sel4benchvcpuconfig/gen_config.h>
+#include <sel4benchvcpu/gen_config.h>
 #include <allocman/vka.h>
 #include <allocman/bootstrap.h>
 #include <stdbool.h>

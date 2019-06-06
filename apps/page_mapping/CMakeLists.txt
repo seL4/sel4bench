@@ -20,12 +20,12 @@ config_option(AppPageMappingBench APP_PAGEMAPPINGBENCH
     "Application to benchmark seL4 mapping a series of pages."
     DEFAULT ON
     DEPENDS "DefaultBenchDeps")
-add_config_library(sel4benchpagemappingconfig "${configure_string}")
+add_config_library(sel4benchpagemapping "${configure_string}")
 
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(page_mapping EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(page_mapping sel4benchpagemappingconfig_Config sel4 muslc cpio sel4vka sel4vspace sel4allocman
+target_link_libraries(page_mapping sel4benchpagemapping_Config sel4 muslc cpio sel4vka sel4vspace sel4allocman
     sel4utils sel4muslcsys elf sel4simple sel4bench sel4benchsupport sel4debug platsupport
     sel4platsupport)
 

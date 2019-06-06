@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
-#include <sel4benchschedulerconfig/gen_config.h>
+#include <sel4benchscheduler/gen_config.h>
 #include <stdio.h>
 
 #include <sel4/sel4.h>

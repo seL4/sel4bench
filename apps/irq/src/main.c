@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
-#include <sel4benchirqconfig/gen_config.h>
+#include <sel4benchirq/gen_config.h>
 
 #include <stdio.h>
 

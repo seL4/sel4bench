@@ -10,7 +10,7 @@
  * @TAG(DATA61_GPL)
  */
 #include <autoconf.h>
-#include <sel4benchappconfig/gen_config.h>
+#include <sel4benchapp/gen_config.h>
 #include <vcpu.h>
 #include <jansson.h>
 #include <sel4bench/sel4bench.h>

@@ -20,12 +20,12 @@ config_option(AppIrqUserBench APP_IRQUSERBENCH
     "Application to benchmark seL4 IRQs without modification to the kernel."
     DEFAULT ON
     DEPENDS "DefaultBenchDeps")
-add_config_library(sel4benchirquserconfig "${configure_string}")
+add_config_library(sel4benchirquser "${configure_string}")
 
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(irquser EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(irquser sel4benchirquserconfig_Config sel4 muslc sel4vka sel4allocman sel4utils
+target_link_libraries(irquser sel4benchirquser_Config sel4 muslc sel4vka sel4allocman sel4utils
     sel4simple sel4muslcsys sel4platsupport platsupport sel4vspace sel4benchsupport sel4debug)
 
 if(AppIrqUserBench)

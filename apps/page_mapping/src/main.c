@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
-#include <sel4benchpagemappingconfig/gen_config.h>
+#include <sel4benchpagemapping/gen_config.h>
 #include <vka/capops.h>
 #include <sel4bench/arch/sel4bench.h>
 #include <benchmark.h>

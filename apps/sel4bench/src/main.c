@@ -12,7 +12,7 @@
 
 /* Include Kconfig variables. */
 #include <autoconf.h>
-#include <sel4benchappconfig/gen_config.h>
+#include <sel4benchapp/gen_config.h>
 
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>

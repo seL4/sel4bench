@@ -11,7 +11,7 @@
  */
 
 #include <autoconf.h>
-#include <sel4benchsignalconfig/gen_config.h>
+#include <sel4benchsignal/gen_config.h>
 #include <stdio.h>
 
 #include <sel4/sel4.h>
