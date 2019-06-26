@@ -12,7 +12,7 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
-include(${KERNEL_HELPERS_PATH})
+include(${CMAKE_SOURCE_DIR}/tools/seL4/cmake-tool/helpers/application_settings.cmake)
 
 # Declare a cache variable that enables/disablings the forcing of cache variables to
 # the specific test values. By default it is disabled
@@ -20,27 +20,13 @@ set(Sel4benchAllowSettingsOverride OFF CACHE BOOL "Allow user to override config
 
 include(easy-settings.cmake)
 
-# set_property(CACHE PLATFORM PROPERTY STRINGS "x86_64;ia32;sabre;jetson;arndale;bbone;bbone_black;beagle;hikey;hikey64;inforce;kzm;odroidx;odroidxu;rpi3;zynq")
-set_property(
-    CACHE PLATFORM
-    PROPERTY STRINGS ${KernelX86Sel4Arch_all_strings} ${KernelARMPlatform_all_strings}
-)
-
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
 if(NOT Sel4benchAllowSettingsOverride)
     # Determine the platform/architecture
-    if(${PLATFORM} IN_LIST KernelX86Sel4Arch_all_strings)
-        set(KernelArch x86 CACHE STRING "" FORCE)
-        set(KernelX86Sel4Arch ${PLATFORM} CACHE STRING "" FORCE)
-        set(AllowUnstableOverhead ON CACHE BOOL "" FORCE)
-        set(KernelX86MicroArch "haswell" CACHE STRING "" FORCE)
-        set(KernelXSaveFeatureSet 7 CACHE STRING "" FORCE)
-        set(KernelXSaveSize 832 CACHE STRING "" FORCE)
-    else()
-        if(NOT ${PLATFORM} IN_LIST KernelARMPlatform_all_strings)
-            message(FATAL_ERROR "Unknown PLATFORM. Initial configuration may not work")
-        endif()
+    if(RISCV32 OR RISCV64)
+        message(FATAL_ERROR "RISC-V is not supported by sel4bench")
+    elseif(AARCH64 OR AARCH32 OR ARM_HYP OR ARM OR AARCH32HF)
         set(KernelArch arm CACHE STRING "" FORCE)
         set(KernelARMPlatform ${PLATFORM} CACHE STRING "" FORCE)
 
@@ -65,6 +51,13 @@ if(NOT Sel4benchAllowSettingsOverride)
         endif()
         # Elfloader settings that correspond to how Data61 sets its boards up.
         ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelArmSel4Arch})
+    else()
+        set(KernelArch x86 CACHE STRING "" FORCE)
+        set(KernelX86Sel4Arch ${PLATFORM} CACHE STRING "" FORCE)
+        set(AllowUnstableOverhead ON CACHE BOOL "" FORCE)
+        set(KernelX86MicroArch "haswell" CACHE STRING "" FORCE)
+        set(KernelXSaveFeatureSet 7 CACHE STRING "" FORCE)
+        set(KernelXSaveSize 832 CACHE STRING "" FORCE)
     endif()
 
     # Setup flags for RELEASE (performance optimized builds)
@@ -85,20 +78,25 @@ if(NOT Sel4benchAllowSettingsOverride)
         set(KernelFastpath OFF CACHE BOOL "" FORCE)
     endif()
     # Configuration that applies to all apps
-    if(KernelArchARM)
-        if(KernelArmCortexA8 OR KernelArchArmV6)
+    if("${KernelArch}" STREQUAL "arm")
+        if(
+            ("${KernelARMPlatform}" STREQUAL "kzm")
+            OR ("${KernelARMPlatform}" STREQUAL "omap3")
+            OR ("${KernelARMPlatform}" STREQUAL "am335x-boneblack")
+            OR ("${KernelARMPlatform}" STREQUAL "am335x-boneblue")
+        )
             set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
         else()
             set(KernelArmExportPMUUser ON CACHE BOOL "" FORCE)
         endif()
 
-        if(KernelArchArmV6)
+        if("${KernelARMPlatform}" STREQUAL "kzm")
             set(KernelDangerousCodeInjectionOnUndefInstr ON CACHE BOOL "" FORCE)
         endif()
     else()
         set(KernelArmExportPMUUser OFF CACHE BOOL "" FORCE)
     endif()
-    if(KernelArchX86)
+    if("${KernelArch}" STREQUAL "x86")
         set(KernelExportPMCUser ON CACHE BOOL "" FORCE)
         set(KernelX86DangerousMSR ON CACHE BOOL "" FORCE)
     endif()
@@ -135,9 +133,12 @@ if(NOT Sel4benchAllowSettingsOverride)
         if(RELEASE)
             set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
             set(AppSmpBench ON CACHE BOOL "" FORCE)
-            if(KernelPlatImx6)
+            if(
+                ("${KernelARMPlatform}" STREQUAL "sabre")
+                OR ("${KernelARMPlatform}" STREQUAL "wandq")
+            )
                 set(ElfloaderMode "secure supervisor" CACHE STRING "" FORCE)
-            elseif(KernelPlattformJetson)
+            elseif("${KernelARMPlatform}" STREQUAL "tk1")
                 set(ElfloaderMode "monitor" CACHE STRING "" FORCE)
             endif()
         else()
@@ -146,7 +147,7 @@ if(NOT Sel4benchAllowSettingsOverride)
     else()
         set(KernelMaxNumNodes 1 CACHE STRING "" FORCE)
         set(AppSmpBench OFF CACHE BOOL "" FORCE)
-        if(KernelPlatformJetson)
+        if("${KernelARMPlatform}" STREQUAL "tk1")
             set(ElfloaderMode "monitor" CACHE STRING "" FORCE)
         endif()
     endif()
