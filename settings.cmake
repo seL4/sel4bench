@@ -12,48 +12,69 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
-include(${CMAKE_SOURCE_DIR}/tools/seL4/cmake-tool/helpers/application_settings.cmake)
+set(project_dir "${CMAKE_CURRENT_LIST_DIR}")
+get_filename_component(resolved_path ${CMAKE_CURRENT_LIST_FILE} REALPATH)
+# repo_dir is distinct from project_dir as this file is symlinked.
+# project_dir corresponds to the top level project directory, and
+# repo_dir is the absolute path after following the symlink.
+get_filename_component(repo_dir ${resolved_path} DIRECTORY)
+
+include(${project_dir}/tools/seL4/cmake-tool/helpers/application_settings.cmake)
 
 # Declare a cache variable that enables/disablings the forcing of cache variables to
 # the specific test values. By default it is disabled
 set(Sel4benchAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
 
-include(easy-settings.cmake)
+include(${repo_dir}/easy-settings.cmake)
+
+if(VCPU)
+    set(ARM_HYP ON CACHE BOOL "ARM EL2 hypervisor features on or off" FORCE)
+endif()
+correct_platform_strings()
+
+include(${project_dir}/kernel/configs/seL4Config.cmake)
+if(RISCV32 OR RISCV64)
+    message(FATAL_ERROR "RISC-V is not supported by sel4bench")
+endif()
+set(
+    valid_platforms ${KernelPlatform_all_strings}
+    # The following plaforms are for backwards compatibility reasons.
+    sabre
+    wandq
+    kzm
+    rpi3
+    exynos5250
+    exynos5410
+    exynos5422
+    am335x-boneblack
+    am335x-boneblue
+    x86_64
+    ia32
+)
+set_property(CACHE PLATFORM PROPERTY STRINGS ${valid_platforms})
+list(FIND valid_platforms "${PLATFORM}" index)
+if("${index}" STREQUAL "-1")
+    message(FATAL_ERROR "Invalid PLATFORM selected: \"${PLATFORM}\"
+Valid platforms are: \"${valid_platforms}\"")
+endif()
 
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
 if(NOT Sel4benchAllowSettingsOverride)
     # Determine the platform/architecture
-    if(RISCV32 OR RISCV64)
-        message(FATAL_ERROR "RISC-V is not supported by sel4bench")
-    elseif(AARCH64 OR AARCH32 OR ARM_HYP OR ARM OR AARCH32HF)
-        set(KernelArch arm CACHE STRING "" FORCE)
-        set(KernelARMPlatform ${PLATFORM} CACHE STRING "" FORCE)
-
-        if(VCPU)
-            set(ARM_HYP ON CACHE BOOL "ARM EL2 hypervisor features on or off" FORCE)
-        else()
+    if(KernelArchARM)
+        if(NOT VCPU)
             set(AppVcpuBench OFF CACHE BOOL "" FORCE)
         endif()
-
-        if(AARCH64)
-            set(KernelArmSel4Arch "aarch64" CACHE STRING "" FORCE)
+        if(KernelSel4ArchAarch64)
             if(ARM_HYP)
                 set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
-            endif()
-        else()
-            if(ARM_HYP)
-                set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
-                set(KernelArmSel4Arch "arm_hyp" CACHE STRING "" FORCE)
-            else()
-                set(KernelArmSel4Arch "aarch32" CACHE STRING "" FORCE)
             endif()
         endif()
+
         # Elfloader settings that correspond to how Data61 sets its boards up.
-        ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelArmSel4Arch})
-    else()
-        set(KernelArch x86 CACHE STRING "" FORCE)
-        set(KernelX86Sel4Arch ${PLATFORM} CACHE STRING "" FORCE)
+        ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelSel4Arch})
+    elseif(KernelArchX86)
         set(AllowUnstableOverhead ON CACHE BOOL "" FORCE)
         set(KernelX86MicroArch "haswell" CACHE STRING "" FORCE)
         set(KernelXSaveFeatureSet 7 CACHE STRING "" FORCE)
@@ -78,25 +99,20 @@ if(NOT Sel4benchAllowSettingsOverride)
         set(KernelFastpath OFF CACHE BOOL "" FORCE)
     endif()
     # Configuration that applies to all apps
-    if("${KernelArch}" STREQUAL "arm")
-        if(
-            ("${KernelARMPlatform}" STREQUAL "kzm")
-            OR ("${KernelARMPlatform}" STREQUAL "omap3")
-            OR ("${KernelARMPlatform}" STREQUAL "am335x-boneblack")
-            OR ("${KernelARMPlatform}" STREQUAL "am335x-boneblue")
-        )
+    if(KernelArchARM)
+        if(KernelPlatformKZM OR KernelPlatformOMAP3 OR KernelPlatformAM335X)
             set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
         else()
             set(KernelArmExportPMUUser ON CACHE BOOL "" FORCE)
         endif()
 
-        if("${KernelARMPlatform}" STREQUAL "kzm")
+        if(KernelPlatformKZM)
             set(KernelDangerousCodeInjectionOnUndefInstr ON CACHE BOOL "" FORCE)
         endif()
     else()
         set(KernelArmExportPMUUser OFF CACHE BOOL "" FORCE)
     endif()
-    if("${KernelArch}" STREQUAL "x86")
+    if(KernelArchX86)
         set(KernelExportPMCUser ON CACHE BOOL "" FORCE)
         set(KernelX86DangerousMSR ON CACHE BOOL "" FORCE)
     endif()
@@ -108,7 +124,7 @@ if(NOT Sel4benchAllowSettingsOverride)
 
     # App-specific configuration
     if(FAULT)
-        if("${PLATFORM}" STREQUAL "kzm")
+        if(KernelPlatformKZM)
             message(FATAL_ERROR "Fault app not supported on kzm.")
         else()
             set(AppFaultBench ON CACHE BOOL "" FORCE)
@@ -133,12 +149,9 @@ if(NOT Sel4benchAllowSettingsOverride)
         if(RELEASE)
             set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
             set(AppSmpBench ON CACHE BOOL "" FORCE)
-            if(
-                ("${KernelARMPlatform}" STREQUAL "sabre")
-                OR ("${KernelARMPlatform}" STREQUAL "wandq")
-            )
+            if(KernelPlatImx6)
                 set(ElfloaderMode "secure supervisor" CACHE STRING "" FORCE)
-            elseif("${KernelARMPlatform}" STREQUAL "tk1")
+            elseif(KernelPlatformTK1)
                 set(ElfloaderMode "monitor" CACHE STRING "" FORCE)
             endif()
         else()
@@ -147,7 +160,7 @@ if(NOT Sel4benchAllowSettingsOverride)
     else()
         set(KernelMaxNumNodes 1 CACHE STRING "" FORCE)
         set(AppSmpBench OFF CACHE BOOL "" FORCE)
-        if("${KernelARMPlatform}" STREQUAL "tk1")
+        if(KernelPlatformTK1)
             set(ElfloaderMode "monitor" CACHE STRING "" FORCE)
         endif()
     endif()
