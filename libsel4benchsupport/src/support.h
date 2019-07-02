@@ -15,4 +15,3 @@
 #include <simple/arch/simple.h>
 
 void benchmark_arch_get_simple(arch_simple_t *simple);
-void benchmark_arch_get_timers(env_t *env, ps_io_ops_t ops);

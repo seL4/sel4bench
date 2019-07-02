@@ -17,6 +17,7 @@
 #include <sel4platsupport/timer.h>
 /* types shared between sel4bench and its child apps */
 
+#define SEL4BENCH_PROTOBUF_RPC (9000)
 typedef struct {
     size_t untyped_size_bits;
     uintptr_t stack_vaddr;
@@ -27,5 +28,4 @@ typedef struct {
     seL4_CPtr untyped_cptr;
     seL4_CPtr sched_ctrl;
     seL4_CPtr serial_ep;
-    timer_objects_t to;
 } benchmark_args_t;

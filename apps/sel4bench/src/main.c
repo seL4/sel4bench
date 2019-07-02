@@ -26,6 +26,7 @@
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
 #include <sel4platsupport/timer.h>
+#include <sel4rpc/server.h>
 #include <sel4utils/api.h>
 #include <sel4utils/stack.h>
 #include <stdio.h>
@@ -102,6 +103,7 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
 {
     int error;
     sel4utils_process_t process;
+    sel4rpc_server_env_t rpc_env;
 
     /* configure benchmark process */
     sel4utils_process_config_t config = process_config_default_simple(&env->simple, benchmark->name,
@@ -110,8 +112,7 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
     error = sel4utils_configure_process_custom(&process, &env->vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process for %s benchmark", benchmark->name);
 
-    /* initialise timers for benchmark environment */
-    sel4utils_copy_timer_caps_to_process(&args->to, &env->to, &env->vka, &process);
+    /* initialise sched ctrl for benchmark environment */
     if (config_set(CONFIG_KERNEL_RT)) {
         seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env->simple, 0);
         args->sched_ctrl = sel4utils_copy_cap_to_process(&process, &env->vka, sched_ctrl);
@@ -148,6 +149,11 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
     args->untyped_size_bits = env->untyped.size_bits;
     args->nr_cores = simple_get_core_count(&env->simple);
 
+    /* set up rpc server environment */
+    error = sel4rpc_server_init(&rpc_env, &env->vka, sel4rpc_default_handler, env, &process.thread.reply,
+                                &env->simple);
+    ZF_LOGF_IF(error, "Failed to initialise RPC server environment");
+
     /* untyped size */
     seL4_Word argc = 1;
     char string_args[argc][WORD_STRING_SIZE];
@@ -158,15 +164,20 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
     ZF_LOGF_IF(error, "Failed to start benchmark process");
 
     /* wait for it to finish */
-    seL4_MessageInfo_t info = api_recv(process.fault_endpoint.cptr, NULL, process.thread.reply.cptr);
-    int result = seL4_GetMR(0);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
-        sel4utils_print_fault_message(info, benchmark->name);
-        sel4debug_dump_registers(process.thread.tcb.cptr);
-        result = EXIT_FAILURE;
-    } else if (result != EXIT_SUCCESS) {
-        printf("Benchmark failed, result %d\n", result);
-        sel4debug_dump_registers(process.thread.tcb.cptr);
+    int result = SEL4BENCH_PROTOBUF_RPC;
+    while (result == SEL4BENCH_PROTOBUF_RPC) {
+        seL4_MessageInfo_t info = api_recv(process.fault_endpoint.cptr, NULL, process.thread.reply.cptr);
+        result = seL4_GetMR(0);
+        if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
+            sel4utils_print_fault_message(info, benchmark->name);
+            sel4debug_dump_registers(process.thread.tcb.cptr);
+            result = EXIT_FAILURE;
+        } else if (result == SEL4BENCH_PROTOBUF_RPC) {
+            sel4rpc_server_recv(&rpc_env);
+        } else if (result != EXIT_SUCCESS) {
+            ZF_LOGE("Benchmark failed, result %d\n", result);
+            sel4debug_dump_registers(process.thread.tcb.cptr);
+        }
     }
 
     /* free results in target vspace (they will still be in ours) */
@@ -226,14 +237,6 @@ void find_untyped(vka_t *vka, vka_object_t *untyped)
     ZF_LOGF_IF(error, "Failed to find free untyped\n");
 }
 
-void find_timer_caps(env_t *env)
-{
-    /* init the default caps */
-    int error = sel4platsupport_init_default_timer_caps(&env->vka, &env->vspace, &env->simple, &env->to);
-    /* timer paddr */
-    ZF_LOGF_IF(error, "Failed to init default timer caps");
-}
-
 void *main_continued(void *arg)
 {
 
@@ -241,7 +244,6 @@ void *main_continued(void *arg)
 
     /* find an untyped for the process to use */
     find_untyped(&global_env.vka, &global_env.untyped);
-    find_timer_caps(&global_env);
 
     /* list of benchmarks */
     benchmark_t *benchmarks[] = {

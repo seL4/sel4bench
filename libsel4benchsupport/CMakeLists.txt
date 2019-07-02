@@ -31,5 +31,6 @@ target_link_libraries(
     sel4allocman
     sel4bench
     sel4muslcsys
+    sel4rpc
     sel4serialserver
 )

@@ -56,6 +56,7 @@ if(Sel4Bench)
         sel4bench
         sel4
         sel4muslcsys
+        sel4rpc
         sel4_autoconf
         sel4benchapp_Config
         sel4benchfault_Config
@@ -70,6 +71,5 @@ if(Sel4Bench)
         sel4benchsync_Config
         sel4benchvcpu_Config
     )
-
     DeclareRootserver(sel4benchapp)
 endif()

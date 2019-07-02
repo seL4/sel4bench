@@ -15,6 +15,7 @@
 #include <allocman/vka.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4platsupport/timer.h>
+#include <sel4rpc/client.h>
 #include <sel4utils/api.h>
 #include <sel4utils/process.h>
 #include <sel4utils/slab.h>
@@ -54,6 +55,8 @@ typedef struct env {
     vka_object_t ntfn;
     /* args we started with */
     benchmark_args_t *args;
+    /* rpc client for communicating with benchmark driver */
+    sel4rpc_client_t rpc_client;
 } env_t;
 
 /* initialise the benchmarking environment and return it */

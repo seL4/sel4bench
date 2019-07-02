@@ -12,6 +12,8 @@
 
 #include <autoconf.h>
 #include <stdio.h>
+#include <sel4rpc/client.h>
+#include <rpc.pb.h>
 
 #include <benchmark.h>
 
@@ -19,24 +21,29 @@
 
 #include "../../support.h"
 
-void benchmark_arch_get_timers(env_t *env, ps_io_ops_t ops)
-{
-    int error = ltimer_default_init(&env->timer.ltimer, ops);
-    ZF_LOGF_IF(error, "Failed to create timeout timer");
-}
-
 static seL4_Error get_irq_trigger(void *data, int irq, int trigger, seL4_CNode cnode,
                                   seL4_Word index, uint8_t depth)
 {
     env_t *env = data;
-    seL4_CPtr cap = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, irq, PS_TRIGGER);
-    cspacepath_t path;
-    vka_cspace_make_path(&env->slab_vka, cap, &path);
-    seL4_Error error = seL4_CNode_Move(cnode, index, depth,
-                                       path.root, path.capPtr, path.capDepth);
-    ZF_LOGF_IF(error != seL4_NoError, "Failed to move irq cap");
 
-    return seL4_NoError;
+    RpcMessage msg = {
+        .which_msg = RpcMessage_irq_tag,
+        .msg.irq = {
+            .which_type = IrqAllocMessage_simple_tag,
+            .type.simple = {
+                .setTrigger = true,
+                .irq = irq,
+                .trigger = trigger,
+            },
+        },
+    };
+
+    int ret = sel4rpc_call(&env->rpc_client, &msg, cnode, index, depth);
+    if (ret) {
+        return ret;
+    }
+
+    return msg.msg.ret.errorCode;
 }
 
 void benchmark_arch_get_simple(arch_simple_t *simple)

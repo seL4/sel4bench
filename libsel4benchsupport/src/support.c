@@ -17,6 +17,7 @@
 
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/io.h>
+#include <sel4rpc/client.h>
 #include <sel4runtime.h>
 #include <sel4utils/helpers.h>
 #include <sel4utils/process.h>
@@ -26,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <rpc.pb.h>
 
 #include <benchmark.h>
 
@@ -99,7 +101,7 @@ static size_t add_frames(void *frames[], size_t start, uintptr_t addr, size_t nu
     return i;
 }
 
-static allocman_t *init_allocator(simple_t *simple, vka_t *vka, timer_objects_t *to)
+static allocman_t *init_allocator(simple_t *simple, vka_t *vka)
 {
     /* set up malloc area */
     morecore_area = app_morecore_area;
@@ -113,9 +115,6 @@ static allocman_t *init_allocator(simple_t *simple, vka_t *vka, timer_objects_t 
     ZF_LOGF_IF(!allocator, "Failed to initialize allocator");
     /* create vka backed by allocator */
     allocman_make_vka(vka, allocator);
-
-    int error = allocman_add_untypeds_from_timer_objects(allocator, to);
-    ZF_LOGF_IF(error, "Failed to add untypeds from timer to allocator");
     return allocator;
 }
 
@@ -160,14 +159,24 @@ static void init_vspace(vka_t *vka, vspace_t *vspace, sel4utils_alloc_data_t *da
 static seL4_Error get_irq(void *data, int irq, seL4_CNode cnode, seL4_Word index, uint8_t depth)
 {
     env_t *env = data;
-    seL4_CPtr cap = sel4platsupport_timer_objs_get_irq_cap(&env->args->to, irq, PS_INTERRUPT);
-    cspacepath_t path;
-    vka_cspace_make_path(&env->slab_vka, cap, &path);
-    seL4_Error error = seL4_CNode_Move(cnode, index, depth,
-                                       path.root, path.capPtr, path.capDepth);
-    ZF_LOGF_IF(error != seL4_NoError, "Failed to move irq cap");
 
-    return seL4_NoError;
+    RpcMessage msg = {
+        .which_msg = RpcMessage_irq_tag,
+        .msg.irq = {
+            .which_type = IrqAllocMessage_simple_tag,
+            .type.simple = {
+                .setTrigger = false,
+                .irq = irq,
+            },
+        },
+    };
+
+    int ret = sel4rpc_call(&env->rpc_client, &msg, cnode, index, depth);
+    if (ret) {
+        return ret;
+    }
+
+    return msg.msg.ret.errorCode;
 }
 
 static inline sel4utils_process_config_t get_process_config(env_t *env, uint8_t prio, void *entry_point)
@@ -452,21 +461,57 @@ static void init_simple(env_t *env)
     benchmark_arch_get_simple(&env->simple.arch_simple);
 }
 
+static sel4rpc_client_t *rpc_client;
+/* TODO move a method like this into libsel4rpc? */
+static int benchmark_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type,
+                                         seL4_Word size_bits, uintptr_t paddr, seL4_Word *cookie)
+{
+    RpcMessage msg = {
+        .which_msg = RpcMessage_memory_tag,
+        .msg.memory = {
+            .address = paddr,
+            .size_bits = size_bits,
+            .type = type,
+            .action = Action_ALLOCATE,
+        },
+    };
+
+    sel4rpc_call(rpc_client, &msg, dest->root, dest->capPtr, dest->capDepth);
+    *cookie = msg.msg.ret.cookie;
+    return msg.msg.ret.errorCode;
+}
+
+static void benchmark_utspace_free_fn(void *data, seL4_Word type, seL4_Word size_bits, seL4_Word target)
+{
+    RpcMessage msg = {
+        .which_msg = RpcMessage_memory_tag,
+        .msg.memory = {
+            .address = target,
+            .size_bits = size_bits,
+            .type = type,
+            .action = Action_FREE,
+        },
+    };
+
+    sel4rpc_call(rpc_client, &msg, seL4_CapNull, seL4_CapNull, seL4_CapNull);
+}
+
 void benchmark_init_timer(env_t *env)
 {
-    /* set up irq caps */
-    int error = sel4platsupport_init_timer_irqs(&env->slab_vka, &env->simple, env->ntfn.cptr,
-                                                &env->timer, &env->args->to);
-    ZF_LOGF_IF(error, "Failed to init timer irqs");
-
     ps_io_ops_t ops;
-    error = sel4platsupport_new_io_mapper(env->vspace, env->slab_vka, &ops.io_mapper);
-    ZF_LOGF_IF(error, "Failed to init io mapper");
+    memset(&ops, 0, sizeof(ops));
+    vka_t vka = env->slab_vka;
+    vka.utspace_alloc_at = benchmark_utspace_alloc_at_fn;
+    vka.utspace_free = benchmark_utspace_free_fn;
+    int error = sel4platsupport_new_io_ops(env->vspace, vka, &ops);
+    if (error) {
+        ZF_LOGF("Failed to get io ops");
+    }
 
-    error = sel4platsupport_new_malloc_ops(&ops.malloc_ops);
-    ZF_LOGF_IF(error, "Failed to init io mapper");
-
-    benchmark_arch_get_timers(env, ops);
+    rpc_client = &env->rpc_client;
+    error = sel4platsupport_init_default_timer_ops(&env->slab_vka, &env->vspace,
+                                                   &env->simple, ops, env->ntfn.cptr, &env->timer);
+    ZF_LOGF_IF(error, "Failed to init timer");
     env->timer_initialised = true;
 }
 
@@ -481,7 +526,8 @@ env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t obje
     env.results = env.args->results;
     init_simple(&env);
 
-    env.allocman = init_allocator(&env.simple, &env.delegate_vka, &env.args->to);
+    sel4rpc_client_init(&env.rpc_client, SEL4UTILS_ENDPOINT_SLOT, SEL4BENCH_PROTOBUF_RPC);
+    env.allocman = init_allocator(&env.simple, &env.delegate_vka);
     init_vspace(&env.delegate_vka, &env.vspace, &env.data, env.args->stack_pages, env.args->stack_vaddr,
                 (uintptr_t) env.results, results_size, (uintptr_t) env.args);
     init_allocator_vspace(env.allocman, &env.vspace);
@@ -501,7 +547,6 @@ env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t obje
 
     /* update object freq for timer objects */
     object_freq[seL4_NotificationObject]++;
-    object_freq[seL4_ARCH_4KPage] += env.args->to.nobjs;
 
     /* set up slab allocator */
     if (slab_init(&env.slab_vka, &env.delegate_vka, object_freq) != 0) {
