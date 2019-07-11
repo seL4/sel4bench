@@ -38,7 +38,11 @@
 #define NUM_ARGS 3
 /* Ensure that enough warmups are performed to prevent the FPU from
  * being restored. */
+#ifdef CONFIG_FPU_MAX_RESTORES_SINCE_SWITCH
 #define WARMUPS (RUNS + CONFIG_FPU_MAX_RESTORES_SINCE_SWITCH)
+#else
+#define WARMUPS RUNS
+#endif
 #define OVERHEAD_RETRIES 4
 
 #ifndef CONFIG_CYCLE_COUNT
