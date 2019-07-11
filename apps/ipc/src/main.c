@@ -36,7 +36,9 @@
 #include <arch/ipc.h>
 
 #define NUM_ARGS 3
-#define WARMUPS RUNS
+/* Ensure that enough warmups are performed to prevent the FPU from
+ * being restored. */
+#define WARMUPS (RUNS + CONFIG_FPU_MAX_RESTORES_SINCE_SWITCH)
 #define OVERHEAD_RETRIES 4
 
 #ifndef CONFIG_CYCLE_COUNT
