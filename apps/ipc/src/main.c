@@ -82,6 +82,11 @@ static void timing_init(void)
     sel4bench_reset_counters();
     sel4bench_start_counters(GENERIC_COUNTER_MASK);
 #endif
+#ifdef CONFIG_PLATFORM_COUNTER
+    sel4bench_set_count_event(0, CONFIG_PLATFORM_COUNTER_CONSTANT);
+    sel4bench_reset_counters();
+    sel4bench_start_counters(GENERIC_COUNTER_MASK);
+#endif
 }
 
 void timing_destroy(void)

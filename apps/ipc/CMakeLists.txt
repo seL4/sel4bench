@@ -31,6 +31,7 @@ config_choice(
     "Counter to measure"
     "Cycle count;Ipc_CycleCount;CYCLE_COUNT;AppIpcBench"
     "Generic counter;Ipc_GenericCounter;GENERIC_COUNTER;AppIpcBench"
+    "Platform counter;Ipc_PlatformCounter;PLATFORM_COUNTER;AppIpcBench"
 )
 config_choice(
     GenericCounterID
@@ -43,6 +44,17 @@ config_choice(
     "4;Ipc_ExecuteInstruction;EXECUTE_INSTRUCTION;Ipc_GenericCounter;AppIpcBench"
     "5;Ipc_BranchMispredict;BRANCH_MISPREDICT;Ipc_GenericCounter;AppIpcBench"
     "6;Ipc_MemoryAccess;MEMORY_ACCESS;Ipc_GenericCounter;AppIpcBench"
+)
+config_string(
+    PlatformCounterConstant
+    PLATFORM_COUNTER_CONSTANT
+    "Internal constant to use for the event"
+    DEFAULT
+    SEL4BENCH_EVENT_CYCLE_CORE
+    DEPENDS
+    "Ipc_PlatformCounter"
+    UNDEF_DISABLED
+    UNQUOTE
 )
 add_config_library(sel4benchipc "${configure_string}")
 
