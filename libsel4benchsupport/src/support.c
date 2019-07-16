@@ -293,13 +293,13 @@ int benchmark_spawn_process(sel4utils_process_t *process, vka_t *vka, vspace_t *
 
     // Copy TLS onto thread stack.
     int error = sel4utils_stack_write(
-        vspace,
-        &process->vspace,
-        vka,
-        local_tls,
-        tls_size,
-        &initial_stack_pointer
-    );
+                    vspace,
+                    &process->vspace,
+                    vka,
+                    local_tls,
+                    tls_size,
+                    &initial_stack_pointer
+                );
     if (error) {
         return -1;
     }
