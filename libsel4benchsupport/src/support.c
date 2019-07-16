@@ -306,15 +306,23 @@ int benchmark_spawn_process(sel4utils_process_t *process, vka_t *vka, vspace_t *
 
     assert(dest_tls_addr == initial_stack_pointer);
 
-    /* move the stack pointer down to a place we can write to.
-     * to be compatible with as many architectures as possible
-     * we need to ensure double word alignment */
+    // Save the initial stack top.
+    void *initial_stack_top = process->thread.stack_top;
+
+    /*
+     * Move the stack pointer down to a place sel4utils_spawn_process can write to.
+     * To be compatible with as many architectures as possible
+     * we need to ensure double word alignment.
+     */
     process->thread.stack_top = (void *) ALIGN_DOWN(initial_stack_pointer - sizeof(seL4_Word), STACK_CALL_ALIGNMENT);
 
     error = sel4utils_spawn_process(process, vka, vspace, argc, argv, false);
     if (error) {
         return error;
     }
+
+    // Restore the initial stack top.
+    process->thread.stack_top = initial_stack_top;
 
     // Configure TLS base for the thread.
     error = seL4_TCB_SetTLSBase(process->thread.tcb.cptr, dest_tp);
