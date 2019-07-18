@@ -26,8 +26,7 @@
 #define N_BROADCAST_ARGS 7
 #define N_PRODUCER_CONSUMER_ARGS 9
 
-void
-abort(void)
+void abort(void)
 {
     benchmark_finished(EXIT_FAILURE);
 }
@@ -37,8 +36,7 @@ size_t __arch_write(char *data, int count)
     return benchmark_write(data, count);
 }
 
-int
-dummy_bin_sem_post(sync_bin_sem_t *lock)
+int dummy_bin_sem_post(sync_bin_sem_t *lock)
 {
     return 0;
 }
@@ -99,9 +97,8 @@ static helper_func_t bench_broadcast_funcs[] = {
     broadcast_func0
 };
 
-void
-benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock,
-        sync_cv_t *cv, sync_results_t *results)
+void benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock,
+                         sync_cv_t *cv, sync_results_t *results)
 {
     sel4utils_thread_t waiters[N_WAITERS];
     sel4utils_thread_t broadcaster;
@@ -117,27 +114,27 @@ benchmark_broadcast(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t
     for (int i = 0; i != N_WAITERS; ++i)  {
         benchmark_configure_thread(env, 0, seL4_MaxPrio, "waiter", &waiters[i]);
     }
-    benchmark_configure_thread(env, 0, seL4_MaxPrio-1, "broadcaster", &broadcaster);
+    benchmark_configure_thread(env, 0, seL4_MaxPrio - 1, "broadcaster", &broadcaster);
 
     for (int j = 0; j < N_BROADCAST_BENCHMARKS; ++j) {
-         for (int run = 0; run < N_RUNS; ++run) {
+        for (int run = 0; run < N_RUNS; ++run) {
             shared = 0;
 
             sel4utils_create_word_args(broadcast_args_strings, broadcast_argv,
-                    N_BROADCAST_ARGS, ep, block_ep, lock, cv, &shared, &start,
-                    &(results->broadcast_broadcast_time[j][run]));
+                                       N_BROADCAST_ARGS, ep, block_ep, lock, cv, &shared, &start,
+                                       &(results->broadcast_broadcast_time[j][run]));
 
             for (int i = 0; i < N_WAITERS; ++i)  {
                 sel4utils_create_word_args(wait_args_strings[i], wait_argv[i], N_WAIT_ARGS, ep,
-                        block_ep, lock, cv, &shared, &start,
-                        &(results->broadcast_wait_time[j][i][run]));
+                                           block_ep, lock, cv, &shared, &start,
+                                           &(results->broadcast_wait_time[j][i][run]));
                 error = sel4utils_start_thread(&waiters[i], (sel4utils_thread_entry_fn) bench_waiter_funcs[j],
-                        (void *) N_WAIT_ARGS, (void *) wait_argv[i], 1);
+                                               (void *) N_WAIT_ARGS, (void *) wait_argv[i], 1);
             }
             assert(error == seL4_NoError);
 
             error = sel4utils_start_thread(&broadcaster, (sel4utils_thread_entry_fn) bench_broadcast_funcs[j],
-                    (void *) N_BROADCAST_ARGS, (void *) broadcast_argv, 1);
+                                           (void *) N_BROADCAST_ARGS, (void *) broadcast_argv, 1);
             assert(error == seL4_NoError);
 
             benchmark_wait_children(ep, "Broadcast bench waiters", N_WAITERS + 1);
@@ -192,9 +189,8 @@ static helper_func_t bench_producer_funcs[] = {
     producer_func0
 };
 
-void
-benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock,
-        sync_cv_t *producer_cv, sync_cv_t *consumer_cv, sync_results_t *results)
+void benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock,
+                                 sync_cv_t *producer_cv, sync_cv_t *consumer_cv, sync_results_t *results)
 {
     sel4utils_thread_t producer, consumer;
     char producer_args_strings[N_PRODUCER_CONSUMER_ARGS][WORD_STRING_SIZE];
@@ -212,19 +208,19 @@ benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_b
         ccnt_t producer_signal, consumer_signal;
 
         sel4utils_create_word_args(producer_args_strings, producer_argv, N_PRODUCER_CONSUMER_ARGS,
-                ep, block_ep, lock, consumer_cv, producer_cv, &fifo_head,
-                &producer_signal, &consumer_signal, &(results->consumer_to_producer[j]));
+                                   ep, block_ep, lock, consumer_cv, producer_cv, &fifo_head,
+                                   &producer_signal, &consumer_signal, &(results->consumer_to_producer[j]));
 
         sel4utils_create_word_args(consumer_args_strings, consumer_argv, N_PRODUCER_CONSUMER_ARGS,
-                ep, block_ep, lock, producer_cv, consumer_cv, &fifo_head,
-                &consumer_signal, &producer_signal, &(results->producer_to_consumer[j]));
+                                   ep, block_ep, lock, producer_cv, consumer_cv, &fifo_head,
+                                   &consumer_signal, &producer_signal, &(results->producer_to_consumer[j]));
 
         error = sel4utils_start_thread(&producer, (sel4utils_thread_entry_fn) bench_producer_funcs[j],
-                (void *) N_PRODUCER_CONSUMER_ARGS, (void *) producer_argv, 1);
+                                       (void *) N_PRODUCER_CONSUMER_ARGS, (void *) producer_argv, 1);
         assert(error == seL4_NoError);
 
         error = sel4utils_start_thread(&consumer, (sel4utils_thread_entry_fn) bench_consumer_funcs[j],
-                (void *) N_PRODUCER_CONSUMER_ARGS, (void *) consumer_argv, 1);
+                                       (void *) N_PRODUCER_CONSUMER_ARGS, (void *) consumer_argv, 1);
         assert(error == seL4_NoError);
 
         benchmark_wait_children(ep, "Broadcast bench waiters", 2);
@@ -234,8 +230,7 @@ benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_b
     seL4_TCB_Suspend(consumer.tcb.cptr);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     env_t *env;
     UNUSED int error;
@@ -288,7 +283,7 @@ main(int argc, char **argv)
     assert(error == seL4_NoError);
 
     benchmark_producer_consumer(env, done_ep.cptr, block_ep.cptr, &lock,
-            &producer_cv, &consumer_cv, results);
+                                &producer_cv, &consumer_cv, results);
 
     sync_cv_destroy(&env->slab_vka, &producer_cv);
     sync_cv_destroy(&env->slab_vka, &consumer_cv);

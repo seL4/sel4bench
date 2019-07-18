@@ -17,17 +17,36 @@ project(hardware C)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 
 set(configure_string "")
-config_option(AppHardwareBench APP_HARDWAREBENCH
+config_option(
+    AppHardwareBench
+    APP_HARDWAREBENCH
     "Application to benchmark hardware-related operations."
-    DEFAULT OFF
-    DEPENDS "KernelEnableBenchmarks;DefaultBenchDeps")
+    DEFAULT
+    OFF
+    DEPENDS
+    "KernelEnableBenchmarks;DefaultBenchDeps"
+)
 add_config_library(hardware "${configure_string}")
 
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(hardware EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(hardware hardware_Config sel4 muslc platsupport sel4platsupport
-    sel4benchsupport elf sel4utils sel4simple sel4bench utils sel4debug sel4muslcsys)
+target_link_libraries(
+    hardware
+    hardware_Config
+    sel4
+    muslc
+    platsupport
+    sel4platsupport
+    sel4benchsupport
+    elf
+    sel4utils
+    sel4simple
+    sel4bench
+    utils
+    sel4debug
+    sel4muslcsys
+)
 if(AppHardwareBench)
     set_property(GLOBAL APPEND PROPERTY sel4benchapps_property "$<TARGET_FILE:hardware>")
 endif()

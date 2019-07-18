@@ -27,8 +27,7 @@
 #define N_INTERRUPTS 500
 #define INTERRUPT_PERIOD_NS (100 * NS_IN_MS)
 
-void
-abort(void)
+void abort(void)
 {
     benchmark_finished(EXIT_FAILURE);
 }
@@ -38,8 +37,7 @@ size_t __arch_write(char *data, int count)
     return benchmark_write(data, count);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     env_t *env;
     irq_results_t *results;

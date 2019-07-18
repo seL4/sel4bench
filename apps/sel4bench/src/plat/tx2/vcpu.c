@@ -29,8 +29,7 @@
  * We don't parameterize the benchmarks or anything fancy, so nothing
  * particularly amazing is done in here.
  */
-static json_t *
-process_vcpu_results(void *r)
+static json_t *process_vcpu_results(void *r)
 {
     vcpu_benchmark_overall_results_t *raw_results = r;
     const int n_params = VCPU_BENCHMARK_N_PARAMS + 1;
@@ -118,15 +117,14 @@ static benchmark_t vcpu_benchmark = {
     .name = "vcpu",
     .enabled = config_set(CONFIG_APP_VCPU_BENCH),
     .results_pages = BYTES_TO_SIZE_BITS_PAGES(
-                                    sizeof(vcpu_benchmark_overall_results_t),
-                                    seL4_PageBits),
+        sizeof(vcpu_benchmark_overall_results_t),
+        seL4_PageBits),
     .process = process_vcpu_results,
     .init = blank_init
 };
 
-benchmark_t *
-vcpu_benchmark_new(void)
+benchmark_t *vcpu_benchmark_new(void)
 {
-   return &vcpu_benchmark;
+    return &vcpu_benchmark;
 }
 #endif

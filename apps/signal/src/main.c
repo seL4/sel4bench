@@ -38,8 +38,7 @@ typedef struct helper_thread {
     seL4_Word argc;
 } helper_thread_t;
 
-void
-abort(void)
+void abort(void)
 {
     benchmark_finished(EXIT_FAILURE);
 }
@@ -49,8 +48,8 @@ size_t __arch_write(char *data, int count)
     return benchmark_write(data, count);
 }
 
-void
-wait_fn(int argc, char **argv) {
+void wait_fn(int argc, char **argv)
+{
 
     assert(argc == N_WAIT_ARGS);
     seL4_CPtr ntfn = (seL4_CPtr) atol(argv[0]);
@@ -69,8 +68,7 @@ wait_fn(int argc, char **argv) {
 }
 
 /* this signal function expects to switch threads (ie wait_fn is higher prio) */
-void
-low_prio_signal_fn(int argc, char **argv)
+void low_prio_signal_fn(int argc, char **argv)
 {
     assert(argc == N_LO_SIGNAL_ARGS);
     seL4_CPtr ntfn = (seL4_CPtr) atol(argv[0]);
@@ -91,8 +89,7 @@ low_prio_signal_fn(int argc, char **argv)
     seL4_Wait(ntfn, NULL);
 }
 
-void
-high_prio_signal_fn(int argc, char **argv)
+void high_prio_signal_fn(int argc, char **argv)
 {
     assert(argc == N_HI_SIGNAL_ARGS);
     seL4_CPtr ntfn = (seL4_CPtr) atol(argv[0]);
@@ -159,17 +156,16 @@ static void stop_threads(helper_thread_t *first, helper_thread_t *second)
     assert(error == seL4_NoError);
 }
 
-static void
-benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
+static void benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
 {
     helper_thread_t wait = {
-         .argc = N_WAIT_ARGS,
-         .fn = (sel4utils_thread_entry_fn) wait_fn,
+        .argc = N_WAIT_ARGS,
+        .fn = (sel4utils_thread_entry_fn) wait_fn,
     };
 
     helper_thread_t signal = {
-         .argc = N_LO_SIGNAL_ARGS,
-         .fn = (sel4utils_thread_entry_fn) low_prio_signal_fn,
+        .argc = N_LO_SIGNAL_ARGS,
+        .fn = (sel4utils_thread_entry_fn) low_prio_signal_fn,
     };
 
     ccnt_t end;
@@ -215,8 +211,7 @@ benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t *results)
     stop_threads(&wait, &signal);
 }
 
-void
-measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
+void measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
 {
     ccnt_t start, end;
     for (int i = 0; i < N_RUNS; i++) {
@@ -227,8 +222,7 @@ measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
     }
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     env_t *env;
     UNUSED int error;

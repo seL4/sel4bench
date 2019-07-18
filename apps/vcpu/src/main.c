@@ -111,8 +111,7 @@ size_t __arch_write(char *data, int count)
 
 /** Initialize one guest_t structure to represent a runnable VCPU thread.
  */
-void
-guest_exec(guest_t *g)
+void guest_exec(guest_t *g)
 {
     int error;
     seL4_UserContext regs = {0};
@@ -142,8 +141,7 @@ guest_exec(guest_t *g)
     assert(g->magic == VCPU_BENCH_SHDATA_MAGIC);
 }
 
-void
-guest_init(guest_t *g, env_t *env, int id)
+void guest_init(guest_t *g, env_t *env, int id)
 {
     int error;
     seL4_ARM_VCPU_ReadRegs_t vrerr;
@@ -235,14 +233,13 @@ guest_init(guest_t *g, env_t *env, int id)
     assert(error == 0);
 }
 
-static inline uintptr_t
-get_pmcr_el0(void)
+static inline uintptr_t get_pmcr_el0(void)
 {
     uintptr_t ret;
 
     asm volatile(
         "mrs %0, pmcr_el0\n"
-        : "=r" (ret));
+        : "=r"(ret));
     return ret;
 }
 
@@ -256,20 +253,18 @@ getPc(void)
 
     asm volatile(
         "mov %0, lr\n"
-        : "=r" (ret));
+        : "=r"(ret));
 
     return ret;
 }
 
-static void
-set_pmccfiltr_el0(uint32_t val)
+static void set_pmccfiltr_el0(uint32_t val)
 {
     asm volatile("msr pmccfiltr_el0, %0\n"
-                 :: "r" (val));
+                 :: "r"(val));
 }
 
-static uint32_t
-get_pmccfilter_el0(void)
+static uint32_t get_pmccfilter_el0(void)
 {
     uint32_t val;
 
@@ -301,8 +296,7 @@ get_pmccfilter_el0(void)
  * @param[in] onoff Boolean stating which state to toggle PL2 cycle counting
  *                  into.
  */
-static void
-vcpu_bm_toggle_cycle_counting_in_pl2(bool onoff)
+static void vcpu_bm_toggle_cycle_counting_in_pl2(bool onoff)
 {
     /* We can use some deductive reasoning:
      * ARMv7-A manual, Section A1.4.2 says that if virtualization extensions
@@ -336,8 +330,7 @@ vcpu_bm_toggle_cycle_counting_in_pl2(bool onoff)
     }
 }
 
-static seL4_MessageInfo_t
-vmm_handle_hypcall(env_t *env, seL4_Word badge, seL4_MessageInfo_t tag)
+static seL4_MessageInfo_t vmm_handle_hypcall(env_t *env, seL4_Word badge, seL4_MessageInfo_t tag)
 {
     int ret = 0;
     assert(badge != 0);
@@ -516,8 +509,7 @@ vmm_handle_hypcall(env_t *env, seL4_Word badge, seL4_MessageInfo_t tag)
     return seL4_MessageInfo_set_length(tag, ret);
 }
 
-static seL4_MessageInfo_t
-vmm_handle_sel4_fault(env_t *env, seL4_Word badge, seL4_MessageInfo_t tag)
+static seL4_MessageInfo_t vmm_handle_sel4_fault(env_t *env, seL4_Word badge, seL4_MessageInfo_t tag)
 {
     seL4_Word guestid, fault_type;
 
@@ -541,8 +533,7 @@ vmm_handle_sel4_fault(env_t *env, seL4_Word badge, seL4_MessageInfo_t tag)
     return seL4_MessageInfo_new(1, 0, 0, 0);
 }
 
-static int
-vcpu_bench_setup_log_buffer_frame(env_t *env)
+static int vcpu_bench_setup_log_buffer_frame(env_t *env)
 {
     int err;
 
@@ -574,8 +565,7 @@ vcpu_bench_setup_log_buffer_frame(env_t *env)
     return 0;
 }
 
-static ccnt_t
-get_ccnt_read_overhead_avg(void)
+static ccnt_t get_ccnt_read_overhead_avg(void)
 {
     ccnt_t prev_stamp, min_overhead, max_overhead, total_overhead, avg_overhead;
 
@@ -616,8 +606,7 @@ get_ccnt_read_overhead_avg(void)
     return avg_overhead;
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     int err, n_guests_exited;
     env_t *env;

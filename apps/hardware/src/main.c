@@ -24,8 +24,7 @@
 
 #include <arch/hardware.h>
 
-void
-abort(void)
+void abort(void)
 {
     benchmark_finished(EXIT_FAILURE);
 }
@@ -35,8 +34,7 @@ size_t __arch_write(char *data, int count)
     return benchmark_write(data, count);
 }
 
-void
-measure_nullsyscall_overhead(ccnt_t *results)
+void measure_nullsyscall_overhead(ccnt_t *results)
 {
     ccnt_t start, end;
     for (int i = 0; i < N_RUNS; i++) {
@@ -59,8 +57,7 @@ void measure_nullsyscall(ccnt_t *results)
 
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     env_t *env;
     UNUSED int error;
