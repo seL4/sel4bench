@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#include <autoconf.h>
+
 #define DO_NTFN_OP(ntfn, sys, syscall) do {\
     uint32_t ep_copy = ntfn; \
     asm volatile ( \

@@ -16,12 +16,9 @@ project(irq C)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 
 set(configure_string "")
-config_option(AppIrqBench APP_IRQBENCH
-    "Application to benchmark seL4 IRQs from inside the kernel.\
+config_option(AppIrqBench APP_IRQBENCH "Application to benchmark seL4 IRQs from inside the kernel.\
     Requires tracepoints (see irq-tracepoint branch or kernel.\
-    This app currently doesn't build."
-    DEFAULT OFF
-    DEPENDS "DefaultBenchDeps")
+    This app currently doesn't build." DEFAULT OFF DEPENDS "DefaultBenchDeps")
 add_config_library(sel4benchirq "${configure_string}")
 
 file(GLOB deps src/*.c)
@@ -29,5 +26,5 @@ list(SORT deps)
 add_executable(irq EXCLUDE_FROM_ALL ${deps})
 
 if(AppIrqBench)
-    target_link_libraries(irq sel4benchirq_Config sel4benchsupport)
+    target_link_libraries(irq sel4benchirq_Config kernel_autoconf sel4benchsupport)
 endif()

@@ -10,11 +10,11 @@
  * @TAG(DATA61_GPL)
  */
 
-#ifndef __SELBENCH_SMP_H
-#define __SELBENCH_SMP_H
+#pragma once
 
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
+#include <smp/gen_config.h>
 
 #ifdef CONFIG_APP_SMPBENCH
 #include <arch/smp.h>
@@ -42,5 +42,3 @@ benchmark_params_t smp_benchmark_params[] = {
 typedef struct smp_results {
     ccnt_t benchmarks_result[TESTS][CONFIG_MAX_NUM_NODES][RUNS];
 } smp_results_t;
-
-#endif /* __SELBENCH_SMP_H */

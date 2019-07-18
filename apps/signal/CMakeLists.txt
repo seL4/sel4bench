@@ -16,16 +16,21 @@ project(signal C)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 
 set(configure_string "")
-config_option(AppSignalBench APP_SIGNALBENCH
+config_option(
+    AppSignalBench
+    APP_SIGNALBENCH
     "Application to benchmark seL4 signals without modification to the kernel."
-    DEFAULT ON
-    DEPENDS "DefaultBenchDeps")
+    DEFAULT
+    ON
+    DEPENDS
+    "DefaultBenchDeps"
+)
 add_config_library(sel4benchsignal "${configure_string}")
 
 file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(signal EXCLUDE_FROM_ALL ${deps})
-target_link_libraries(signal sel4benchsignal_Config sel4benchsupport sel4muslcsys)
+target_link_libraries(signal kernel_autoconf sel4benchsignal_Config sel4benchsupport sel4muslcsys)
 
 if(AppSignalBench)
     set_property(GLOBAL APPEND PROPERTY sel4benchapps_property "$<TARGET_FILE:signal>")
