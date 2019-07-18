@@ -32,7 +32,7 @@ list(SORT deps)
 add_executable(irquser EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
     irquser
-    kernel_autoconf
+    sel4_autoconf
     sel4benchirquser_Config
     sel4
     muslc

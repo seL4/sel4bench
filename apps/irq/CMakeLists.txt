@@ -26,5 +26,5 @@ list(SORT deps)
 add_executable(irq EXCLUDE_FROM_ALL ${deps})
 
 if(AppIrqBench)
-    target_link_libraries(irq sel4benchirq_Config kernel_autoconf sel4benchsupport)
+    target_link_libraries(irq sel4benchirq_Config sel4_autoconf sel4benchsupport)
 endif()

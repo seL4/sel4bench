@@ -32,7 +32,7 @@ list(SORT deps)
 add_executable(page_mapping EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
     page_mapping
-    kernel_autoconf
+    sel4_autoconf
     sel4benchpagemapping_Config
     sel4
     muslc

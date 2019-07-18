@@ -32,7 +32,7 @@ list(SORT deps)
 add_executable(vcpu EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
     vcpu
-    kernel_autoconf
+    sel4_autoconf
     sel4benchvcpu_Config
     sel4
     muslc

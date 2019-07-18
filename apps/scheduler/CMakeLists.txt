@@ -32,7 +32,7 @@ list(SORT deps)
 add_executable(scheduler EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
     scheduler
-    kernel_autoconf
+    sel4_autoconf
     sel4benchscheduler_Config
     sel4
     muslc

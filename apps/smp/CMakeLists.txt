@@ -32,7 +32,7 @@ file(GLOB deps src/*.c)
 add_executable(smp EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
     smp
-    kernel_autoconf
+    sel4_autoconf
     smp_Config
     muslc
     sel4

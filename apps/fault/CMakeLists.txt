@@ -35,7 +35,7 @@ if("${PLATFORM}" STREQUAL "sabre")
 endif()
 target_link_libraries(
     fault
-    kernel_autoconf
+    sel4_autoconf
     sel4benchfault_Config
     sel4
     sel4bench

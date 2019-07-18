@@ -56,7 +56,7 @@ if(Sel4Bench)
         sel4bench
         sel4
         sel4muslcsys
-        kernel_autoconf
+        sel4_autoconf
         sel4benchapp_Config
         sel4benchfault_Config
         hardware_Config

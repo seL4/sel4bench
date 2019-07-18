@@ -51,7 +51,7 @@ list(SORT deps)
 add_executable(ipc EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
     ipc
-    kernel_autoconf
+    sel4_autoconf
     sel4benchipc_Config
     sel4
     muslc

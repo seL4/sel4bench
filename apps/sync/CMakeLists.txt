@@ -32,7 +32,7 @@ list(SORT deps)
 add_executable(sync EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
     sync
-    kernel_autoconf
+    sel4_autoconf
     sel4benchsync_Config
     sel4benchsupport
     sel4sync
