@@ -75,7 +75,7 @@ if(NOT Sel4benchAllowSettingsOverride)
         endif()
 
         # Elfloader settings that correspond to how Data61 sets its boards up.
-        ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelSel4Arch})
+        ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
     elseif(KernelArchX86)
         set(AllowUnstableOverhead ON CACHE BOOL "" FORCE)
         set(KernelX86MicroArch "haswell" CACHE STRING "" FORCE)
