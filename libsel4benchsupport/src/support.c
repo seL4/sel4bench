@@ -26,6 +26,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <arch_stdio.h>
 #include <string.h>
 #include <rpc.pb.h>
 
@@ -56,7 +57,7 @@ static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 /* serial server */
 static serial_client_context_t context;
 
-size_t benchmark_write(char *data, int count)
+size_t benchmark_write(void *data, size_t count)
 {
     return (size_t) serial_server_write(&context, data, count);
 }
@@ -517,6 +518,8 @@ void benchmark_init_timer(env_t *env)
 
 env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
 {
+    sel4muslcsys_register_stdio_write_fn(benchmark_write);
+
     /* parse arguments */
     if (argc < 1) {
         ZF_LOGF("Insufficient arguments, expected 1, got %d\n", (int) argc);

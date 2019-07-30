@@ -64,7 +64,7 @@ env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t obje
 /* signal to the benchmark driver process that we are done */
 NORETURN void benchmark_finished(int exit_code);
 /* Write for benchmarks. prints via a serial server in the initial task */
-size_t benchmark_write(char *buf, int count);
+size_t benchmark_write(void *buf, size_t count);
 
 /* Initialise the timer for the benchmark to use */
 void benchmark_init_timer(env_t *env);
