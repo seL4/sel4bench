@@ -14,7 +14,11 @@
 #include <stdio.h>
 
 #include <sel4platsupport/timer.h>
+#include <sel4platsupport/irq.h>
 #include <utils/time.h>
+
+#include <platsupport/irq.h>
+#include <platsupport/ltimer.h>
 
 #include <sel4bench/arch/sel4bench.h>
 #include <sel4bench/kernel_logging.h>
@@ -49,8 +53,10 @@ void spinner_fn(int argc, char **argv)
 static seL4_CPtr done_ep;
 /* ntfn for ticker to wait for timer irqs on */
 static seL4_CPtr timer_signal;
-/* timer */
-seL4_timer_t *timer;
+/* initialised IRQ interface */
+static ps_irq_ops_t *irq_ops;
+/* ntfn_id of the timer notification provided to the IRQ interface */
+static ntfn_id_t timer_ntfn_id;
 
 void ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
 {
@@ -63,7 +69,7 @@ void ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
         seL4_Wait(timer_signal, &badge);
         /* record result */
         SEL4BENCH_READ_CCNT(end);
-        sel4platsupport_handle_timer_irq(timer, badge);
+        sel4platsupport_irq_handle(irq_ops, timer_ntfn_id, badge);
         end_low = (seL4_Word) end;
         start = (seL4_Word) * current_time;
         results[i] = end_low - start;
@@ -97,13 +103,14 @@ int main(int argc, char **argv)
 
     /* set up globals */
     done_ep = endpoint.cptr;
-    timer = &env->timer;
     timer_signal = env->ntfn.cptr;
+    irq_ops = &env->io_ops.irq_ops;
+    timer_ntfn_id = env->ntfn_id;
 
-    int error = ltimer_reset(&env->timer.ltimer);
+    int error = ltimer_reset(&env->ltimer);
     ZF_LOGF_IF(error, "Failed to start timer");
 
-    error = ltimer_set_timeout(&env->timer.ltimer, INTERRUPT_PERIOD_NS, TIMEOUT_PERIODIC);
+    error = ltimer_set_timeout(&env->ltimer, INTERRUPT_PERIOD_NS, TIMEOUT_PERIODIC);
     ZF_LOGF_IF(error, "Failed to configure timer");
 
     sel4bench_init();

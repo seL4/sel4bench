@@ -47,7 +47,7 @@ static inline void wait_for_benchmark(env_t *env)
 {
     seL4_Word badge;
     seL4_Wait(env->ntfn.cptr, &badge);
-    sel4platsupport_handle_timer_irq(&env->timer, badge);
+    sel4platsupport_irq_handle(&env->io_ops.irq_ops, env->ntfn_id, badge);
 }
 
 static inline void delay_warmup_period(env_t *env)
@@ -216,8 +216,8 @@ int main(int argc, char *argv[])
         zigset(i, ZIGSEED + i);
     }
 
-    ZF_LOGF_IF(ltimer_reset(&env->timer.ltimer) != 0, "Failed to start timer\n");
-    ZF_LOGF_IF(ltimer_set_timeout(&env->timer.ltimer, NS_IN_S, TIMEOUT_PERIODIC) != 0, "Failed to configure timer\n");
+    ZF_LOGF_IF(ltimer_reset(&env->ltimer) != 0, "Failed to start timer\n");
+    ZF_LOGF_IF(ltimer_set_timeout(&env->ltimer, NS_IN_S, TIMEOUT_PERIODIC) != 0, "Failed to configure timer\n");
 
     for (int i = 0; i < nr_cores; i++) {
         size_t name_sz = strlen("ping") + WORD_STRING_SIZE + 1;
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
     }
 
     benchmark_multicore_ipc_throughput(env, results);
-    ZF_LOGF_IF(ltimer_reset(&env->timer.ltimer) != 0, "Failed to stop timer\n");
+    ZF_LOGF_IF(ltimer_reset(&env->ltimer) != 0, "Failed to stop timer\n");
 
     benchmark_finished(EXIT_SUCCESS);
     return 0;
