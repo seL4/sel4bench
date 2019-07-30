@@ -16,8 +16,7 @@
 
 #define IMX6_MAX_FREQ (996 * MHZ)
 
-void
-plat_setup(env_t *env)
+void plat_setup(env_t *env)
 {
     /* set to highest cpu freq */
     int error = sel4platsupport_new_io_mapper(&env->vspace, &env->vka, &env->ops.io_mapper);
@@ -25,11 +24,11 @@ plat_setup(env_t *env)
 
     clock_sys_t clock;
     error = clock_sys_init(&env->ops, &clock);
-	ZF_LOGF_IF(error != 0, "clock_sys_init failed");
+    ZF_LOGF_IF(error != 0, "clock_sys_init failed");
 
     clk_t *clk = clk_get_clock(&clock, CLK_ARM);
     ZF_LOGF_IF(error != 0, "Failed to get clock");
 
     freq_t freq = clk_set_freq(clk, IMX6_MAX_FREQ);
-	ZF_LOGF_IF(freq != IMX6_MAX_FREQ, "Failed to set imx6 freq");
+    ZF_LOGF_IF(freq != IMX6_MAX_FREQ, "Failed to set imx6 freq");
 }
