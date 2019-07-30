@@ -33,6 +33,7 @@
 #include <benchmark.h>
 
 #include <utils/util.h>
+#include <sel4/sel4.h>
 
 #include "support.h"
 
@@ -60,23 +61,6 @@ static serial_client_context_t context;
 size_t benchmark_write(void *data, size_t count)
 {
     return (size_t) serial_server_write(&context, data, count);
-}
-
-NORETURN void benchmark_finished(int exit_code)
-{
-    /* stop the timer */
-    if (env.timer_initialised) {
-        sel4platsupport_destroy_timer(&env.timer, &env.slab_vka);
-    }
-
-    /* stop the serial */
-    serial_server_disconnect(&context);
-
-    /* send back exit code */
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-    seL4_SetMR(0, exit_code);
-    seL4_Call(SEL4UTILS_ENDPOINT_SLOT, info);
-    while (true);
 }
 
 static void parse_code_region(sel4utils_elf_region_t *region)
@@ -497,23 +481,47 @@ static void benchmark_utspace_free_fn(void *data, seL4_Word type, seL4_Word size
     sel4rpc_call(rpc_client, &msg, seL4_CapNull, seL4_CapNull, seL4_CapNull);
 }
 
+static vka_utspace_alloc_at_fn utspace_alloc_copy;
+static vka_utspace_free_fn utspace_free_copy;
+
 void benchmark_init_timer(env_t *env)
 {
-    ps_io_ops_t ops;
-    memset(&ops, 0, sizeof(ops));
-    vka_t vka = env->slab_vka;
-    vka.utspace_alloc_at = benchmark_utspace_alloc_at_fn;
-    vka.utspace_free = benchmark_utspace_free_fn;
-    int error = sel4platsupport_new_io_ops(env->vspace, vka, &ops);
-    if (error) {
-        ZF_LOGF("Failed to get io ops");
-    }
+    /* Copy and replace the vka utspace functions */
+    utspace_alloc_copy = env->slab_vka.utspace_alloc_at;
+    utspace_free_copy = env->slab_vka.utspace_free;
+    env->slab_vka.utspace_alloc_at = benchmark_utspace_alloc_at_fn;
+    env->slab_vka.utspace_free = benchmark_utspace_free_fn;
 
     rpc_client = &env->rpc_client;
-    error = sel4platsupport_init_default_timer_ops(&env->slab_vka, &env->vspace,
-                                                   &env->simple, ops, env->ntfn.cptr, &env->timer);
+
+    int error = ltimer_default_init(&env->ltimer, env->io_ops, NULL, NULL);
     ZF_LOGF_IF(error, "Failed to init timer");
+
+    /* Restore the vka utspace functions */
+    env->slab_vka.utspace_alloc_at = utspace_alloc_copy;
+    env->slab_vka.utspace_free = utspace_free_copy;
+
     env->timer_initialised = true;
+}
+
+NORETURN void benchmark_finished(int exit_code)
+{
+    /* stop the timer */
+    if (env.timer_initialised) {
+        /* overwrite parts of the VKA again so that it can free the resources */
+        env.slab_vka.utspace_free = benchmark_utspace_free_fn;
+
+        ltimer_destroy(&env.ltimer);
+    }
+
+    /* stop the serial */
+    serial_server_disconnect(&context);
+
+    /* send back exit code */
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+    seL4_SetMR(0, exit_code);
+    seL4_Call(SEL4UTILS_ENDPOINT_SLOT, info);
+    while (true);
 }
 
 env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
@@ -557,7 +565,28 @@ env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t obje
     }
 
     /* allocate a notification for timers */
-    ZF_LOGF_IFERR(vka_alloc_notification(&env.slab_vka, &env.ntfn), "Failed to allocate ntfn");
+    error = vka_alloc_notification(&env.slab_vka, &env.ntfn);
+    ZF_LOGF_IF(error, "Failed to allocate ntfn");
+
+    /* initialise a ps_io_ops_t structure, individually as we don't want to
+     * use the default IRQ interface */
+    error = sel4platsupport_new_malloc_ops(&env.io_ops.malloc_ops);
+    ZF_LOGF_IF(error, "Failed to setup the malloc interface");
+
+    error = sel4platsupport_new_io_mapper(&env.vspace, &env.slab_vka, &env.io_ops.io_mapper);
+    ZF_LOGF_IF(error, "Failed to setup the IO mapper");
+
+    error = sel4platsupport_new_fdt_ops(&env.io_ops.io_fdt, &env.simple, &env.io_ops.malloc_ops);
+    ZF_LOGF_IF(error, "Failed to setup the FDT interface");
+
+    error = sel4platsupport_new_arch_ops(&env.io_ops, &env.simple, &env.slab_vka);
+    ZF_LOGF_IF(error, "Failed to setup the arch ops");
+
+    error = sel4platsupport_new_mini_irq_ops(&env.io_ops.irq_ops, &env.slab_vka, &env.simple, &env.io_ops.malloc_ops,
+                                             env.ntfn.cptr, MASK(seL4_BadgeBits));
+    ZF_LOGF_IF(error, "Failed to setup the mini IRQ interface");
+
+    env.ntfn_id = MINI_IRQ_INTERFACE_NTFN_ID;
 
     return &env;
 }

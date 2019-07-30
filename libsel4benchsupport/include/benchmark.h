@@ -16,6 +16,9 @@
 #include <sel4bench/sel4bench.h>
 #include <sel4platsupport/timer.h>
 #include <sel4rpc/client.h>
+#include <platsupport/io.h>
+#include <platsupport/irq.h>
+#include <platsupport/ltimer.h>
 #include <sel4utils/api.h>
 #include <sel4utils/process.h>
 #include <sel4utils/slab.h>
@@ -28,6 +31,8 @@
 #define NUM_AVERAGE_EVENTS (SEL4BENCH_NUM_GENERIC_EVENTS + 1u)
 #define CYCLE_COUNT_EVENT SEL4BENCH_NUM_GENERIC_EVENTS
 #define AVERAGE_RUNS 10000
+
+#define MAX_TIMER_IRQS 4
 
 /* benchmarking environment set up by root task */
 typedef struct env {
@@ -47,8 +52,8 @@ typedef struct env {
     sel4utils_elf_region_t region;
     /* virtual address to write benchmark results to */
     void *results;
-    /* seL4 ltimer wrapper */
-    seL4_timer_t timer;
+    /* ltimer interface */
+    ltimer_t ltimer;
     /* has the timer been initialised? */
     bool timer_initialised;
     /* notification that is bound to both timer irq handlers */
@@ -57,6 +62,10 @@ typedef struct env {
     benchmark_args_t *args;
     /* rpc client for communicating with benchmark driver */
     sel4rpc_client_t rpc_client;
+    /* platsupport IO ops structure to use for the timer driver */
+    ps_io_ops_t io_ops;
+    /* ID of the notification managed by the mini IRQ interface */
+    ntfn_id_t ntfn_id;
 } env_t;
 
 /* initialise the benchmarking environment and return it */
