@@ -20,7 +20,7 @@ void
 plat_setup(env_t *env)
 {
     /* set to highest cpu freq */
-    int error = sel4platsupport_new_io_mapper(env->vspace, env->vka, &env->ops.io_mapper);
+    int error = sel4platsupport_new_io_mapper(&env->vspace, &env->vka, &env->ops.io_mapper);
     ZF_LOGF_IF(error != 0, "Failed to get io mapper");
 
     clock_sys_t clock;
