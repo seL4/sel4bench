@@ -418,6 +418,12 @@ static seL4_CPtr sched_ctrl(void *data, int core)
     return ((env_t *) data)->args->sched_ctrl + core;
 }
 
+static ssize_t extended_bootinfo_len(void *data, seL4_Word type)
+{
+    /* This is mainly used to suppress warnings about how the original function was not implemented. */
+    return -1;
+}
+
 static void init_simple(env_t *env)
 {
     env->simple.data = env;
@@ -440,6 +446,7 @@ static void init_simple(env_t *env)
     //env->simple.print =
     //env->simple.arch_info =
     //env->simple.extended_bootinfo =
+    env->simple.extended_bootinfo_len = extended_bootinfo_len;
 
     env->simple.arch_simple.data = env;
     env->simple.arch_simple.irq = get_irq;
