@@ -68,11 +68,6 @@ void abort(void)
     benchmark_finished(EXIT_FAILURE);
 }
 
-size_t __arch_write(char *data, int count)
-{
-    return benchmark_write(data, count);
-}
-
 static void timing_init(void)
 {
     sel4bench_init();

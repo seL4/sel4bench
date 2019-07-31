@@ -104,11 +104,6 @@ const char *vcpu_benchmark_names[] = {
     "VCPU_BENCHMARK_REPLY_SYSCALL",
 };
 
-size_t __arch_write(char *data, int count)
-{
-    return benchmark_write(data, count);
-}
-
 /** Initialize one guest_t structure to represent a runnable VCPU thread.
  */
 void guest_exec(guest_t *g)

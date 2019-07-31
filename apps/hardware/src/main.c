@@ -29,11 +29,6 @@ void abort(void)
     benchmark_finished(EXIT_FAILURE);
 }
 
-size_t __arch_write(char *data, int count)
-{
-    return benchmark_write(data, count);
-}
-
 void measure_nullsyscall_overhead(ccnt_t *results)
 {
     ccnt_t start, end;

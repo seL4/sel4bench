@@ -43,11 +43,6 @@ void abort(void)
     benchmark_finished(EXIT_FAILURE);
 }
 
-size_t __arch_write(char *data, int count)
-{
-    return benchmark_write(data, count);
-}
-
 void wait_fn(int argc, char **argv)
 {
 
