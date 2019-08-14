@@ -9,7 +9,7 @@
 
   @TAG(DATA61_BSD)
 -->
-# sel4bench
+# hullo
 
 sel4 benchmarking applications and support library.
 
