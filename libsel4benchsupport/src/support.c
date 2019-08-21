@@ -171,7 +171,7 @@ static inline sel4utils_process_config_t get_process_config(env_t *env, uint8_t 
     config = process_config_create_cnode(config, CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
     config = process_config_create_vspace(config, &env->region, 1);
     config = process_config_priority(config, prio);
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
     config.sched_params = sched_params_round_robin(config.sched_params, &env->simple, 0,
                                                    CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
 #endif
@@ -219,7 +219,7 @@ void benchmark_configure_thread(env_t *env, seL4_CPtr fault_ep, uint8_t prio, ch
     config = thread_config_priority(config, prio);
     config = thread_config_mcp(config, prio);
     config = thread_config_auth(config, simple_get_tcb(&env->simple));
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
     config.sched_params = sched_params_round_robin(config.sched_params, &env->simple, 0,
                                                    CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_US);
 #endif
@@ -378,7 +378,7 @@ static int get_cap_count(void *data)
         last--;
     }
 
-    if (!config_set(CONFIG_KERNEL_RT)) {
+    if (!config_set(CONFIG_KERNEL_MCS)) {
         /* skip the 2 RT only slots */
         last -= 2;
     }
@@ -400,7 +400,7 @@ static seL4_CPtr get_nth_cap(void *data, int n)
             n++;
         }
         /* now introduce a 2 cptr hole if we're not on the RT kernel */
-        if (!config_set(CONFIG_KERNEL_RT) && n >= SEL4UTILS_SCHED_CONTEXT_SLOT) {
+        if (!config_set(CONFIG_KERNEL_MCS) && n >= SEL4UTILS_SCHED_CONTEXT_SLOT) {
             n += 2;
         }
         return n;

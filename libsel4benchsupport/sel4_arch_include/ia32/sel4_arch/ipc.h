@@ -72,7 +72,7 @@
     ); \
 } while(0)
 
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
 #define DO_REPLY_RECV(ep, tag, ro, sys) do { \
     uint32_t ep_copy = ep; \
     uint32_t ro_copy = ro; \
@@ -197,7 +197,7 @@
     ); \
 } while(0)
 
-#endif /* CONFIG_KERNEL_RT */
+#endif /* CONFIG_KERNEL_MCS */
 
 #define READ_COUNTER_BEFORE SEL4BENCH_READ_CCNT
 #define READ_COUNTER_AFTER  SEL4BENCH_READ_CCNT

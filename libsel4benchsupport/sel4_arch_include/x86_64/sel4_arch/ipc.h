@@ -64,7 +64,7 @@
             ); \
 } while (0)
 
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
 #define DO_REPLY_RECV(ep, tag, ro, sys) do { \
     uint64_t ep_copy = ep; \
     register seL4_Word ro_copy asm("r12") = ro;\
@@ -166,7 +166,7 @@
             :  "rcx", "rbx","r11" \
             ); \
 } while (0)
-#endif /* CONFIG_KERNEL_RT */
+#endif /* CONFIG_KERNEL_MCS */
 
 #define READ_COUNTER_BEFORE(var) do { \
     uint32_t low, high; \

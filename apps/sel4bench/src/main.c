@@ -84,7 +84,7 @@ static void setup_fault_handler(env_t *env)
     error = seL4_TCB_SetPriority(fault_handler.tcb.cptr, simple_get_tcb(&env->simple), seL4_MaxPrio);
     ZF_LOGF_IFERR(error, "Failed to set prio for fault handler");
 
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         /* give it a sc */
         error = vka_alloc_sched_context(&env->vka, &fault_handler.sched_context);
         ZF_LOGF_IF(error, "Failed to allocate sc");
@@ -113,7 +113,7 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
     ZF_LOGF_IFERR(error, "Failed to configure process for %s benchmark", benchmark->name);
 
     /* initialise sched ctrl for benchmark environment */
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env->simple, 0);
         args->sched_ctrl = sel4utils_copy_cap_to_process(&process, &env->vka, sched_ctrl);
         for (int i = 1; i < CONFIG_MAX_NUM_NODES; i++) {

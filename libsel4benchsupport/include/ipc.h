@@ -66,7 +66,7 @@ typedef struct benchmark_params {
     uint8_t length;
     /* id of overhead calculation for this function */
     enum overheads overhead_id;
-    /* if CONFIG_KERNEL_RT, should the server be passive? */
+    /* if CONFIG_KERNEL_MCS, should the server be passive? */
     bool passive;
 } benchmark_params_t;
 

@@ -45,7 +45,7 @@
 } while(0)
 
 
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
 #define DO_REPLY_RECV_10(ep, tag, ro, swi) do { \
     register seL4_Word src asm("x0") = (seL4_Word)ep; \
     register seL4_MessageInfo_t info asm("x1") = tag; \
@@ -110,7 +110,7 @@
         : "r"(scno) \
     ); \
 } while(0)
-#endif /* CONFIG_KERNEL_RT */
+#endif /* CONFIG_KERNEL_MCS */
 
 #define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "svc #0")
 #define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, "nop")

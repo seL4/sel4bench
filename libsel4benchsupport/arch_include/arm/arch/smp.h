@@ -31,7 +31,7 @@ static inline void smp_benchmark_ping(seL4_CPtr ep)
 
 static inline void smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
 {
-#if CONFIG_KERNEL_RT
+#if CONFIG_KERNEL_MCS
     seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL, NULL, reply);
 #else
     seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL, NULL);

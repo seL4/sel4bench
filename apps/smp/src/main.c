@@ -97,7 +97,7 @@ void *pong_fn(int argc, char **argv, void *x)
 
     sel4bench_init();
 
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         /* signal that we are ready to be converted to passive */
         api_nbsend_recv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, reply);
     }
@@ -119,7 +119,7 @@ static inline void benchmark_multicore_reset_test(int nr_cores)
         pp_threads[i].pp_ipcs.calls_completed = 0;
 
         /* rebind ping's sc */
-        if (config_set(CONFIG_KERNEL_RT)) {
+        if (config_set(CONFIG_KERNEL_MCS)) {
             error = api_sc_unbind(pp_threads[i].ping.sched_context.cptr);
             ZF_LOGF_IF(error, "Failed to unbind pings sc");
 
@@ -168,7 +168,7 @@ static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *result
 
         for (int core_idx = 0; core_idx < nr_cores; core_idx++) {
             seL4_TCB_Resume(pp_threads[core_idx].pong.tcb.cptr);
-            if (config_set(CONFIG_KERNEL_RT)) {
+            if (config_set(CONFIG_KERNEL_MCS)) {
                 /* wait for pong */
                 seL4_Wait(pp_threads[core_idx].ep.cptr, NULL);
                 /* convert pong to passive */
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
 
         /* prepare thread for pp_ipcs on different cores */
         sched_params_t params = {0};
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
         params = sched_params_round_robin(params, &env->simple, i, CONFIG_BOOT_THREAD_TIME_SLICE * US_IN_MS);
 #else
         params.core = i;

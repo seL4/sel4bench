@@ -167,7 +167,7 @@ seL4_Word name(int argc, char *argv[]) { \
     seL4_CPtr ep = atoi(argv[0]);\
     seL4_CPtr result_ep = atoi(argv[1]);\
     seL4_CPtr reply = atoi(argv[2]);\
-    if (config_set(CONFIG_KERNEL_RT)) {\
+    if (config_set(CONFIG_KERNEL_MCS)) {\
         api_nbsend_recv(ep, tag, ep, NULL, reply);\
     } else {\
         recv_func(ep, NULL, reply); \
@@ -288,7 +288,7 @@ void run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
                                         server->argv, 1);
     ZF_LOGF_IF(error, "Failed to spawn server\n");
 
-    if (config_set(CONFIG_KERNEL_RT) && params->server_fn != IPC_RECV_FUNC) {
+    if (config_set(CONFIG_KERNEL_MCS) && params->server_fn != IPC_RECV_FUNC) {
         /* wait for server to tell us its initialised */
         seL4_Wait(ep, NULL);
 
@@ -306,7 +306,7 @@ void run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
     /* get results */
     *ret1 = get_result(result_ep_path.capPtr);
 
-    if (config_set(CONFIG_KERNEL_RT) && params->server_fn != IPC_RECV_FUNC && params->passive) {
+    if (config_set(CONFIG_KERNEL_MCS) && params->server_fn != IPC_RECV_FUNC && params->passive) {
         /* convert server to active so it can send us the result */
         error = api_sc_bind(server->process.thread.sched_context.cptr,
                             server->process.thread.tcb.cptr);
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 4,
         [seL4_EndpointObject] = 2,
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
         [seL4_SchedContextObject] = 4,
         [seL4_ReplyObject] = 4
 #endif
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
                     params->direction == DIR_TO ? "client --> server" : "server --> client",
                     params->client_prio, params->server_prio,
                     params->same_vspace ? "same" : "diff",
-                    (config_set(CONFIG_KERNEL_RT) && params->passive) ? "passive" : "active", params->length);
+                    (config_set(CONFIG_KERNEL_MCS) && params->passive) ? "passive" : "active", params->length);
 
             /* set up client for benchmark */
             int error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, auth, params->client_prio);

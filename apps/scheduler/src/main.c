@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 6,
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
         [seL4_SchedContextObject] = 6,
         [seL4_ReplyObject] = 6,
 #endif

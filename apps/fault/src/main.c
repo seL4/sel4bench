@@ -73,7 +73,7 @@ static inline seL4_Word fault_handler_start(seL4_CPtr ep, seL4_CPtr done_ep, seL
     seL4_Word ip;
 
     /* signal driver to convert us to passive and block */
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         api_nbsend_recv(done_ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, reply);
         ip = seL4_GetMR(0);
     } else {
@@ -196,7 +196,7 @@ void run_benchmark(void *faulter_fn, void *handler_fn, seL4_CPtr done_ep)
                                        (void *) N_HANDLER_ARGS, (void *) handler_argv, true);
     ZF_LOGF_IF(error, "Failed to start handler");
 
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         /* convert the fault handler to passive */
         ZF_LOGD("Waiting to convert handler to passive");
         seL4_Wait(done_ep, NULL);
@@ -212,7 +212,7 @@ void run_benchmark(void *faulter_fn, void *handler_fn, seL4_CPtr done_ep)
     /* benchmark runs */
     benchmark_wait_children(done_ep, "faulter", 1);
 
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         /* convert the fault handler to active */
         ZF_LOGD("Rebound sc\n");
         error = api_sc_bind(fault_handler.sched_context.cptr, fault_handler.tcb.cptr);
@@ -292,7 +292,7 @@ int main(int argc, char **argv)
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 2,
         [seL4_EndpointObject] = 2,
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
         [seL4_SchedContextObject] = 2,
         [seL4_ReplyObject] = 2,
 #endif

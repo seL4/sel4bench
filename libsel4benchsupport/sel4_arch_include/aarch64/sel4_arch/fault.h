@@ -13,7 +13,7 @@
 
 #include <autoconf.h>
 
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
 #define DO_REPLY_RECV_1(ep, ip, ro, swi) do { \
     register seL4_Word src asm("x0") = (seL4_Word)ep; \
     register seL4_MessageInfo_t info asm("x1") = seL4_MessageInfo_new(0, 0, 0, 1); \
@@ -43,7 +43,7 @@
     ip = mr0; \
 } while(0)
 
-#endif /* CONFIG_KERNEL_RT */
+#endif /* CONFIG_KERNEL_MCS */
 
 #define DO_REAL_REPLY_RECV_1(ep, mr0, ro) DO_REPLY_RECV_1(ep, mr0, ro, "svc #0")
 #define DO_NOP_REPLY_RECV_1(ep, mr0, ro)  DO_REPLY_RECV_1(ep, mr0, ro, "nop")
