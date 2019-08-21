@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __SELBENCH_IPC_H
-#define __SELBENCH_IPC_H
+#pragma once
 
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
@@ -49,11 +48,11 @@ typedef enum {
     IPC_RECV_FUNC = 9
 } helper_func_id_t;
 
-typedef seL4_Word (*helper_func_t)(int argc, char *argv[]);
+typedef seL4_Word(*helper_func_t)(int argc, char *argv[]);
 
 typedef struct benchmark_params {
     /* name of the function we are benchmarking */
-    const char* name;
+    const char *name;
     /* direction of the ipc */
     dir_t direction;
     /* functions for client and server to run */
@@ -71,7 +70,7 @@ typedef struct benchmark_params {
 } benchmark_params_t;
 
 struct overhead_benchmark_params {
-    const char* name;
+    const char *name;
 };
 
 /* array of benchmarks to run */
@@ -182,8 +181,7 @@ typedef struct ipc_results {
     ccnt_t benchmarks[ARRAY_SIZE(benchmark_params)][RUNS];
 } ipc_results_t;
 
-static inline bool
-results_stable(ccnt_t *array, size_t size)
+static inline bool results_stable(ccnt_t *array, size_t size)
 {
     for (size_t i = 1; i < size; i++) {
         if (array[i] != array[i - 1]) {
@@ -193,5 +191,3 @@ results_stable(ccnt_t *array, size_t size)
 
     return true;
 }
-
-#endif /* __SELBENCH_IPC_H */

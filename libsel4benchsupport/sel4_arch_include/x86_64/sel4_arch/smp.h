@@ -10,19 +10,16 @@
  * @TAG(DATA61_GPL)
  */
 
-#ifndef __SELBENCH_SEL4_ARCH_SMP_H
-#define __SELBENCH_SEL4_ARCH_SMP_H
+#pragma once
 
 #include <autoconf.h>
 
-static inline void
-smp_benchmark_ping(seL4_CPtr ep)
+static inline void smp_benchmark_ping(seL4_CPtr ep)
 {
     seL4_CallWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL);
 }
 
-static inline void
-smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
+static inline void smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
 {
 #ifdef CONFIG_KERNEL_MCS
     seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL, NULL, reply);
@@ -30,5 +27,3 @@ smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
     seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL, NULL);
 #endif
 }
-
-#endif /* __SELBENCH_SEL4_ARCH_SMP_H */

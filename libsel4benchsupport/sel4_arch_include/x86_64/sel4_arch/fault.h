@@ -47,13 +47,12 @@
     msg0 = mr0; \
 } while(0)
 
-static inline seL4_MessageInfo_t
-seL4_RecvWith1MR(seL4_CPtr src, seL4_Word *mr0, seL4_CPtr reply) {
+static inline seL4_MessageInfo_t seL4_RecvWith1MR(seL4_CPtr src, seL4_Word *mr0, seL4_CPtr reply)
+{
     return seL4_RecvWithMRs(src, NULL, mr0, NULL, NULL, NULL, reply);
 }
 
-static inline void
-seL4_ReplyWith1MR(seL4_Word mr0, seL4_CPtr dest)
+static inline void seL4_ReplyWith1MR(seL4_Word mr0, seL4_CPtr dest)
 {
     return seL4_SendWithMRs(dest, seL4_MessageInfo_new(0, 0, 0, 1), &mr0, NULL, NULL, NULL);
 }
@@ -85,13 +84,12 @@ seL4_ReplyWith1MR(seL4_Word mr0, seL4_CPtr dest)
     msg0 = mr0; \
 } while(0)
 
-static inline seL4_MessageInfo_t
-seL4_RecvWith1MR(seL4_CPtr src, seL4_Word *mr0, UNUSED seL4_CPtr reply) {
+static inline seL4_MessageInfo_t seL4_RecvWith1MR(seL4_CPtr src, seL4_Word *mr0, UNUSED seL4_CPtr reply)
+{
     return seL4_RecvWithMRs(src, NULL, mr0, NULL, NULL, NULL);
 }
 
-static inline void
-seL4_ReplyWith1MR(seL4_Word mr0, UNUSED seL4_CPtr dest)
+static inline void seL4_ReplyWith1MR(seL4_Word mr0, UNUSED seL4_CPtr dest)
 {
     return seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 1), &mr0, NULL, NULL, NULL);
 }
