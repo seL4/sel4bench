@@ -44,24 +44,9 @@ sel4_configure_platform_settings()
 if(RISCV32 OR RISCV64)
     message(FATAL_ERROR "RISC-V is not supported by sel4bench")
 endif()
-set(
-    valid_platforms ${KernelPlatform_all_strings}
-    # The following plaforms are for backwards compatibility reasons.
-    sabre
-    wandq
-    kzm
-    rpi3
-    exynos5250
-    exynos5410
-    exynos5422
-    am335x-boneblack
-    am335x-boneblue
-    x86_64
-    ia32
-)
+set(valid_platforms ${KernelPlatform_all_strings} ${correct_platform_strings_platform_aliases})
 set_property(CACHE PLATFORM PROPERTY STRINGS ${valid_platforms})
-list(FIND valid_platforms "${PLATFORM}" index)
-if("${index}" STREQUAL "-1")
+if(NOT "${PLATFORM}" IN_LIST valid_platforms)
     message(FATAL_ERROR "Invalid PLATFORM selected: \"${PLATFORM}\"
 Valid platforms are: \"${valid_platforms}\"")
 endif()
