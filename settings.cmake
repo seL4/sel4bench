@@ -25,6 +25,7 @@ list(
 
 set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/nanopb" CACHE INTERNAL "")
 
+set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 include(application_settings)
 
 # Declare a cache variable that enables/disablings the forcing of cache variables to
