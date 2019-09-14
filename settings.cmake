@@ -12,27 +12,34 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
-set(project_dir "${CMAKE_CURRENT_LIST_DIR}")
-get_filename_component(resolved_path ${CMAKE_CURRENT_LIST_FILE} REALPATH)
-# repo_dir is distinct from project_dir as this file is symlinked.
-# project_dir corresponds to the top level project directory, and
-# repo_dir is the absolute path after following the symlink.
-get_filename_component(repo_dir ${resolved_path} DIRECTORY)
+set(project_dir "${CMAKE_CURRENT_LIST_DIR}/../../")
+file(GLOB project_modules ${project_dir}/projects/*)
+list(
+    APPEND
+        CMAKE_MODULE_PATH
+        ${project_dir}/kernel
+        ${project_dir}/tools/seL4/cmake-tool/helpers/
+        ${project_dir}/tools/seL4/elfloader-tool/
+        ${project_modules}
+)
 
-include(${project_dir}/tools/seL4/cmake-tool/helpers/application_settings.cmake)
+set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/nanopb" CACHE INTERNAL "")
+
+include(application_settings)
 
 # Declare a cache variable that enables/disablings the forcing of cache variables to
 # the specific test values. By default it is disabled
 set(Sel4benchAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
 
-include(${repo_dir}/easy-settings.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/easy-settings.cmake)
 
 if(VCPU)
     set(ARM_HYP ON CACHE BOOL "ARM EL2 hypervisor features on or off" FORCE)
 endif()
 correct_platform_strings()
 
-include(${project_dir}/kernel/configs/seL4Config.cmake)
+find_package(seL4 REQUIRED)
+sel4_configure_platform_settings()
 if(RISCV32 OR RISCV64)
     message(FATAL_ERROR "RISC-V is not supported by sel4bench")
 endif()

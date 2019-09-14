@@ -11,33 +11,18 @@
 #
 
 cmake_minimum_required(VERSION 3.7.2)
-# Default dependencies on kernel benchmarking features. Declared here so that
-# all the benchmark applications can use it
-if(
-    (KernelArchX86 AND KernelExportPMCUser AND KernelX86DangerousMSR)
-    OR (KernelArchARM AND KernelArmExportPMUUser)
-    OR (KernelArchArmV6 AND KernelDangerousCodeInjection)
-    OR (KernelArchArmCortexA8 AND KernelDangerousCodeInjection)
-)
-    set(DefaultBenchDeps TRUE)
-else()
-    set(DefaultBenchDeps FALSE)
-endif()
 
-add_subdirectory(apps/fault)
-add_subdirectory(apps/hardware)
-add_subdirectory(apps/ipc)
-add_subdirectory(apps/irq)
-add_subdirectory(apps/irquser)
-add_subdirectory(apps/page_mapping)
-add_subdirectory(apps/scheduler)
-add_subdirectory(apps/signal)
-add_subdirectory(apps/smp)
-add_subdirectory(apps/sync)
-add_subdirectory(apps/vcpu)
-add_subdirectory(libsel4benchsupport)
+include(settings.cmake)
 
-# This needs to be after the applications so that sel4bench can grab all the elf files.
+project(sel4bench C CXX ASM)
+
+find_package(seL4 REQUIRED)
+find_package(elfloader-tool REQUIRED)
+
+sel4_import_kernel()
+elfloader_import_project()
+
 add_subdirectory(apps/sel4bench)
 
+include(simulation)
 GenerateSimulateScript()

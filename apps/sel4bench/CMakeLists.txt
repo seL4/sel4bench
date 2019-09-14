@@ -39,6 +39,47 @@ config_string(
     0
     UNQUOTE
 )
+
+# Default dependencies on kernel benchmarking features. Declared here so that
+# all the benchmark applications can use it
+if(
+    (KernelArchX86 AND KernelExportPMCUser AND KernelX86DangerousMSR)
+    OR (KernelArchARM AND KernelArmExportPMUUser)
+    OR (KernelArchArmV6 AND KernelDangerousCodeInjection)
+    OR (KernelArchArmCortexA8 AND KernelDangerousCodeInjection)
+)
+    set(DefaultBenchDeps TRUE)
+else()
+    set(DefaultBenchDeps FALSE)
+endif()
+
+find_package(musllibc REQUIRED)
+find_package(util_libs REQUIRED)
+find_package(seL4_libs REQUIRED)
+find_package(sel4_projects_libs REQUIRED)
+find_package(projects_libs REQUIRED)
+
+# This sets up environment build flags and imports musllibc and runtime libraries.
+musllibc_setup_build_environment_with_sel4runtime()
+sel4_import_libsel4()
+util_libs_import_libraries()
+sel4_libs_import_libraries()
+projects_libs_import_libraries()
+sel4_projects_libs_import_libraries()
+
+add_subdirectory(../fault fault)
+add_subdirectory(../hardware hardware)
+add_subdirectory(../ipc ipc)
+add_subdirectory(../irq irq)
+add_subdirectory(../irquser irquser)
+add_subdirectory(../page_mapping page_mapping)
+add_subdirectory(../scheduler scheduler)
+add_subdirectory(../signal signal)
+add_subdirectory(../smp smp)
+add_subdirectory(../sync sync)
+add_subdirectory(../vcpu vcpu)
+add_subdirectory(../../libsel4benchsupport libsel4benchsupport)
+
 config_option(Sel4Bench SEL4_BENCH "Enable seL4 benchmarking" DEFAULT ON)
 
 if(Sel4Bench)
@@ -47,6 +88,7 @@ if(Sel4Bench)
     file(GLOB static src/*.c src/plat/${KernelPlatform}/*.c)
 
     get_property(sel4benchapps GLOBAL PROPERTY sel4benchapps_property)
+    include(cpio)
     MakeCPIO(archive.o "${sel4benchapps}")
     add_executable(sel4benchapp EXCLUDE_FROM_ALL ${static} archive.o)
 
@@ -71,5 +113,6 @@ if(Sel4Bench)
         sel4benchsync_Config
         sel4benchvcpu_Config
     )
+    include(rootserver)
     DeclareRootserver(sel4benchapp)
 endif()
