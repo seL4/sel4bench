@@ -15,6 +15,10 @@ cmake_minimum_required(VERSION 3.7.2)
 project(fault C)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 
+if(KernelPlatformKZM)
+    message(FATAL_ERROR "Fault app not supported on kzm.")
+endif()
+
 set(configure_string "")
 config_option(
     AppFaultBench

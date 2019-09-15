@@ -113,11 +113,7 @@ if(NOT Sel4benchAllowSettingsOverride)
 
     # App-specific configuration
     if(FAULT)
-        if(KernelPlatformKZM)
-            message(FATAL_ERROR "Fault app not supported on kzm.")
-        else()
-            set(AppFaultBench ON CACHE BOOL "" FORCE)
-        endif()
+        set(AppFaultBench ON CACHE BOOL "" FORCE)
     else()
         set(AppFaultBench OFF CACHE BOOL "" FORCE)
     endif()
