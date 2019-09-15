@@ -28,10 +28,6 @@ set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/nanopb" CACHE INTERNAL "")
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 include(application_settings)
 
-# Declare a cache variable that enables/disablings the forcing of cache variables to
-# the specific test values. By default it is disabled
-set(Sel4benchAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
-
 include(${CMAKE_CURRENT_LIST_DIR}/easy-settings.cmake)
 
 if(VCPU)
@@ -41,7 +37,8 @@ correct_platform_strings()
 
 find_package(seL4 REQUIRED)
 sel4_configure_platform_settings()
-if(RISCV32 OR RISCV64)
+
+if(KernelArchRiscV)
     message(FATAL_ERROR "RISC-V is not supported by sel4bench")
 endif()
 set(valid_platforms ${KernelPlatform_all_strings} ${correct_platform_strings_platform_aliases})
@@ -51,11 +48,12 @@ if(NOT "${PLATFORM}" IN_LIST valid_platforms)
 Valid platforms are: \"${valid_platforms}\"")
 endif()
 
-set(LibNanopb ON CACHE BOOL "" FORCE)
-
-# We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
-# in the cmake-gui to prevent excessively confusing users
+# Declare a cache variable that enables/disablings the forcing of cache variables to
+# the specific test values. By default it is disabled
+set(Sel4benchAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
 if(NOT Sel4benchAllowSettingsOverride)
+    # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
+    # in the cmake-gui to prevent excessively confusing users
     # Determine the platform/architecture
     if(KernelArchARM)
         if(NOT VCPU)
@@ -67,17 +65,12 @@ if(NOT Sel4benchAllowSettingsOverride)
             endif()
         endif()
 
-        # Elfloader settings that correspond to how Data61 sets its boards up.
-        ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
-    elseif(KernelArchX86)
-        set(AllowUnstableOverhead ON CACHE BOOL "" FORCE)
-        set(KernelX86MicroArch "haswell" CACHE STRING "" FORCE)
-        set(KernelXSaveFeatureSet 7 CACHE STRING "" FORCE)
-        set(KernelXSaveSize 832 CACHE STRING "" FORCE)
     endif()
 
     # Setup flags for RELEASE (performance optimized builds)
     ApplyCommonReleaseVerificationSettings(${RELEASE} OFF)
+    # This option is controlled by ApplyCommonReleaseVerificationSettings
+    mark_as_advanced(CMAKE_BUILD_TYPE)
     if(RELEASE)
         set(KernelFWholeProgram ON CACHE BOOL "" FORCE)
     endif()
@@ -87,29 +80,6 @@ if(NOT Sel4benchAllowSettingsOverride)
     else()
         set(KernelFastpath OFF CACHE BOOL "" FORCE)
     endif()
-    # Configuration that applies to all apps
-    if(KernelArchARM)
-        if(KernelPlatformKZM OR KernelPlatformOMAP3 OR KernelPlatformAM335X)
-            set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
-        else()
-            set(KernelArmExportPMUUser ON CACHE BOOL "" FORCE)
-        endif()
-
-        if(KernelPlatformKZM)
-            set(KernelDangerousCodeInjectionOnUndefInstr ON CACHE BOOL "" FORCE)
-        endif()
-    else()
-        set(KernelArmExportPMUUser OFF CACHE BOOL "" FORCE)
-    endif()
-    if(KernelArchX86)
-        set(KernelExportPMCUser ON CACHE BOOL "" FORCE)
-        set(KernelX86DangerousMSR ON CACHE BOOL "" FORCE)
-    endif()
-    set(KernelRootCNodeSizeBits 13 CACHE STRING "" FORCE)
-    set(KernelTimeSlice 500 CACHE STRING "" FORCE)
-    set(KernelTimerTickMS 1000 CACHE STRING "" FORCE)
-    set(LibSel4MuslcSysMorecoreBytes 0 CACHE STRING "" FORCE)
-    set(KernelVerificationBuild OFF CACHE BOOL "" FORCE)
 
     # App-specific configuration
     if(FAULT)
