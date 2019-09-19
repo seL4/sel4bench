@@ -13,7 +13,6 @@
 cmake_minimum_required(VERSION 3.7.2)
 
 project(sel4benchapp C)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 set(configure_string "")
 
 config_option(
