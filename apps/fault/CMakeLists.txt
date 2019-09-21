@@ -14,10 +14,6 @@ cmake_minimum_required(VERSION 3.7.2)
 
 project(fault C)
 
-if(KernelPlatformKZM)
-    message(FATAL_ERROR "Fault app not supported on kzm.")
-endif()
-
 set(configure_string "")
 config_option(
     AppFaultBench
