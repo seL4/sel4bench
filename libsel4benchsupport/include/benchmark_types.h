@@ -24,6 +24,7 @@ typedef struct {
     size_t stack_pages;
     void *results;
     int nr_cores;
+    void *fdt;
     seL4_CPtr first_free;
     seL4_CPtr untyped_cptr;
     seL4_CPtr sched_ctrl;

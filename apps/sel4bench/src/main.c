@@ -34,6 +34,7 @@
 #include <utils/util.h>
 #include <vka/object.h>
 #include <vka/capops.h>
+#include <libfdt.h>
 
 #include <ipc.h>
 #include <benchmark_types.h>
@@ -143,6 +144,23 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
     /* do benchmark specific init */
     benchmark->init(&env->vka, &env->simple, &process);
 
+    size_t num_fdt_pages = 0;
+    if (config_set(CONFIG_ARCH_ARM)) {
+        char *fdt_blob = ps_io_fdt_get(&env->ops.io_fdt);
+        ZF_LOGF_IF(!fdt_blob, "Failed to get the FDT blob for sharing with the benchmark process");
+        size_t fdt_size = fdt_totalsize(fdt_blob);
+        /* perhaps optimise to use larger page sizes if possible? */
+        num_fdt_pages = DIV_ROUND_UP(fdt_size, BIT(seL4_PageBits));
+        /* share the FDT with the benchmarking process */
+        args->fdt = vspace_share_mem(&env->vspace, &process.vspace, fdt_blob, num_fdt_pages,
+                                     seL4_PageBits, seL4_AllRights, true);
+        ZF_LOGF_IF(!args->fdt, "Failed to share the FDT blob");
+        /* offset the shared address if the address is page aligned */
+        if (((uintptr_t) args->fdt & MASK(seL4_PageBits)) != ((uintptr_t) fdt_blob & MASK(seL4_PageBits))) {
+            args->fdt += (uintptr_t) fdt_blob & MASK(seL4_PageBits);
+        }
+    }
+
     /* set up arguments */
     void *remote_args_vaddr = vspace_share_mem(&env->vspace, &process.vspace, args, 1,
                                                seL4_PageBits, seL4_AllRights, true);
@@ -183,6 +201,11 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
     /* free results in target vspace (they will still be in ours) */
     vspace_unmap_pages(&process.vspace, args->results, benchmark->results_pages, seL4_PageBits, VSPACE_FREE);
     vspace_unmap_pages(&process.vspace, remote_args_vaddr, 1, seL4_PageBits, VSPACE_FREE);
+    if (config_set(CONFIG_ARCH_ARM)) {
+        /* free the shared FDT, align it just in case we've offsetted the addr */
+        void *aligned_fdt_addr = (void *) ALIGN_DOWN((uintptr_t) args->fdt, BIT(seL4_PageBits));
+        vspace_unmap_pages(&process.vspace, aligned_fdt_addr, num_fdt_pages, seL4_PageBits, VSPACE_FREE);
+    }
     /* clean up */
 
     /* revoke the untypeds so it's clean for the next benchmark */
@@ -335,6 +358,14 @@ int main(void)
     error = serial_server_parent_spawn_thread(&global_env.simple, &global_env.vka,
                                               &global_env.vspace, seL4_MaxPrio);
     ZF_LOGF_IF(error, "Failed to start serial server");
+
+    if (config_set(CONFIG_ARCH_ARM)) {
+        /* initialise the FDT interface while we have access to the bootinfo */
+        error = sel4platsupport_new_malloc_ops(&global_env.ops.malloc_ops);
+        ZF_LOGF_IF(error, "Failed to get malloc_ops");
+        error = sel4platsupport_new_fdt_ops(&global_env.ops.io_fdt, &global_env.simple, &global_env.ops.malloc_ops);
+        ZF_LOGF_IF(error, "Failed to get fdt ops");
+    }
 
     /* Print welcome banner. */
     printf("\n");
