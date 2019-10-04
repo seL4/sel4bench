@@ -29,6 +29,7 @@
 #include <arch_stdio.h>
 #include <string.h>
 #include <rpc.pb.h>
+#include <libfdt.h>
 
 #include <benchmark.h>
 
@@ -531,6 +532,24 @@ NORETURN void benchmark_finished(int exit_code)
     while (true);
 }
 
+static char *benchmark_io_fdt_get(void *cookie)
+{
+    return (cookie != NULL) ? (char *) cookie : NULL;
+}
+
+static int benchmark_setup_io_fdt(ps_io_fdt_t *io_fdt, char *fdt_blob)
+{
+    if (!io_fdt || !fdt_blob) {
+        ZF_LOGE("Args are NULL");
+        return -1;
+    }
+
+    io_fdt->cookie = fdt_blob;
+    io_fdt->get_fn = benchmark_io_fdt_get;
+
+    return 0;
+}
+
 env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
 {
     sel4muslcsys_register_stdio_write_fn(benchmark_write);
@@ -583,8 +602,11 @@ env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t obje
     error = sel4platsupport_new_io_mapper(&env.vspace, &env.slab_vka, &env.io_ops.io_mapper);
     ZF_LOGF_IF(error, "Failed to setup the IO mapper");
 
-    error = sel4platsupport_new_fdt_ops(&env.io_ops.io_fdt, &env.simple, &env.io_ops.malloc_ops);
-    ZF_LOGF_IF(error, "Failed to setup the FDT interface");
+    if (env.args->fdt) {
+        /* manually setup the fdt interface */
+        error = benchmark_setup_io_fdt(&env.io_ops.io_fdt, env.args->fdt);
+        ZF_LOGF_IF(error, "Failed to setup the FDT interface");
+    }
 
     error = sel4platsupport_new_arch_ops(&env.io_ops, &env.simple, &env.slab_vka);
     ZF_LOGF_IF(error, "Failed to setup the arch ops");
