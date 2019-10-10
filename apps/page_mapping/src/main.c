@@ -112,10 +112,10 @@ static void inline map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
 }
 
 #define PROT_UNPROT_NPAGE(func, right)\
-    static void inline func(seL4_CPtr page_cap, int npage){\
+    static void inline func(seL4_CPtr addr, seL4_CPtr page_cap, int npage){\
         long err UNUSED;\
         for(int i = 0; i < npage; i++){\
-            err = seL4_ARCH_Page_Remap(page_cap, SEL4UTILS_PD_SLOT, right,\
+            err = seL4_ARCH_Page_Map(page_cap, SEL4UTILS_PD_SLOT, addr, right,\
                             seL4_ARCH_Default_VMAttributes);\
             assert(err == 0);\
             page_cap++;\
@@ -173,7 +173,7 @@ bench_proc(int argc UNUSED, char *argv[])
     COMPILER_MEMORY_FENCE();
     SEL4BENCH_READ_CCNT(start);
 
-    prot_pages(page_ptr_start, npage);
+    prot_pages(addr, page_ptr_start, npage);
 
     SEL4BENCH_READ_CCNT(end);
     COMPILER_MEMORY_FENCE();
@@ -183,7 +183,7 @@ bench_proc(int argc UNUSED, char *argv[])
     COMPILER_MEMORY_FENCE();
     SEL4BENCH_READ_CCNT(start);
 
-    unprot_pages(page_ptr_start, npage);
+    unprot_pages(addr, page_ptr_start, npage);
 
     SEL4BENCH_READ_CCNT(end);
     COMPILER_MEMORY_FENCE();
