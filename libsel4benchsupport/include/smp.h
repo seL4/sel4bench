@@ -14,11 +14,8 @@
 
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
-#include <smp/gen_config.h>
-
-#ifdef CONFIG_APP_SMPBENCH
 #include <arch/smp.h>
-#endif
+
 #define WARMUPS 2
 #define RUNS 5
 #define TESTS ARRAY_SIZE(smp_benchmark_params)

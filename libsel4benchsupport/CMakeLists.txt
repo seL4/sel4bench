@@ -25,7 +25,6 @@ target_include_directories(
 target_link_libraries(
     sel4benchsupport
     sel4_autoconf
-    smp_Config
     muslc
     sel4runtime
     sel4allocman
