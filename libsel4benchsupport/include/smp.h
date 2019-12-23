@@ -12,9 +12,12 @@
 
 #pragma once
 
+#include <autoconf.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
+#if CONFIG_MAX_NUM_NODES > 1
 #include <arch/smp.h>
+#endif
 
 #define WARMUPS 2
 #define RUNS 5
