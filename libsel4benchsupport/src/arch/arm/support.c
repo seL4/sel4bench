@@ -21,7 +21,7 @@
 
 #include "../../support.h"
 
-static seL4_Error get_irq_trigger(void *data, int irq, int trigger, seL4_CNode cnode,
+static seL4_Error get_irq_trigger(void *data, int irq, int trigger, int core, seL4_CNode cnode,
                                   seL4_Word index, uint8_t depth)
 {
     env_t *env = data;
