@@ -38,6 +38,8 @@ static inline void smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
 #endif
 }
 
+#ifndef CONFIG_ARCH_ARM_V6
+/* smp_benchmark_check_overhead is not supported on armv6 platforms */
 static inline ccnt_t smp_benchmark_check_overhead(void)
 {
     uint32_t ccnt_overhead;
@@ -66,3 +68,4 @@ static inline ccnt_t smp_benchmark_check_overhead(void)
 
     return total / OVERHEAD_MEAS_RUNS;
 }
+#endif /* !CONFIG_ARCH_ARM_V6 */
