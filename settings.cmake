@@ -24,6 +24,7 @@ list(
 )
 
 set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/nanopb" CACHE INTERNAL "")
+set(BBL_PATH ${project_dir}/tools/riscv-pk CACHE STRING "BBL Folder location")
 
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 include(application_settings)
@@ -38,9 +39,6 @@ correct_platform_strings()
 find_package(seL4 REQUIRED)
 sel4_configure_platform_settings()
 
-if(KernelArchRiscV)
-    message(FATAL_ERROR "RISC-V is not supported by sel4bench")
-endif()
 set(valid_platforms ${KernelPlatform_all_strings} ${correct_platform_strings_platform_aliases})
 set_property(CACHE PLATFORM PROPERTY STRINGS ${valid_platforms})
 if(NOT "${PLATFORM}" IN_LIST valid_platforms)
@@ -72,7 +70,9 @@ if(NOT Sel4benchAllowSettingsOverride)
     # This option is controlled by ApplyCommonReleaseVerificationSettings
     mark_as_advanced(CMAKE_BUILD_TYPE)
     if(RELEASE)
-        set(KernelFWholeProgram ON CACHE BOOL "" FORCE)
+        if(NOT KernelArchRiscV)
+            set(KernelFWholeProgram ON CACHE BOOL "" FORCE)
+        endif()
     endif()
 
     if(FASTPATH)
