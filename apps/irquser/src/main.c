@@ -75,7 +75,7 @@ void ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
         results[i] = end_low - start;
     }
 
-    seL4_Signal(done_ep);
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
 int main(int argc, char **argv)

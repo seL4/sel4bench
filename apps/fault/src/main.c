@@ -62,8 +62,8 @@ static inline void fault_handler_done(seL4_CPtr ep, seL4_Word ip, seL4_CPtr done
     /* handle last fault */
     ip += UD_INSTRUCTION_SIZE;
     seL4_ReplyWith1MR(ip, reply);
-    /* tell benchmark we are done */
-    seL4_Signal(done_ep);
+    /* tell benchmark we are done and that there are no errors */
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
     /* block */
     seL4_Wait(ep, NULL);
 }
@@ -95,7 +95,7 @@ static void measure_fault_fn(int argc, char **argv)
         SEL4BENCH_READ_CCNT(*start);
         fault();
     }
-    seL4_Signal(done_ep);
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
 static void measure_fault_handler_fn(int argc, char **argv)
@@ -134,7 +134,7 @@ static void measure_fault_reply_fn(int argc, char **argv)
         SEL4BENCH_READ_CCNT(end);
         results->fault_reply[i] = end - *start;
     }
-    seL4_Signal(done_ep);
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
 static void measure_fault_reply_handler_fn(int argc, char **argv)
@@ -170,7 +170,7 @@ static void measure_fault_roundtrip_fn(int argc, char **argv)
         SEL4BENCH_READ_CCNT(end);
         results->round_trip[i] = end - start;
     }
-    seL4_Signal(done_ep);
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
 static void measure_fault_roundtrip_handler_fn(int argc, char **argv)
