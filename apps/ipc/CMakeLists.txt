@@ -44,6 +44,22 @@ config_choice(
     "5;Ipc_BranchMispredict;BRANCH_MISPREDICT;Ipc_GenericCounter;AppIpcBench"
     "6;Ipc_MemoryAccess;MEMORY_ACCESS;Ipc_GenericCounter;AppIpcBench"
 )
+
+if(KernelArchARM)
+    config_set(L1DCacheSize L1_DCACHE_SIZE "0x8000")
+endif()
+
+config_choice(
+    CacheToMeasure
+    CACHE_TO_MEASURE
+    "cache to measure"
+    "Hot Cache;Ipc_HotCache;HOT_CACHE;AppIpcBench"
+    "Clean L1 ICache;Ipc_CleanL1ICache;CLEAN_L1_ICACHE;AppIpcBench;KernelArchARM;NOT AppSmpBench"
+    "Clean L1 DCache;Ipc_CleanL1DCache;CLEAN_L1_DCACHE;AppIpcBench;KernelArchARM;NOT AppSmpBench"
+    "Clean L1 IDCache;Ipc_CleanL1IDCache;CLEAN_L1_IDCACHE;AppIpcBench;KernelArchARM;NOT AppSmpBench"
+    "Dirty L1 DCache;Ipc_DirtyL1DCache;DIRTY_L1_DCACHE;AppIpcBench;L1DCacheSize"
+)
+
 config_string(
     PlatformCounterConstant
     PLATFORM_COUNTER_CONSTANT

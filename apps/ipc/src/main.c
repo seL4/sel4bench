@@ -109,6 +109,43 @@ static inline void dummy_seL4_Reply(UNUSED seL4_CPtr reply, seL4_MessageInfo_t t
     (void)tag;
 }
 
+static inline void dummy_cache_func(void) {}
+
+#ifdef CONFIG_CLEAN_L1_ICACHE
+#define CACHE_FUNC() do {                           \
+    seL4_BenchmarkFlushL1Caches(seL4_ARM_CacheI);   \
+} while (0)
+
+#elif CONFIG_CLEAN_L1_DCACHE
+#define CACHE_FUNC() do {                           \
+    seL4_BenchmarkFlushL1Caches(seL4_ARM_CacheD);   \
+} while (0)
+
+#elif CONFIG_CLEAN_L1_CACHE
+#define CACHE_FUNC() do {                           \
+    seL4_BenchmarkFlushL1Caches(seL4_ARM_CacheID);  \
+} while (0)
+
+#elif CONFIG_DIRTY_L1_DCACHE
+#define L1_CACHE_LINE_SIZE BIT(CONFIG_L1_CACHE_LINE_SIZE_BITS)
+#define POLLUTE_ARRARY_SIZE CONFIG_L1_DCACHE_SIZE/L1_CACHE_LINE_SIZE/sizeof(int)
+#define POLLUTE_RUNS 5
+#define CACHE_FUNC() do {                                       \
+    ALIGN(L1_CACHE_LINE_SIZE) volatile                          \
+    int pollute_array[POLLUTE_ARRARY_SIZE][L1_CACHE_LINE_SIZE]; \
+    for (int i = 0; i < POLLUTE_RUNS; i++) {                    \
+        for (int j = 0; j < L1_CACHE_LINE_SIZE; j++) {          \
+            for (int k = 0; k < POLLUTE_ARRARY_SIZE; k++) {     \
+                pollute_array[k][j]++;                          \
+            }                                                   \
+        }                                                       \
+    }                                                           \
+} while (0)
+
+#else
+#define CACHE_FUNC dummy_cache_func
+#endif
+
 seL4_Word ipc_call_func(int argc, char *argv[]);
 seL4_Word ipc_call_func2(int argc, char *argv[]);
 seL4_Word ipc_call_10_func(int argc, char *argv[]);
@@ -133,7 +170,7 @@ static helper_func_t bench_funcs[] = {
     ipc_recv_func
 };
 
-#define IPC_CALL_FUNC(name, bench_func, send_func, call_func, send_start_end, length) \
+#define IPC_CALL_FUNC(name, bench_func, send_func, call_func, send_start_end, length, cache_func) \
     seL4_Word name(int argc, char *argv[]) { \
     uint32_t i; \
     ccnt_t start UNUSED, end UNUSED; \
@@ -143,6 +180,7 @@ static helper_func_t bench_funcs[] = {
     call_func(ep, tag); \
     COMPILER_MEMORY_FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
+        cache_func(); \
         READ_COUNTER_BEFORE(start); \
         bench_func(ep, tag); \
         READ_COUNTER_AFTER(end); \
@@ -154,12 +192,12 @@ static helper_func_t bench_funcs[] = {
     return 0; \
 }
 
-IPC_CALL_FUNC(ipc_call_func, DO_REAL_CALL, seL4_Send, dummy_seL4_Call, end, 0)
-IPC_CALL_FUNC(ipc_call_func2, DO_REAL_CALL, dummy_seL4_Send, seL4_Call, start, 0)
-IPC_CALL_FUNC(ipc_call_10_func, DO_REAL_CALL_10, seL4_Send, dummy_seL4_Call, end, 10)
-IPC_CALL_FUNC(ipc_call_10_func2, DO_REAL_CALL_10, dummy_seL4_Send, seL4_Call, start, 10)
+IPC_CALL_FUNC(ipc_call_func, DO_REAL_CALL, seL4_Send, dummy_seL4_Call, end, 0, dummy_cache_func)
+IPC_CALL_FUNC(ipc_call_func2, DO_REAL_CALL, dummy_seL4_Send, seL4_Call, start, 0, CACHE_FUNC)
+IPC_CALL_FUNC(ipc_call_10_func, DO_REAL_CALL_10, seL4_Send, dummy_seL4_Call, end, 10, dummy_cache_func)
+IPC_CALL_FUNC(ipc_call_10_func2, DO_REAL_CALL_10, dummy_seL4_Send, seL4_Call, start, 10, CACHE_FUNC)
 
-#define IPC_REPLY_RECV_FUNC(name, bench_func, reply_func, recv_func, send_start_end, length) \
+#define IPC_REPLY_RECV_FUNC(name, bench_func, reply_func, recv_func, send_start_end, length, cache_func) \
 seL4_Word name(int argc, char *argv[]) { \
     uint32_t i; \
     ccnt_t start UNUSED, end UNUSED; \
@@ -174,6 +212,7 @@ seL4_Word name(int argc, char *argv[]) { \
     }\
     COMPILER_MEMORY_FENCE(); \
     for (i = 0; i < WARMUPS; i++) { \
+        cache_func(); \
         READ_COUNTER_BEFORE(start); \
         bench_func(ep, tag, reply); \
         READ_COUNTER_AFTER(end); \
@@ -185,10 +224,10 @@ seL4_Word name(int argc, char *argv[]) { \
     return 0; \
 }
 
-IPC_REPLY_RECV_FUNC(ipc_replyrecv_func2, DO_REAL_REPLY_RECV, api_reply, api_recv, end, 0)
-IPC_REPLY_RECV_FUNC(ipc_replyrecv_func, DO_REAL_REPLY_RECV, dummy_seL4_Reply, api_recv, start, 0)
-IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func2, DO_REAL_REPLY_RECV_10, api_reply, api_recv, end, 10)
-IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func, DO_REAL_REPLY_RECV_10, dummy_seL4_Reply, api_recv, start, 10)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_func2, DO_REAL_REPLY_RECV, api_reply, api_recv, end, 0, dummy_cache_func)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_func, DO_REAL_REPLY_RECV, dummy_seL4_Reply, api_recv, start, 0, CACHE_FUNC)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func2, DO_REAL_REPLY_RECV_10, api_reply, api_recv, end, 10, dummy_cache_func)
+IPC_REPLY_RECV_FUNC(ipc_replyrecv_10_func, DO_REAL_REPLY_RECV_10, dummy_seL4_Reply, api_recv, start, 10, CACHE_FUNC)
 
 seL4_Word
 ipc_recv_func(int argc, char *argv[])
