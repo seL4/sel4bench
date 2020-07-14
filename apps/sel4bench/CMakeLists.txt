@@ -96,7 +96,7 @@ if(Sel4Bench)
     target_link_libraries(
         sel4benchapp
         jansson
-        sel4bench
+        sel4benchsupport
         sel4
         sel4muslcsys
         sel4rpc
