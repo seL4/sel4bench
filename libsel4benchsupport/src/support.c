@@ -550,7 +550,8 @@ static int benchmark_setup_io_fdt(ps_io_fdt_t *io_fdt, char *fdt_blob)
     return 0;
 }
 
-env_t *benchmark_get_env(int argc, char **argv, size_t results_size, size_t object_freq[seL4_ObjectTypeCount])
+env_t *benchmark_get_env(int argc, char const *const *argv, size_t results_size,
+                         size_t object_freq[seL4_ObjectTypeCount])
 {
     sel4muslcsys_register_stdio_write_fn(benchmark_write);
 
