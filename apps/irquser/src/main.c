@@ -12,6 +12,9 @@
 #include <autoconf.h>
 #include <sel4benchirquser/gen_config.h>
 #include <stdio.h>
+#include <sel4runtime.h>
+#include <muslcsys/vsyscall.h>
+#include <utils/attribute.h>
 
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/irq.h>
@@ -78,12 +81,10 @@ void ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
     seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
-int main(int argc, char **argv)
-{
-    env_t *env;
-    irquser_results_t *results;
-    vka_object_t endpoint = {0};
+static env_t *env;
 
+void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+{
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 2,
         [seL4_EndpointObject] = 1,
@@ -93,7 +94,19 @@ int main(int argc, char **argv)
 #endif
     };
 
-    env = benchmark_get_env(argc, argv, sizeof(irquser_results_t), object_freq);
+    env = benchmark_get_env(
+              sel4runtime_argc(),
+              sel4runtime_argv(),
+              sizeof(irquser_results_t),
+              object_freq
+          );
+}
+
+int main(int argc, char **argv)
+{
+    irquser_results_t *results;
+    vka_object_t endpoint = {0};
+
     benchmark_init_timer(env);
     results = (irquser_results_t *) env->results;
 

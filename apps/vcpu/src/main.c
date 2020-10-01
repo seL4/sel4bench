@@ -49,6 +49,9 @@
 #include <utils/attribute.h>
 #include <vka/vka.h>
 #include <vka/object_capops.h>
+#include <sel4runtime.h>
+#include <muslcsys/vsyscall.h>
+#include <utils/attribute.h>
 
 #include <benchmark.h>
 #include <vcpu.h>
@@ -601,13 +604,10 @@ static ccnt_t get_ccnt_read_overhead_avg(void)
     return avg_overhead;
 }
 
-int main(int argc, char **argv)
-{
-    int err, n_guests_exited;
-    env_t *env;
-    cspacepath_t ep_path, result_ep_path;
-    vcpu_benchmark_overall_results_t *overall_results;
+static env_t *env;
 
+void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+{
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 4,
         [seL4_EndpointObject] = 2,
@@ -617,9 +617,20 @@ int main(int argc, char **argv)
 #endif
     };
 
-    env = benchmark_get_env(argc, argv,
-                            sizeof(vcpu_benchmark_overall_results_t),
-                            object_freq);
+    env = benchmark_get_env(
+              sel4runtime_argc(),
+              sel4runtime_argv(),
+              sizeof(vcpu_benchmark_overall_results_t),
+              object_freq
+          );
+}
+
+int main(int argc, char **argv)
+{
+    int err, n_guests_exited;
+    cspacepath_t ep_path, result_ep_path;
+    vcpu_benchmark_overall_results_t *overall_results;
+
     overall_results = env->results;
 
     sel4bench_init();

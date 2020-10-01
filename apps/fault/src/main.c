@@ -17,6 +17,9 @@
 #include <sel4/sel4.h>
 #include <sel4bench/arch/sel4bench.h>
 #include <utils/ud.h>
+#include <sel4runtime.h>
+#include <muslcsys/vsyscall.h>
+#include <utils/attribute.h>
 
 #include <benchmark.h>
 #include <fault.h>
@@ -283,12 +286,10 @@ void measure_overhead(fault_results_t *results)
     }
 }
 
-int main(int argc, char **argv)
-{
-    env_t *env;
-    UNUSED int error;
-    fault_results_t *results;
+static env_t *env;
 
+void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+{
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 2,
         [seL4_EndpointObject] = 2,
@@ -298,7 +299,18 @@ int main(int argc, char **argv)
 #endif
     };
 
-    env = benchmark_get_env(argc, argv, sizeof(fault_results_t), object_freq);
+    env = benchmark_get_env(
+              sel4runtime_argc(),
+              sel4runtime_argv(),
+              sizeof(fault_results_t),
+              object_freq
+          );
+}
+
+int main(int argc, char **argv)
+{
+    UNUSED int error;
+    fault_results_t *results;
     results = (fault_results_t *) env->results;
 
     sel4bench_init();

@@ -13,6 +13,9 @@
 #include <autoconf.h>
 #include <sel4benchsignal/gen_config.h>
 #include <stdio.h>
+#include <sel4runtime.h>
+#include <muslcsys/vsyscall.h>
+#include <utils/attribute.h>
 
 #include <sel4/sel4.h>
 #include <sel4bench/arch/sel4bench.h>
@@ -217,13 +220,10 @@ void measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
     }
 }
 
-int main(int argc, char **argv)
-{
-    env_t *env;
-    UNUSED int error;
-    vka_object_t done_ep, ntfn;
-    signal_results_t *results;
+static env_t *env;
 
+void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+{
     /* configure the slab allocator - we need 2 tcbs, 2 scs, 1 ntfn, 1 ep */
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 2,
@@ -235,7 +235,20 @@ int main(int argc, char **argv)
         [seL4_NotificationObject] = 1,
     };
 
-    env = benchmark_get_env(argc, argv, sizeof(signal_results_t), object_freq);
+    env = benchmark_get_env(
+              sel4runtime_argc(),
+              sel4runtime_argv(),
+              sizeof(signal_results_t),
+              object_freq
+          );
+}
+
+int main(int argc, char **argv)
+{
+    UNUSED int error;
+    vka_object_t done_ep, ntfn;
+    signal_results_t *results;
+
     results = (signal_results_t *) env->results;
 
     sel4bench_init();
