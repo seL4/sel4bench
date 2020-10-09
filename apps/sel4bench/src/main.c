@@ -319,6 +319,7 @@ extern vspace_t *muslc_this_vspace;
 extern reservation_t muslc_brk_reservation;
 extern void *muslc_brk_reservation_start;
 static allocman_t *allocman;
+static sel4utils_res_t malloc_res;
 
 static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
 {
@@ -342,7 +343,6 @@ static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
                                                            &global_env.vka, info);
 
     /* set up malloc */
-    sel4utils_res_t malloc_res;
     error = sel4utils_reserve_range_no_alloc(&global_env.vspace, &malloc_res, seL4_LargePageBits, seL4_AllRights, 1,
                                              &muslc_brk_reservation_start);
     muslc_this_vspace = &global_env.vspace;
