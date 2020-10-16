@@ -47,8 +47,8 @@ char _cpio_archive_end[1];
 
 /* so malloc works */
 #define MORE_CORE_SIZE 3000000
-char *morecore_area;
-size_t morecore_size;
+extern char *morecore_area;
+extern size_t morecore_size;
 static char app_morecore_area[MORE_CORE_SIZE];
 
 /* allocator */
