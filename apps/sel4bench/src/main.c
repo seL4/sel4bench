@@ -12,6 +12,8 @@
 #include <allocman/vka.h>
 #include <assert.h>
 
+#include <sel4runtime.h>
+
 #include <simple/simple.h>
 #include <simple-default/simple-default.h>
 
@@ -310,6 +312,12 @@ void *main_continued(void *arg)
 extern vspace_t *muslc_this_vspace;
 extern reservation_t muslc_brk_reservation;
 extern void *muslc_brk_reservation_start;
+/* When the root task exists, it should simply suspend itself */
+static void sel4bench_exit(int code)
+{
+    seL4_TCB_Suspend(seL4_CapInitThreadTCB);
+}
+
 
 int main(void)
 {
@@ -318,6 +326,9 @@ int main(void)
     UNUSED reservation_t virtual_reservation;
     UNUSED int error;
     void *vaddr;
+
+    /* Set exit handler */
+    sel4runtime_set_exit(sel4bench_exit);
 
     info  = platsupport_get_bootinfo();
     simple_default_init_bootinfo(&global_env.simple, info);
