@@ -67,11 +67,11 @@ size_t benchmark_write(void *data, size_t count)
 static void parse_code_region(sel4utils_elf_region_t *region)
 {
     extern char __executable_start[];
-    extern char _end[];
+    extern char _etext[];
 
     region->rights = seL4_AllRights;
     region->reservation_vstart = (void *) ROUND_DOWN((seL4_Word) __executable_start, (1 << seL4_PageBits));
-    region->size = (void *) _end - region->reservation_vstart;
+    region->size = (void *) _etext - region->reservation_vstart;
     region->elf_vstart = region->reservation_vstart;
     region->cacheable = true;
 }
@@ -187,8 +187,10 @@ void benchmark_shallow_clone_process(env_t *env, sel4utils_process_t *process, u
     error = sel4utils_configure_process_custom(process, &env->slab_vka, &env->vspace, config);
     ZF_LOGF_IFERR(error, "Failed to configure process %s", name);
 
-    /* clone the ELF region into the vspace - note that we are not
-     * cloning the heap. */
+    /* clone the text segment into the vspace - note that as we are only cloning the text
+     * segment, you will not be able to use anything that relies on initialisation in benchmark
+     * threads - like printf, (but seL4_Debug_PutChar is ok)
+     */
     error = sel4utils_bootstrap_clone_into_vspace(&env->vspace, &process->vspace,
                                                   env->region.reservation);
     ZF_LOGF_IF(error, "Failed to bootstrap clone into vspace for %s", name);
