@@ -10,8 +10,8 @@
 #include <hardware.h>
 #include <stdio.h>
 
-static json_t *
-hardware_process(void *results) {
+static json_t *hardware_process(void *results)
+{
     hardware_results_t *raw_results = results;
 
     result_desc_t desc = {
@@ -52,8 +52,7 @@ static benchmark_t hardware_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-hardware_benchmark_new(void)
+benchmark_t *hardware_benchmark_new(void)
 {
     return &hardware_benchmark;
 }

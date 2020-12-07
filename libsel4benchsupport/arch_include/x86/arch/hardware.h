@@ -3,9 +3,6 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __ARCH_HARDWARE_H
-#define __ARCH_HARDWARE_H
+#pragma once
 
 #include <sel4_arch/hardware.h>
-
-#endif /* __ARCH_HARDWARE_H */

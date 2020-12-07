@@ -13,8 +13,7 @@
 #include "math.h"
 #include "printing.h"
 
-void
-process_average_results(int rows, int cols, ccnt_t array[rows][cols], result_t results[cols])
+void process_average_results(int rows, int cols, ccnt_t array[rows][cols], result_t results[cols])
 {
     /* first divide results by no of runs */
     for (int row = 0; row < rows; row++) {
@@ -40,8 +39,7 @@ process_average_results(int rows, int cols, ccnt_t array[rows][cols], result_t r
     }
 }
 
-result_t
-process_result(size_t n, ccnt_t array[n], result_desc_t desc)
+result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc)
 {
     array = &array[desc.ignored];
     int size = n - desc.ignored;
@@ -52,7 +50,9 @@ process_result(size_t n, ccnt_t array[n], result_desc_t desc)
             print_all(size, array);
         }
         if (!config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
-            return (result_t) {0};
+            return (result_t) {
+                0
+            };
         }
     }
 
@@ -63,9 +63,8 @@ process_result(size_t n, ccnt_t array[n], result_desc_t desc)
     return calculate_results(size, array);
 }
 
-void
-process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
-                result_t results[ncols])
+void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
+                     result_t results[ncols])
 {
     for (int i = 0; i < ncols; i++) {
         results[i] = process_result(nrows, array[i], desc);

@@ -5,13 +5,12 @@
  */
 #include "../../env.h"
 
-void
-plat_setup(env_t *env)
+void plat_setup(env_t *env)
 {
- 	if (config_set(CONFIG_ARCH_X86_64)) {
-     	/* check if the cpu supports rdtscp */
-    	int edx = 0;
-	    asm volatile("cpuid":"=d"(edx):"a"(0x80000001):"ecx");
-      	ZF_LOGF_IF((edx & (BIT(27))) == 0, "CPU does not support rdtscp instruction");
- 	}
+    if (config_set(CONFIG_ARCH_X86_64)) {
+        /* check if the cpu supports rdtscp */
+        int edx = 0;
+        asm volatile("cpuid":"=d"(edx):"a"(0x80000001):"ecx");
+        ZF_LOGF_IF((edx & (BIT(27))) == 0, "CPU does not support rdtscp instruction");
+    }
 }

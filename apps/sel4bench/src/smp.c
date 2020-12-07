@@ -18,14 +18,12 @@
 
 static int cores_collective_results;
 
-static void
-process_smp_results_init(UNUSED vka_t *vka, simple_t *simple, UNUSED sel4utils_process_t *process)
+static void process_smp_results_init(UNUSED vka_t *vka, simple_t *simple, UNUSED sel4utils_process_t *process)
 {
     cores_collective_results = simple_get_core_count(simple);
 }
 
-static json_t *
-process_smp_results(void *r)
+static json_t *process_smp_results(void *r)
 {
     smp_results_t *raw_results = r;
 
@@ -83,8 +81,7 @@ static benchmark_t smp_benchmark = {
     .init = process_smp_results_init
 };
 
-benchmark_t *
-smp_benchmark_new(void)
+benchmark_t *smp_benchmark_new(void)
 {
     return &smp_benchmark;
 }

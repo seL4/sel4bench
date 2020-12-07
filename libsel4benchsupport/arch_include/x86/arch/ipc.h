@@ -4,9 +4,6 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#ifndef __ARCH_IPC_H
-#define __ARCH_IPC_H
+#pragma once
 
 #include <sel4_arch/ipc.h>
-
-#endif /* __ARCH_IPC_H */

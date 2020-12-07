@@ -13,8 +13,7 @@
 #include "math.h"
 
 /* these functions adapted from libgsl -- require code to be GPL */
-static double
-results_mean(const size_t n, const ccnt_t array[n])
+static double results_mean(const size_t n, const ccnt_t array[n])
 {
     size_t i;
     long double mean = 0;
@@ -27,8 +26,7 @@ results_mean(const size_t n, const ccnt_t array[n])
     return mean;
 }
 
-static double
-results_variance(const size_t n, const ccnt_t array[n], const ccnt_t mean)
+static double results_variance(const size_t n, const ccnt_t array[n], const ccnt_t mean)
 {
     long double variance = 0;
 
@@ -43,14 +41,12 @@ results_variance(const size_t n, const ccnt_t array[n], const ccnt_t mean)
     return (double) variance;
 }
 
-static double
-results_stddev(const size_t n, const ccnt_t array[n], const long double variance)
+static double results_stddev(const size_t n, const ccnt_t array[n], const long double variance)
 {
-    return sqrt ( variance * ((double) n / (double) (n - 1.0f)));
+    return sqrt(variance * ((double) n / (double)(n - 1.0f)));
 }
 
-static double
-results_median(const size_t n, const ccnt_t sorted_data[n])
+static double results_median(const size_t n, const ccnt_t sorted_data[n])
 {
     double median;
     const size_t lhs = (n - 1) / 2;
@@ -70,8 +66,7 @@ results_median(const size_t n, const ccnt_t sorted_data[n])
     return median;
 }
 
-static double
-results_quantile(const size_t n, const ccnt_t sorted_data[n], const double quantile)
+static double results_quantile(const size_t n, const ccnt_t sorted_data[n], const double quantile)
 {
     const double index = quantile * (n - 1) ;
     const size_t lhs = (int)index ;
@@ -92,8 +87,7 @@ results_quantile(const size_t n, const ccnt_t sorted_data[n], const double quant
     return result;
 }
 
-static ccnt_t
-results_mode(const size_t n, const ccnt_t sorted_data[n])
+static ccnt_t results_mode(const size_t n, const ccnt_t sorted_data[n])
 {
     if (n == 0) {
         return 0;
@@ -127,8 +121,7 @@ results_mode(const size_t n, const ccnt_t sorted_data[n])
     return mode;
 }
 
-static int
-ccnt_compare_fn(const void *a, const void *b)
+static int ccnt_compare_fn(const void *a, const void *b)
 {
     ccnt_t first = *((ccnt_t *) a);
     ccnt_t second = *((ccnt_t *) b);
@@ -136,8 +129,7 @@ ccnt_compare_fn(const void *a, const void *b)
     return (first > second) - (first < second);
 }
 
-result_t
-calculate_results(const size_t n, ccnt_t data[n])
+result_t calculate_results(const size_t n, ccnt_t data[n])
 {
     /* create a copy of the data to sort */
     ccnt_t sorted_data[n];

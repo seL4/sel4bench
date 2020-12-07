@@ -4,11 +4,8 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#ifndef __SEL4BENCH_MATH_H
-#define __SEL4BENCH_MATH_H
+#pragma once
 
 #include "benchmark.h"
 
 result_t calculate_results(const size_t n, ccnt_t data[n]);
-
-#endif /* __SEL4BENCH_MATH_H */

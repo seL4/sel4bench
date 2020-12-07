@@ -95,8 +95,8 @@ enum vcpu_benchmarks {
 
 typedef struct _vcpu_benchmark_deep_data {
     ccnt_t start[VCPU_BENCH_N_ITERATIONS],
-             end[VCPU_BENCH_N_ITERATIONS],
-             elapsed[VCPU_BENCH_N_ITERATIONS];
+           end[VCPU_BENCH_N_ITERATIONS],
+           elapsed[VCPU_BENCH_N_ITERATIONS];
 } vcpu_benchmark_deep_data_t;
 
 typedef struct _vcpu_benchmark_results {

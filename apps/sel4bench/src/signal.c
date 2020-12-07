@@ -10,8 +10,8 @@
 #include <sel4benchsupport/signal.h>
 #include <stdio.h>
 
-static json_t *
-signal_process(void *results) {
+static json_t *signal_process(void *results)
+{
     signal_results_t *raw_results = results;
 
     result_desc_t desc = {
@@ -47,7 +47,7 @@ signal_process(void *results) {
     process_average_results(N_RUNS, NUM_AVERAGE_EVENTS, raw_results->hi_prio_average, average_results);
 
     json_array_append_new(array, average_counters_to_json("Average signal to low prio thread",
-                                                           average_results));
+                                                          average_results));
 
     return array;
 }
@@ -60,8 +60,7 @@ static benchmark_t signal_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-signal_benchmark_new(void)
+benchmark_t *signal_benchmark_new(void)
 {
     return &signal_benchmark;
 }

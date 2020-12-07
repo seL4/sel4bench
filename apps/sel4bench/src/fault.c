@@ -10,8 +10,8 @@
 #include <fault.h>
 #include <stdio.h>
 
-static json_t *
-fault_process(void *results) {
+static json_t *fault_process(void *results)
+{
     fault_results_t *raw_results = results;
 
     result_desc_t desc = {
@@ -71,8 +71,7 @@ static benchmark_t fault_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-fault_benchmark_new(void)
+benchmark_t *fault_benchmark_new(void)
 {
     return &fault_benchmark;
 }

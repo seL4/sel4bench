@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __SELBENCH_HARDWARE_H
-#define __SELBENCH_HARDWARE_H
+#pragma once
 
 #include <sel4bench/sel4bench.h>
 
@@ -15,5 +14,3 @@ typedef struct hardware_results {
     ccnt_t nullSyscall_results[N_RUNS];
     ccnt_t nullSyscall_overhead[N_RUNS];
 } hardware_results_t;
-
-#endif /* __SELBENCH_HARDWARE_H */

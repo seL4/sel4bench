@@ -50,7 +50,7 @@ static float efix(int id)
 {
     float x;
 
-    for ( ; ; ) {
+    for (; ;) {
         if (rs[id].iz == 0) {
             return (7.69711 - log(UNI(id)));
         }
@@ -68,8 +68,7 @@ static float efix(int id)
     }
 }
 
-static void
-zigset(int tid, uint32_t jsrseed)
+static void zigset(int tid, uint32_t jsrseed)
 {
     const double m1 = 2147483648.0, m2 = 4294967296.;
     double dn = 3.442619855899, tn = dn, vn = 9.91256303526217e-3, q;

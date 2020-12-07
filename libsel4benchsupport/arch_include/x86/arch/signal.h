@@ -3,9 +3,6 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __ARCH_SIGNAL_H
-#define __ARCH_SIGNAL_H
+#pragma once
 
 #include <sel4_arch/signal.h>
-
-#endif /* __ARCH_SIGNAL_H */

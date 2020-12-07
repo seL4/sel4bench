@@ -5,8 +5,7 @@
  */
 #include "../../env.h"
 
-void
-plat_setup(env_t *env)
+void plat_setup(env_t *env)
 {
     /* nothing to do */
 }

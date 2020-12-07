@@ -37,36 +37,32 @@ typedef void (guest_bm_stamp_getter_fn)(guest_t *self,
                                         vcpu_benchmark_results_t *r,
                                         uint64_t *start, uint64_t *end);
 
-static inline void
-cleanDCacheByVa(seL4_Word va, bool PoC)
+static inline void cleanDCacheByVa(seL4_Word va, bool PoC)
 {
     va &= ~(VCPU_BENCH_CACHE_LINE_SZ - 1);
 
     if (PoC) {
-        asm volatile("dc cvac, %0\n" : : "r" (va));
+        asm volatile("dc cvac, %0\n" : : "r"(va));
     } else {
-        asm volatile("dc cvau, %0\n" : : "r" (va));
+        asm volatile("dc cvau, %0\n" : : "r"(va));
     }
 }
 
-static inline void
-invalidateDCacheByVa(seL4_Word va)
+static inline void invalidateDCacheByVa(seL4_Word va)
 {
     va &= ~(VCPU_BENCH_CACHE_LINE_SZ - 1);
 
     /* DC IVA always goes to PoC. */
-    asm volatile("dc ivac, %0\n" : : "r" (va));
+    asm volatile("dc ivac, %0\n" : : "r"(va));
 }
 
-static inline void
-invalidateICacheByVa(seL4_Word va)
+static inline void invalidateICacheByVa(seL4_Word va)
 {
     va &= ~(VCPU_BENCH_CACHE_LINE_SZ - 1);
-    asm volatile("ic ivau, %0\n" : : "r" (va));
+    asm volatile("ic ivau, %0\n" : : "r"(va));
 }
 
-static void
-cleanGuestContextToDCache(guest_t *self, bool PoC)
+static void cleanGuestContextToDCache(guest_t *self, bool PoC)
 {
     uintptr_t va = (uintptr_t)self;
 
@@ -76,8 +72,7 @@ cleanGuestContextToDCache(guest_t *self, bool PoC)
     }
 }
 
-static void
-cleanSharedGlobalsToDCache(bool PoC)
+static void cleanSharedGlobalsToDCache(bool PoC)
 {
     uintptr_t va = (uintptr_t)&sg;
 
@@ -87,41 +82,37 @@ cleanSharedGlobalsToDCache(bool PoC)
     }
 }
 
-static void
-invalidateLogBufferFromDCache(void)
+static void invalidateLogBufferFromDCache(void)
 {
     uintptr_t va = (uintptr_t)sg.sel4_log_buffer;
 
     va &= ~(VCPU_BENCH_CACHE_LINE_SZ - 1);
     for (; va < (uintptr_t)sg.sel4_log_buffer + BIT(seL4_PageBits);
-            va += VCPU_BENCH_CACHE_LINE_SZ) {
+         va += VCPU_BENCH_CACHE_LINE_SZ) {
         invalidateDCacheByVa(va);
     }
 }
 
-static inline void
-invalidateTlbAll(void)
+static inline void invalidateTlbAll(void)
 {
     asm volatile("tlbi alle1\n\t");
 }
 
-static inline void
-arm_hyp_sys_null(seL4_Word sys)
+static inline void arm_hyp_sys_null(seL4_Word sys)
 {
     register seL4_Word scno asm("x7") = sys;
-    asm volatile (
+    asm volatile(
         "hvc #0"
         : /* no outputs */
         : "r"(scno)
     );
 }
 
-static inline void
-arm_hyp_sys_send_recv(seL4_Word sys, seL4_Word dest,
-                      seL4_Word *out_badge,
-                      seL4_Word info_arg, seL4_Word *out_info,
-                      seL4_Word *in_out_mr0, seL4_Word *in_out_mr1,
-                      seL4_Word *in_out_mr2, seL4_Word *in_out_mr3)
+static inline void arm_hyp_sys_send_recv(seL4_Word sys, seL4_Word dest,
+                                         seL4_Word *out_badge,
+                                         seL4_Word info_arg, seL4_Word *out_info,
+                                         seL4_Word *in_out_mr0, seL4_Word *in_out_mr1,
+                                         seL4_Word *in_out_mr2, seL4_Word *in_out_mr3)
 {
     register seL4_Word destptr asm("x0") = dest;
     register seL4_Word info asm("x1") = info_arg;
@@ -134,10 +125,10 @@ arm_hyp_sys_send_recv(seL4_Word sys, seL4_Word dest,
 
     /* Perform the system call. */
     register seL4_Word scno asm("x7") = sys;
-    asm volatile (
+    asm volatile(
         "hvc #0"
-        : "+r" (msg0), "+r" (msg1), "+r" (msg2), "+r" (msg3),
-        "+r" (info), "+r" (destptr)
+        : "+r"(msg0), "+r"(msg1), "+r"(msg2), "+r"(msg3),
+        "+r"(info), "+r"(destptr)
         : "r"(scno)
         : "memory"
     );
@@ -149,8 +140,7 @@ arm_hyp_sys_send_recv(seL4_Word sys, seL4_Word dest,
     *in_out_mr3 = msg3;
 }
 
-LIBSEL4_INLINE_FUNC seL4_MessageInfo_t
-seL4_HypCall(seL4_CPtr dest, seL4_MessageInfo_t msgInfo)
+LIBSEL4_INLINE_FUNC seL4_MessageInfo_t seL4_HypCall(seL4_CPtr dest, seL4_MessageInfo_t msgInfo)
 {
 
     seL4_MessageInfo_t info;
@@ -172,52 +162,50 @@ seL4_HypCall(seL4_CPtr dest, seL4_MessageInfo_t msgInfo)
     return info;
 }
 
-LIBSEL4_INLINE seL4_Error
-seL4_ARMHyp_Page_Invalidate_Data(seL4_ARM_Page _service, seL4_Word start_offset, seL4_Word end_offset)
+LIBSEL4_INLINE seL4_Error seL4_ARMHyp_Page_Invalidate_Data(seL4_ARM_Page _service, seL4_Word start_offset,
+                                                           seL4_Word end_offset)
 {
-        seL4_Error result;
-        seL4_MessageInfo_t tag = seL4_MessageInfo_new(ARMPageInvalidate_Data, 0, 0, 2);
-        seL4_MessageInfo_t output_tag;
+    seL4_Error result;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(ARMPageInvalidate_Data, 0, 0, 2);
+    seL4_MessageInfo_t output_tag;
 
-        /* Marshal and initialise parameters. */
-        seL4_SetMR(0, start_offset);
-        seL4_SetMR(1, end_offset);
+    /* Marshal and initialise parameters. */
+    seL4_SetMR(0, start_offset);
+    seL4_SetMR(1, end_offset);
 
-        /* Perform the call, passing in-register arguments directly. */
-        output_tag = seL4_HypCall(_service, tag);
-        result = (seL4_Error) seL4_MessageInfo_get_label(output_tag);
+    /* Perform the call, passing in-register arguments directly. */
+    output_tag = seL4_HypCall(_service, tag);
+    result = (seL4_Error) seL4_MessageInfo_get_label(output_tag);
 
-        return result;
+    return result;
 }
 
-LIBSEL4_INLINE seL4_Error
-seL4_ARMHyp_Page_Clean_Data(seL4_ARM_Page _service, seL4_Word start_offset, seL4_Word end_offset)
+LIBSEL4_INLINE seL4_Error seL4_ARMHyp_Page_Clean_Data(seL4_ARM_Page _service, seL4_Word start_offset,
+                                                      seL4_Word end_offset)
 {
-        seL4_Error result;
-        seL4_MessageInfo_t tag = seL4_MessageInfo_new(ARMPageClean_Data, 0, 0, 2);
-        seL4_MessageInfo_t output_tag;
+    seL4_Error result;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(ARMPageClean_Data, 0, 0, 2);
+    seL4_MessageInfo_t output_tag;
 
-        /* Marshal and initialise parameters. */
-        seL4_SetMR(0, start_offset);
-        seL4_SetMR(1, end_offset);
+    /* Marshal and initialise parameters. */
+    seL4_SetMR(0, start_offset);
+    seL4_SetMR(1, end_offset);
 
-        /* Perform the call, passing in-register arguments directly. */
-        output_tag = seL4_HypCall(_service, tag);
-        result = (seL4_Error) seL4_MessageInfo_get_label(output_tag);
+    /* Perform the call, passing in-register arguments directly. */
+    output_tag = seL4_HypCall(_service, tag);
+    result = (seL4_Error) seL4_MessageInfo_get_label(output_tag);
 
-        return result;
+    return result;
 }
 
-LIBSEL4_INLINE_FUNC void
-seL4_HypYield(void)
+LIBSEL4_INLINE_FUNC void seL4_HypYield(void)
 {
     arm_hyp_sys_null(seL4_SysYield);
     asm volatile("" ::: "memory");
 }
 
 #ifdef CONFIG_PRINTING
-LIBSEL4_INLINE_FUNC void
-seL4_HypDebugPutChar(char c)
+LIBSEL4_INLINE_FUNC void seL4_HypDebugPutChar(char c)
 {
     seL4_Word unused0 = 0;
     seL4_Word unused1 = 0;
@@ -229,8 +217,7 @@ seL4_HypDebugPutChar(char c)
     arm_hyp_sys_send_recv(seL4_SysDebugPutChar, c, &unused0, 0, &unused1, &unused2, &unused3, &unused4, &unused5);
 }
 
-static int
-_sel4_dbg_puts(const char *str)
+static int _sel4_dbg_puts(const char *str)
 {
     int len;
 
@@ -241,8 +228,7 @@ _sel4_dbg_puts(const char *str)
     return len;
 }
 
-static int
-_sel4_dbg_printf(guest_t *g, const char *fmt, ...)
+static int _sel4_dbg_printf(guest_t *g, const char *fmt, ...)
 {
     int len;
     va_list args;
@@ -263,8 +249,7 @@ _sel4_dbg_printf(guest_t *g, const char *fmt, ...)
 #endif
 
 #ifdef CONFIG_DEBUG_BUILD
-LIBSEL4_INLINE_FUNC seL4_Uint32
-seL4_HypDebugCapIdentify(seL4_CPtr cap)
+LIBSEL4_INLINE_FUNC seL4_Uint32 seL4_HypDebugCapIdentify(seL4_CPtr cap)
 {
     seL4_Word unused0 = 0;
     seL4_Word unused1 = 0;
@@ -279,8 +264,7 @@ seL4_HypDebugCapIdentify(seL4_CPtr cap)
 
 #ifdef CONFIG_ENABLE_BENCHMARKS
 /* set the log index back to 0 */
-LIBSEL4_INLINE_FUNC seL4_Error
-seL4_HypBenchmarkResetLog(void)
+LIBSEL4_INLINE_FUNC seL4_Error seL4_HypBenchmarkResetLog(void)
 {
     seL4_Word unused0 = 0;
     seL4_Word unused1 = 0;
@@ -295,8 +279,7 @@ seL4_HypBenchmarkResetLog(void)
     return (seL4_Error) ret;
 }
 
-LIBSEL4_INLINE_FUNC seL4_Word
-seL4_HypBenchmarkFinalizeLog(void)
+LIBSEL4_INLINE_FUNC seL4_Word seL4_HypBenchmarkFinalizeLog(void)
 {
     seL4_Word unused0 = 0;
     seL4_Word unused1 = 0;
@@ -314,8 +297,7 @@ seL4_HypBenchmarkFinalizeLog(void)
 
 /** Triggers an IPC to the VMM thread.
  */
-NO_INLINE static void
-vmm_call(guest_t *g, int hypcallno, int argc, ...)
+NO_INLINE static void vmm_call(guest_t *g, int hypcallno, int argc, ...)
 {
     va_list args;
 
@@ -359,16 +341,14 @@ vmm_call(guest_t *g, int hypcallno, int argc, ...)
     }
 }
 
-static void
-vmm_call_putc(guest_t *g, char c)
+static void vmm_call_putc(guest_t *g, char c)
 {
     assert(g != NULL);
 
     vmm_call(g, HYPCALL_SYS_PUTC, 1, c);
 }
 
-static int
-vmm_call_puts(guest_t *g, char *str)
+static int vmm_call_puts(guest_t *g, char *str)
 {
     int len;
     assert(g != NULL);
@@ -385,33 +365,29 @@ vmm_call_puts(guest_t *g, char *str)
     return len;
 }
 
-NORETURN static void
-vmm_call_exit_thread(guest_t *g,
-                     bool was_el1_fault, int exitstatus, seL4_Word misc)
+NORETURN static void vmm_call_exit_thread(guest_t *g,
+                                          bool was_el1_fault, int exitstatus, seL4_Word misc)
 {
     cleanGuestContextToDCache(g, 0);
     vmm_call(g, HYPCALL_SYS_EXIT_THREAD, 3, was_el1_fault, exitstatus, misc);
     __builtin_unreachable();
 }
 
-static void
-vmm_call_get_sel4reply_start_stamp(guest_t *g, uint64_t *ret)
+static void vmm_call_get_sel4reply_start_stamp(guest_t *g, uint64_t *ret)
 {
     vmm_call(g, HYPCALL_SYS_GET_SEL4_REPLY_START_STAMP, 1, ret);
 }
 
-static void
-vmm_call_get_sel4call_end_stamp(guest_t *g, uint64_t *ret)
+static void vmm_call_get_sel4call_end_stamp(guest_t *g, uint64_t *ret)
 {
     vmm_call(g, HYPCALL_SYS_GET_SEL4_CALL_END_STAMP, 1, ret);
 }
 
-static void
-vmm_call_report_end_results(guest_t *g, enum vcpu_benchmarks bm,
-                            uint64_t min, uint64_t max,
-                            uint64_t clipped_avg, uint64_t complete_avg,
-                            uint64_t clipped_total, uint64_t complete_total,
-                            uint64_t n_anomalies)
+static void vmm_call_report_end_results(guest_t *g, enum vcpu_benchmarks bm,
+                                        uint64_t min, uint64_t max,
+                                        uint64_t clipped_avg, uint64_t complete_avg,
+                                        uint64_t clipped_total, uint64_t complete_total,
+                                        uint64_t n_anomalies)
 {
     vmm_call(g, HYPCALL_SYS_BM_REPORT_END_RESULTS, 8, bm,
              min, max,
@@ -421,39 +397,34 @@ vmm_call_report_end_results(guest_t *g, enum vcpu_benchmarks bm,
 }
 
 #if VCPU_BENCH_COLLECT_DEEP_DATA != 0
-static void
-vmm_call_report_deep_results(guest_t *g, enum vcpu_benchmarks bm,
-                             int iteration, uint64_t min, uint64_t max)
+static void vmm_call_report_deep_results(guest_t *g, enum vcpu_benchmarks bm,
+                                         int iteration, uint64_t min, uint64_t max)
 {
     vmm_call(g, HYPCALL_SYS_BM_REPORT_DEEP_RESULTS, 4, bm,
              iteration, min, max);
 }
 #endif
 
-static void
-kcall_get_hvc_end_stamp(uint64_t *end)
+static void kcall_get_hvc_end_stamp(uint64_t *end)
 {
     (void)end;
 }
 
-static void
-kcall_get_eret_start_stamp(uint64_t *start)
+static void kcall_get_eret_start_stamp(uint64_t *start)
 {
     (void)start;
 }
 
-static void
-kcall_invoke_null_kcall(int64_t sel4_syscall_num)
+static void kcall_invoke_null_kcall(int64_t sel4_syscall_num)
 {
-    asm volatile (
+    asm volatile(
         "mov x7, %0\n"
         "hvc #0\n"
-        :: "r" (sel4_syscall_num)
+        :: "r"(sel4_syscall_num)
         : "x7");
 }
 
-NO_INLINE static int
-vmm_printf(guest_t *g, char *fmt, ...)
+NO_INLINE static int vmm_printf(guest_t *g, char *fmt, ...)
 {
     int ret;
     va_list args;
@@ -471,31 +442,28 @@ vmm_printf(guest_t *g, char *fmt, ...)
     return ret;
 }
 
-static inline seL4_Word
-get_elr_el1(void)
+static inline seL4_Word get_elr_el1(void)
 {
     seL4_Word ret;
 
     asm volatile("mrs %0, elr_el1\n"
-                 : "=r" (ret));
+                 : "=r"(ret));
 
     return ret;
 }
 
 #define get_int_vector()    get_esr_el1()
-static inline seL4_Word
-get_esr_el1(void)
+static inline seL4_Word get_esr_el1(void)
 {
     seL4_Word ret;
 
     asm volatile("mrs %0, esr_el1\n"
-                 : "=r" (ret));
+                 : "=r"(ret));
 
     return ret;
 }
 
-void
-guest_vector_common(int vectornum)
+void guest_vector_common(int vectornum)
 {
     /* Ideally we should have a way to tell the exception handler which guest it
      * is being invoked by, but right now it doesn't know that.
@@ -515,14 +483,13 @@ guest_vector_common(int vectornum)
     vmm_call_exit_thread(&guests[1], true, -1, esr_el1);
 }
 
-static inline seL4_Word
-get_currentel(void)
+static inline seL4_Word get_currentel(void)
 {
     seL4_Word pstate;
 
     asm volatile(
         "mrs %0, currentEL\n"
-        : "=r" (pstate));
+        : "=r"(pstate));
 
     pstate >>= 2;
     pstate &= 0x3;
@@ -530,8 +497,7 @@ get_currentel(void)
     return pstate;
 }
 
-static inline bool
-is_el1(seL4_Word pstate)
+static inline bool is_el1(seL4_Word pstate)
 {
 #ifdef CONFIG_ARCH_AARCH64
     return pstate == 0x1;
@@ -543,24 +509,21 @@ is_el1(seL4_Word pstate)
 #endif
 }
 
-static inline void
-guest_install_vector_table(void)
+static inline void guest_install_vector_table(void)
 {
     asm volatile(
         "msr vbar_el1, %0\n"
-        :: "r" (aarch64_el1_vector_table));
+        :: "r"(aarch64_el1_vector_table));
 }
 
-static inline seL4_Word
-get_vbar_el1(void)
+static inline seL4_Word get_vbar_el1(void)
 {
     seL4_Word ret;
-    asm volatile("mrs %0, vbar_el1\n":"=r" (ret));
+    asm volatile("mrs %0, vbar_el1\n":"=r"(ret));
     return ret;
 }
 
-static uint64_t
-guest_bm_calc_clipped_average(guest_t *self, vcpu_benchmark_results_t *r)
+static uint64_t guest_bm_calc_clipped_average(guest_t *self, vcpu_benchmark_results_t *r)
 {
     /* We need to also take stock of the number of anomalies when averaging
      * since we don't add anomalies to the total cycle count.
@@ -568,8 +531,7 @@ guest_bm_calc_clipped_average(guest_t *self, vcpu_benchmark_results_t *r)
     return r->clipped_total / (VCPU_BENCH_N_ITERATIONS - r->n_anomalies);
 }
 
-static uint64_t
-guest_bm_calc_complete_average(guest_t *self, vcpu_benchmark_results_t *r)
+static uint64_t guest_bm_calc_complete_average(guest_t *self, vcpu_benchmark_results_t *r)
 {
     /* We need to also take stock of the number of anomalies when averaging
      * since we don't add anomalies to the total cycle count.
@@ -589,11 +551,10 @@ guest_bm_calc_complete_average(guest_t *self, vcpu_benchmark_results_t *r)
  * This function factors that in by looking for unusually high differences in
  * measured time between runs.
  */
-static bool
-guest_bm_cycle_counter_anomaly_detected(guest_t *self,
-                                        int curr_iteration,
-                                        uint64_t curr_measurement_elapsed_time,
-                                        vcpu_benchmark_results_t *r)
+static bool guest_bm_cycle_counter_anomaly_detected(guest_t *self,
+                                                    int curr_iteration,
+                                                    uint64_t curr_measurement_elapsed_time,
+                                                    vcpu_benchmark_results_t *r)
 {
 #if VCPU_BENCH_COLLECT_DEEP_DATA != 0
     uint64_t prev_measurement_elapsed_time, measurement_diff;
@@ -620,10 +581,9 @@ guest_bm_cycle_counter_anomaly_detected(guest_t *self,
     return false;
 }
 
-static void
-guest_run_bm_hvc_priv_escalate(guest_t *self,
-                               vcpu_benchmark_results_t *r,
-                               uint64_t *start, uint64_t *end)
+static void guest_run_bm_hvc_priv_escalate(guest_t *self,
+                                           vcpu_benchmark_results_t *r,
+                                           uint64_t *start, uint64_t *end)
 {
     benchmark_track_kernel_entry_t stampdata;
 
@@ -649,10 +609,9 @@ guest_run_bm_hvc_priv_escalate(guest_t *self,
     *end = stampdata.start_time;
 }
 
-static void
-guest_run_bm_eret_priv_deescalate(guest_t *self,
-                                  vcpu_benchmark_results_t *r,
-                                  uint64_t *start, uint64_t *end)
+static void guest_run_bm_eret_priv_deescalate(guest_t *self,
+                                              vcpu_benchmark_results_t *r,
+                                              uint64_t *start, uint64_t *end)
 {
     benchmark_track_kernel_entry_t stampdata;
 
@@ -678,10 +637,9 @@ guest_run_bm_eret_priv_deescalate(guest_t *self,
     *start = stampdata.start_time + stampdata.duration;
 }
 
-static void
-guest_run_bm_hvc_null_syscall(guest_t *self,
-                              vcpu_benchmark_results_t *r,
-                              uint64_t *start, uint64_t *end)
+static void guest_run_bm_hvc_null_syscall(guest_t *self,
+                                          vcpu_benchmark_results_t *r,
+                                          uint64_t *start, uint64_t *end)
 {
     strncpy(r->name, "seL4 NULL syscall", VCPU_BENCH_NAME_SIZE);
     SEL4BENCH_READ_CCNT(*start);
@@ -689,30 +647,27 @@ guest_run_bm_hvc_null_syscall(guest_t *self,
     SEL4BENCH_READ_CCNT(*end);
 }
 
-static void
-guest_run_bm_call_syscall(guest_t *self,
-                          vcpu_benchmark_results_t *r,
-                          uint64_t *start, uint64_t *end)
+static void guest_run_bm_call_syscall(guest_t *self,
+                                      vcpu_benchmark_results_t *r,
+                                      uint64_t *start, uint64_t *end)
 {
     strncpy(r->name, "seL4_Call full invocation", VCPU_BENCH_NAME_SIZE);
     SEL4BENCH_READ_CCNT(*start);
     vmm_call_get_sel4call_end_stamp(self, end);
 }
 
-static void
-guest_run_bm_reply_syscall(guest_t *self,
-                           vcpu_benchmark_results_t *r,
-                           uint64_t *start, uint64_t *end)
+static void guest_run_bm_reply_syscall(guest_t *self,
+                                       vcpu_benchmark_results_t *r,
+                                       uint64_t *start, uint64_t *end)
 {
     strncpy(r->name, "seL4_Reply full invocation", VCPU_BENCH_NAME_SIZE);
     vmm_call_get_sel4reply_start_stamp(self, start);
     SEL4BENCH_READ_CCNT(*end);
 }
 
-static void
-guest_run_bm(guest_t *self,
-             guest_bm_stamp_getter_fn *stamp_getter_fn,
-             vcpu_benchmark_results_t *r)
+static void guest_run_bm(guest_t *self,
+                         guest_bm_stamp_getter_fn *stamp_getter_fn,
+                         vcpu_benchmark_results_t *r)
 {
     memset(r, 0, sizeof(*r));
 
@@ -752,9 +707,8 @@ guest_run_bm(guest_t *self,
     r->complete_avg = guest_bm_calc_complete_average(self, r);
 }
 
-static void
-guest_report_bm_results(guest_t *self,
-                        enum vcpu_benchmarks bm, vcpu_benchmark_results_t *r)
+static void guest_report_bm_results(guest_t *self,
+                                    enum vcpu_benchmarks bm, vcpu_benchmark_results_t *r)
 {
     vmm_call_report_end_results(self, bm,
                                 r->min, r->max,
@@ -776,8 +730,7 @@ guest_report_bm_results(guest_t *self,
  */
 static vcpu_benchmark_results_t guest_results;
 
-static int
-guest_run_benchmarks(guest_t *self)
+static int guest_run_benchmarks(guest_t *self)
 {
     guest_run_bm(self, guest_run_bm_hvc_priv_escalate, &guest_results);
     guest_report_bm_results(self, VCPU_BENCHMARK_HVC_PRIV_ESCALATE,
@@ -802,8 +755,7 @@ guest_run_benchmarks(guest_t *self)
     return 0;
 }
 
-int
-guest_main(guest_t *self)
+int guest_main(guest_t *self)
 {
     seL4_Word currentel, cpacr;
     seL4_Error err;

@@ -12,8 +12,7 @@
 #include "printing.h"
 #include "ipc.h"
 
-void
-print_all(int size, ccnt_t array[size])
+void print_all(int size, ccnt_t array[size])
 {
     uint32_t i;
     for (i = 0; i < size; i++) {

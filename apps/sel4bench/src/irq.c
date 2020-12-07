@@ -26,9 +26,9 @@ static ccnt_t kernel_log_data[KERNEL_MAX_NUM_LOG_ENTRIES];
 static unsigned int offsets[CONFIG_MAX_NUM_TRACE_POINTS];
 static unsigned int sizes[CONFIG_MAX_NUM_TRACE_POINTS];
 
-static json_t *
-process(void *results) {
-     irq_results_t *irq_results = (irq_results_t *) results;
+static json_t *process(void *results)
+{
+    irq_results_t *irq_results = (irq_results_t *) results;
 
     /* Sort and group data by tracepoints. A stable sort is used so the first N_IGNORED
      * results of each tracepoint can be ignored, as this keeps the data in chronological
@@ -61,7 +61,7 @@ process(void *results) {
         ZF_LOGF("Insufficient data recorded. Was the kernel built with the relevant tracepoints?\n");
     }
 
-    ccnt_t *data = (ccnt_t*)malloc(sizeof(ccnt_t) * n_data);
+    ccnt_t *data = (ccnt_t *)malloc(sizeof(ccnt_t) * n_data);
     if (data == NULL) {
         ZF_LOGF("Failed to allocate memory\n");
     }
@@ -106,14 +106,13 @@ static benchmark_t irq_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-irq_benchmark_new(void)
+benchmark_t *irq_benchmark_new(void)
 {
     return &irq_benchmark;
 }
 
-static json_t *
-irquser_process(void *r) {
+static json_t *irquser_process(void *r)
+{
     irquser_results_t *raw_results = r;
 
     result_desc_t desc = {
@@ -159,8 +158,7 @@ static benchmark_t irquser_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-irquser_benchmark_new(void)
+benchmark_t *irquser_benchmark_new(void)
 {
-   return &irquser_benchmark;
+    return &irquser_benchmark;
 }

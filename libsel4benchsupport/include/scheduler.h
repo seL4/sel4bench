@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __SELBENCH_SCHEDULER_H
-#define __SELBENCH_SCHEDULER_H
+#pragma once
 
 #include <sel4bench/sel4bench.h>
 #include <benchmark.h>
@@ -26,8 +25,7 @@ typedef struct scheduler_results_t {
 
 } scheduler_results_t;
 
-static inline uint8_t
-gen_next_prio(int i)
+static inline uint8_t gen_next_prio(int i)
 {
     /* for the master seL4 kernel, the only thing that effects the length of a
      * schedule call is how far apart the two prios are that we are switching between.
@@ -40,5 +38,3 @@ gen_next_prio(int i)
      */
     return seL4_MinPrio + 1 + (i * seL4_WordBits);
 }
-
-#endif /* __SELBENCH_SCHEDULER_H */

@@ -15,18 +15,17 @@
 #include "printing.h"
 #include "processing.h"
 
-static json_t *
-process_ipc_results(void *r)
+static json_t *process_ipc_results(void *r)
 {
     ipc_results_t *raw_results = r;
     ccnt_t overheads[NUM_OVERHEAD_BENCHMARKS];
 
     /* check overheads */
     for (int i = 0; i < NUM_OVERHEAD_BENCHMARKS; i++) {
-        if (!results_stable(&raw_results->overhead_benchmarks[i][1] , RUNS - 1)) {
+        if (!results_stable(&raw_results->overhead_benchmarks[i][1], RUNS - 1)) {
             if (!config_set(CONFIG_ALLOW_UNSTABLE_OVERHEAD)) {
                 printf("Benchmarking overhead of a %s is not stable! Cannot continue\n",
-                        overhead_benchmark_params[i].name);
+                       overhead_benchmark_params[i].name);
                 print_all(RUNS, raw_results->overhead_benchmarks[i]);
                 return NULL;
             }
@@ -101,8 +100,8 @@ process_ipc_results(void *r)
         };
 
         functions[i] = (char *) benchmark_params[i].name,
-        directions[i] = benchmark_params[i].direction == DIR_TO ? "client->server" :
-                                                                  "server->client";
+                       directions[i] = benchmark_params[i].direction == DIR_TO ? "client->server" :
+                                       "server->client";
         client_prios[i] = benchmark_params[i].client_prio;
         server_prios[i] = benchmark_params[i].server_prio;
         same_vspace[i] = benchmark_params[i].same_vspace;
@@ -124,8 +123,7 @@ static benchmark_t ipc_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-ipc_benchmark_new(void)
+benchmark_t *ipc_benchmark_new(void)
 {
-   return &ipc_benchmark;
+    return &ipc_benchmark;
 }

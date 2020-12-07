@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __SELBENCH_SIGNAL_H
-#define __SELBENCH_SIGNAL_H
+#pragma once
 
 #include <sel4bench/sel4bench.h>
 #include <benchmark.h>
@@ -18,5 +17,3 @@ typedef struct signal_results {
     ccnt_t overhead[N_RUNS];
     ccnt_t hi_prio_average[N_RUNS][NUM_AVERAGE_EVENTS];
 } signal_results_t;
-
-#endif /* __SELBENCH_SIGNAL_H */

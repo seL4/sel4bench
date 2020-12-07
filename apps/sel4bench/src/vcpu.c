@@ -20,9 +20,8 @@ static benchmark_t vcpu_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-vcpu_benchmark_new(void)
+benchmark_t *vcpu_benchmark_new(void)
 {
-   return &vcpu_benchmark;
+    return &vcpu_benchmark;
 }
 #endif

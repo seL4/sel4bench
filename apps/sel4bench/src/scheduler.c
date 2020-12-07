@@ -10,8 +10,7 @@
 #include <scheduler.h>
 #include <stdio.h>
 
-static void
-process_yield_results(scheduler_results_t *results, ccnt_t overhead, json_t *array)
+static void process_yield_results(scheduler_results_t *results, ccnt_t overhead, json_t *array)
 {
     result_desc_t desc = {
         .ignored = N_IGNORED,
@@ -36,11 +35,10 @@ process_yield_results(scheduler_results_t *results, ccnt_t overhead, json_t *arr
     result_t average_results[NUM_AVERAGE_EVENTS];
     process_average_results(N_RUNS, NUM_AVERAGE_EVENTS, results->average_yield, average_results);
     json_array_append_new(array, average_counters_to_json("Average seL4_Yield (no thread switch)",
-                                                           average_results));
+                                                          average_results));
 }
 
-static void
-process_scheduler_results(scheduler_results_t *results, json_t *array)
+static void process_scheduler_results(scheduler_results_t *results, json_t *array)
 {
     result_desc_t desc = {
         .stable = true,
@@ -92,11 +90,11 @@ process_scheduler_results(scheduler_results_t *results, json_t *array)
     result_t average_results[NUM_AVERAGE_EVENTS];
     process_average_results(N_RUNS, NUM_AVERAGE_EVENTS, results->set_prio_average, average_results);
     json_array_append_new(array, average_counters_to_json("Average to reschedule current thread",
-                                                           average_results));
+                                                          average_results));
 }
 
-static json_t *
-scheduler_process(void *results) {
+static json_t *scheduler_process(void *results)
+{
     scheduler_results_t *raw_results = results;
     json_t *array = json_array();
 
@@ -132,8 +130,7 @@ static benchmark_t sched_benchmark = {
     .init = blank_init
 };
 
-benchmark_t *
-scheduler_benchmark_new(void)
+benchmark_t *scheduler_benchmark_new(void)
 {
     return &sched_benchmark;
 }

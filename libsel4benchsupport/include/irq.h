@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __SELBENCH_IRQ_H
-#define __SELBENCH_IRQ_H
+#pragma once
 
 #include <sel4bench/kernel_logging.h>
 #include <sel4bench/logging.h>
@@ -25,5 +24,3 @@ typedef struct irquser_results_t {
     ccnt_t thread_results[N_RUNS];
     ccnt_t process_results[N_RUNS];
 } irquser_results_t;
-
-#endif /* __SELBENCH_IRQ_H */

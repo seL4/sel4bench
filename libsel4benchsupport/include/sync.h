@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __SELBENCH_SYNC_H
-#define __SELBENCH_SYNC_H
+#pragma once
 
 #include <sel4bench/sel4bench.h>
 
@@ -23,19 +22,19 @@
  * C - use (C)ombined syscals (SignalRecv)
  */
 
-const char* broadcast_wait_names[] = {
+const char *broadcast_wait_names[] = {
     "Wait time"
 };
 
-const char* broadcast_broadcast_names[] = {
+const char *broadcast_broadcast_names[] = {
     "Broadcast time"
 };
 
-const char* producer_to_consumer_names[] = {
+const char *producer_to_consumer_names[] = {
     "Producer to consumer"
 };
 
-const char* consumer_to_producer_names[] = {
+const char *consumer_to_producer_names[] = {
     "Consumer to producer"
 };
 
@@ -48,5 +47,3 @@ typedef struct sync_results {
 } sync_results_t;
 
 typedef void (*helper_func_t)(int argc, char *argv[]);
-
-#endif /* __SELBENCH_SYNC_H */

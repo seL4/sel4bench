@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-#ifndef __SEL4_ARCH_HARDWARE_H
-#define __SEL4_ARCH_HARDWARE_H
+#pragma once
 
 #define DO_NULLSYSCALL_OP(sys, syscall) do {\
     asm volatile ( \
@@ -22,5 +21,3 @@
 
 #define DO_REAL_NULLSYSCALL()     DO_NULLSYSCALL("sysenter")
 #define DO_NOP_NULLSYSCALL()      DO_NULLSYSCALL(".byte 0x66\n.byte 0x90")
-
-#endif /* __SEL4_ARCH_HARDWARE_H */
