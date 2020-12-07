@@ -99,9 +99,9 @@ static json_t *process_ipc_results(void *r)
             .overhead = overheads[benchmark_params[i].overhead_id],
         };
 
-        functions[i] = (char *) benchmark_params[i].name,
-                       directions[i] = benchmark_params[i].direction == DIR_TO ? "client->server" :
-                                       "server->client";
+        functions[i] = (char *) benchmark_params[i].name;
+        directions[i] = benchmark_params[i].direction == DIR_TO ? "client->server" :
+                        "server->client";
         client_prios[i] = benchmark_params[i].client_prio;
         server_prios[i] = benchmark_params[i].server_prio;
         same_vspace[i] = benchmark_params[i].same_vspace;
