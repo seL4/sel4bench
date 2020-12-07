@@ -1,5 +1,10 @@
 /*
- * @TAG(CUSTOM)
+ * SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+ *
+ * Copyright 200 Marsaglia and Tsang
+ *
+ * The source https://www.jstatsoft.org/article/view/v005i08
+ * says GPL 2 or later or GPL-compatible license (which MIT is).
  *
  * The ziggurat method for RNOR and REXP
  *
