@@ -17,6 +17,7 @@
 #include <smp/gen_config.h>
 #include <sel4benchsync/gen_config.h>
 #include <sel4benchvcpu/gen_config.h>
+#include <sel4benchtraceclearmemory/gen_config.h>
 #include <jansson.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
@@ -106,6 +107,7 @@ benchmark_t *sync_benchmark_new(void);
 benchmark_t *page_mapping_benchmark_new(void);
 benchmark_t *smp_benchmark_new(void);
 benchmark_t *vcpu_benchmark_new(void);
+benchmark_t *trace_clearMemory_benchmark_new(void);
 
 static inline void blank_init(UNUSED vka_t *vka, UNUSED simple_t *simple, UNUSED sel4utils_process_t *process)
 {

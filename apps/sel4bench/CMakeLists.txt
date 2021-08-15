@@ -73,6 +73,7 @@ add_subdirectory(../signal signal)
 add_subdirectory(../smp smp)
 add_subdirectory(../sync sync)
 add_subdirectory(../vcpu vcpu)
+add_subdirectory(../trace_clearMemory trace_clearMemory)
 add_subdirectory(../../libsel4benchsupport libsel4benchsupport)
 
 config_option(Sel4Bench SEL4_BENCH "Enable seL4 benchmarking" DEFAULT ON)
@@ -107,6 +108,7 @@ if(Sel4Bench)
         smp_Config
         sel4benchsync_Config
         sel4benchvcpu_Config
+        sel4benchtraceclearmemory_Config
     )
     include(rootserver)
     DeclareRootserver(sel4benchapp)
