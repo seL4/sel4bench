@@ -38,7 +38,6 @@ config_string(
 if(
     (KernelArchX86 AND KernelExportPMCUser AND KernelX86DangerousMSR)
     OR (KernelArchARM AND KernelArmExportPMUUser)
-    OR (KernelArchArmV6 AND KernelDangerousCodeInjection)
     OR (KernelArchArmCortexA8 AND KernelDangerousCodeInjection)
 )
     set(DefaultBenchDeps TRUE)
