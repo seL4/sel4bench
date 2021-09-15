@@ -16,7 +16,7 @@ config_option(
     DEFAULT
     OFF
     DEPENDS
-    "NOT KernelArchArmV6;DefaultBenchDeps"
+    "DefaultBenchDeps"
 )
 add_config_library(sel4benchfault "${configure_string}")
 
