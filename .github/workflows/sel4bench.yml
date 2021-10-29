@@ -66,6 +66,7 @@ jobs:
           - odroid_c2
           - odroid_xu4
           - am335x_boneblack
+          - tx1
           - tx2
           - hifive
         include:
