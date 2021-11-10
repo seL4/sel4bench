@@ -108,15 +108,53 @@ jobs:
           path: '*.json'
 
   deploy:
-    name: Deploy manifest
+    name: Deploy
     if: ${{ github.repository_owner == 'seL4' }}
     runs-on: ubuntu-latest
     needs: [code, hw-run]
     steps:
-    - name: Deploy
+    - name: Deploy manifest
+      id: deploy
       uses: seL4/ci-actions/manifest-deploy@master
       with:
         xml: ${{ needs.code.outputs.xml }}
         manifest_repo: sel4bench-manifest
       env:
         GH_SSH: ${{ secrets.CI_SSH }}
+    - name: Check out website repo
+      uses: actions/checkout@v2
+      with:
+        repository: seL4/website
+        token: ${{ secrets.PRIV_REPO_TOKEN }}
+    - name: Get results for web deployment (sabre)
+      uses: actions/download-artifact@v2
+      with:
+        name: sel4bench-results-sabre
+    - name: Get results for web deployment (haswell)
+      uses: actions/download-artifact@v2
+      with:
+        name: sel4bench-results-pc99-haswell3
+    - name: Get results for web deployment (skylake)
+      uses: actions/download-artifact@v2
+      with:
+        name: sel4bench-results-pc99-skylake
+    - name: Get results for web deployment (tx1)
+      uses: actions/download-artifact@v2
+      with:
+        name: sel4bench-results-tx1
+    - name: Get results for web deployment (hifive)
+      uses: actions/download-artifact@v2
+      with:
+        name: sel4bench-results-hifive
+    - name: Generate web page
+      uses: seL4/ci-actions/sel4bench-web@master
+      with:
+        manifest_sha: ${{ steps.deploy.outputs.manifest_sha }}
+    - name: Deploy web page
+      run: |
+        mv home.pml content/About/Performance/
+        git config user.name "seL4 CI"
+        git config user.email "ci@sel4.systems"
+        git add content/About/Performance/home.pml
+        git commit -s -m "CI: update performance results"
+        git push origin master
