@@ -12,6 +12,7 @@
 
 typedef struct {
     ccnt_t reply_recv_overhead[N_RUNS];
+    ccnt_t reply_recv_1_overhead[N_RUNS];
     ccnt_t ccnt_overhead[N_RUNS];
 
     /* we ignore the last result for the following,
@@ -21,4 +22,7 @@ typedef struct {
     ccnt_t round_trip[N_RUNS + 1];
     ccnt_t fault[N_RUNS + 1];
     ccnt_t fault_reply[N_RUNS + 1];
+    ccnt_t vm_fault[N_RUNS + 1];
+    ccnt_t vm_fault_reply[N_RUNS + 1];
+    ccnt_t vm_fault_map[N_RUNS + 1];
 } fault_results_t;

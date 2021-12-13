@@ -22,6 +22,16 @@
     ip = mr0; \
 } while(0)
 
+#define DO_REPLY_RECV(ep, tag, ro, swi) do { \
+    register seL4_Word src asm("r0") = (seL4_Word)ep; \
+    register seL4_MessageInfo_t info asm("r1") = tag; \
+    register seL4_Word scno asm("r7") = seL4_SysReplyRecv; \
+    register seL4_Word ro_copy asm("r6") = ro; \
+    asm volatile(NOPS swi NOPS \
+        : "+r"(src), "+r"(info) \
+        : "r"(scno), "r" (ro_copy) \
+    ); \
+} while(0)
 
 #else
 #define DO_REPLY_RECV_1(ep, ip, ro, swi) do { \
@@ -36,7 +46,20 @@
     ); \
     ip = mr0; \
 } while(0)
+
+#define DO_REPLY_RECV(ep, tag, ro, swi) do { \
+    register seL4_Word src asm("r0") = (seL4_Word)ep; \
+    register seL4_MessageInfo_t info asm("r1") = tag; \
+    register seL4_Word scno asm("r7") = seL4_SysReplyRecv; \
+    asm volatile(NOPS swi NOPS \
+        : "+r"(src), "+r"(info) \
+        : "r"(scno) \
+    ); \
+} while(0)
+
 #endif /* CONFIG_KERNEL_MCS */
 
 #define DO_REAL_REPLY_RECV_1(ep, mr0, ro) DO_REPLY_RECV_1(ep, mr0, ro, "swi $0")
 #define DO_NOP_REPLY_RECV_1(ep, mr0, ro)  DO_REPLY_RECV_1(ep, mr0, ro, "nop")
+#define DO_REAL_REPLY_RECV(ep, tag, ro) DO_REPLY_RECV(ep, tag, ro, "swi $0")
+#define DO_NOP_REPLY_RECV(ep, tag, ro) DO_REPLY_RECV(ep, tag, ro, "nop")
