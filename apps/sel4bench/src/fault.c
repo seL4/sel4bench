@@ -16,7 +16,7 @@ static json_t *fault_process(void *results)
 
     result_desc_t desc = {
         .stable = true,
-        .name = "fault overhead (undefined instruction fault)",
+        .name = "fault overhead",
         .ignored = N_IGNORED
     };
 
@@ -44,22 +44,6 @@ static json_t *fault_process(void *results)
     result = process_result(N_RUNS, raw_results->fault, desc);
     json_array_append_new(array, result_set_to_json(set));
 
-    /*VM Faults */
-    desc.stable = true,
-    desc.name = "fault overhead (vm fault)",
-    desc.overhead = 0;
-
-    /* calculate overhead of reply_recv */
-    result = process_result(N_RUNS, raw_results->reply_recv_overhead, desc);
-
-    set.name = "fault overhead (vm fault)",
-    set.n_results = 1,
-    set.n_extra_cols = 0,
-
-    json_array_append_new(array, result_set_to_json(set));
-
-    desc.stable = false;
-    desc.overhead = result.min;
 
     set.name = "vm fault + mapping round trip";
     result = process_result(N_RUNS, raw_results->vm_fault_map, desc);

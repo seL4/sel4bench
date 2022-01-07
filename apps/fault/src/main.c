@@ -174,6 +174,7 @@ static void measure_vm_fault_fn(int argc, char **argv) {
     seL4_CPtr done_ep = atol(argv[2]);
 
     for (int i = 0; i < N_RUNS + 1; i++){
+        // ZF_LOGE("Faulter: %d", i);
         SEL4BENCH_READ_CCNT(*start);
         read_fault();
     }
@@ -187,6 +188,7 @@ static void measure_vm_fault_handler_fn(int argc, char **argv) {
     ccnt_t end;
     fault_results_t *results;
     seL4_Word badge = 0;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
     parse_handler_args(argc, argv, &ep, &start, &results, &done_ep, &reply, &tcb);
 
@@ -203,14 +205,17 @@ static void measure_vm_fault_handler_fn(int argc, char **argv) {
     for (int i = 0; i < N_RUNS; i++) {
         /* Clear MRs to ensure they get repopulated. */
         set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
-        DO_REAL_REPLY_RECV(ep, seL4_MessageInfo_new(0, 0, 0, 0), reply);
+        int msg = 0;
+        DO_REAL_REPLY_RECV_1(ep, msg, reply);
+        // DO_REAL_REPLY_RECV(ep, tag, reply);
         SEL4BENCH_READ_CCNT(end);
         results->vm_fault[i] = end - *start;
-
+        // ZF_LOGE("Handler: %d", i);
         volatile int j;
         for (j = 0; j < 10000; j++) {
 
         }
+        
     }
 
     set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
@@ -219,7 +224,6 @@ static void measure_vm_fault_handler_fn(int argc, char **argv) {
     } else {
         api_reply(reply, seL4_MessageInfo_new(0, 0, 0, 0));
     }
-
     /* tell benchmark we are done and that there are no errors */
     seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
     /* block */
@@ -251,6 +255,7 @@ static void measure_vm_fault_reply_handler_fn(int argc, char **argv)
     ccnt_t end;
     fault_results_t *results;
     seL4_Word badge = 0;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
     parse_handler_args(argc, argv, &ep, &start, &results, &done_ep, &reply, &tcb);
 
@@ -267,7 +272,9 @@ static void measure_vm_fault_reply_handler_fn(int argc, char **argv)
         /* record time */
         SEL4BENCH_READ_CCNT(*start);
         /* wait for fault */
-        DO_REAL_REPLY_RECV(ep, seL4_MessageInfo_new(0, 0, 0, 0), reply);
+        int msg = 0;
+        DO_REAL_REPLY_RECV_1(ep, msg, reply);
+        // DO_REAL_REPLY_RECV(ep, tag, reply);
     }
 
     set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
@@ -441,6 +448,7 @@ static void measure_vm_fault_map_handler_fn(int argc, char **argv) {
     volatile ccnt_t *start;
     ccnt_t end;
     fault_results_t *results;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
     parse_handler_args(argc, argv, &ep, &start, &results, &done_ep, &reply, &tcb);
     seL4_CPtr *caps = (seL4_CPtr *) atol(argv[6]);
@@ -457,7 +465,7 @@ static void measure_vm_fault_map_handler_fn(int argc, char **argv) {
     for (int i = 0; i < N_RUNS; i++) {
         err = seL4_ARCH_Page_Map(caps[i], SEL4UTILS_PD_SLOT, START_ADDR + i * (1 << seL4_PageBits), seL4_AllRights,
                                 seL4_ARCH_Default_VMAttributes);
-        DO_REAL_REPLY_RECV(ep, seL4_MessageInfo_new(0, 0, 0, 0), reply);
+        DO_REAL_REPLY_RECV(ep, tag, reply);
     }
 
     err = seL4_ARCH_Page_Map(caps[N_RUNS], SEL4UTILS_PD_SLOT, START_ADDR + N_RUNS * (1 << seL4_PageBits), seL4_AllRights,
@@ -617,6 +625,7 @@ void measure_overhead(fault_results_t *results)
     seL4_CPtr ep = 0;
     UNUSED seL4_Word mr0 = 0;
     UNUSED seL4_CPtr reply = 0;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
     /* overhead of reply recv stub + cycle count */
     for (int i = 0; i < N_RUNS; i++) {
@@ -624,13 +633,6 @@ void measure_overhead(fault_results_t *results)
         DO_NOP_REPLY_RECV_1(ep, mr0, reply);
         SEL4BENCH_READ_CCNT(end);
         results->reply_recv_1_overhead[i] = (end - start);
-    }
-
-    for (int i = 0; i < N_RUNS; i++) {
-        SEL4BENCH_READ_CCNT(start);
-        DO_NOP_REPLY_RECV(ep, seL4_MessageInfo_new(0, 0, 0, 0), reply);
-        SEL4BENCH_READ_CCNT(end);
-        results->reply_recv_overhead[i] = (end - start);
     }
 
     /* overhead of cycle count */

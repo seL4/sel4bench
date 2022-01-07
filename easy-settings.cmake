@@ -21,7 +21,7 @@
 #
 set(RELEASE ON CACHE BOOL "Performance optimized build")
 set(HARDWARE OFF CACHE BOOL "Configuration for sel4bench hardware app")
-set(FAULT OFF CACHE BOOL "Configuration sel4bench fault app")
+set(FAULT ON CACHE BOOL "Configuration sel4bench fault app")
 set(VCPU OFF CACHE BOOL "Whether or not to run the VCPU benchmarks")
 set(SMP OFF CACHE BOOL "Configuration sel4bench smp app")
 set(PLATFORM "x86_64" CACHE STRING "Platform to test")

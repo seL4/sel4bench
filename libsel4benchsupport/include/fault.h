@@ -11,7 +11,6 @@
 #define N_RUNS (100 + N_IGNORED)
 
 typedef struct {
-    ccnt_t reply_recv_overhead[N_RUNS];
     ccnt_t reply_recv_1_overhead[N_RUNS];
     ccnt_t ccnt_overhead[N_RUNS];
 
