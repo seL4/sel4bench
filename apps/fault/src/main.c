@@ -207,7 +207,6 @@ static void measure_vm_fault_handler_fn(int argc, char **argv) {
         set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
         int msg = 0;
         DO_REAL_REPLY_RECV_1(ep, msg, reply);
-        // DO_REAL_REPLY_RECV(ep, tag, reply);
         SEL4BENCH_READ_CCNT(end);
         results->vm_fault[i] = end - *start;
         // ZF_LOGE("Handler: %d", i);
@@ -274,7 +273,6 @@ static void measure_vm_fault_reply_handler_fn(int argc, char **argv)
         /* wait for fault */
         int msg = 0;
         DO_REAL_REPLY_RECV_1(ep, msg, reply);
-        // DO_REAL_REPLY_RECV(ep, tag, reply);
     }
 
     set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
@@ -465,7 +463,9 @@ static void measure_vm_fault_map_handler_fn(int argc, char **argv) {
     for (int i = 0; i < N_RUNS; i++) {
         err = seL4_ARCH_Page_Map(caps[i], SEL4UTILS_PD_SLOT, START_ADDR + i * (1 << seL4_PageBits), seL4_AllRights,
                                 seL4_ARCH_Default_VMAttributes);
-        DO_REAL_REPLY_RECV(ep, tag, reply);
+
+        int msg = 0;
+        DO_REAL_REPLY_RECV_1(ep, msg, reply);
     }
 
     err = seL4_ARCH_Page_Map(caps[N_RUNS], SEL4UTILS_PD_SLOT, START_ADDR + N_RUNS * (1 << seL4_PageBits), seL4_AllRights,
