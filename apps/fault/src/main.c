@@ -170,7 +170,7 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
 
 static void measure_vm_fault_fn(int argc, char **argv)
 {
-    assert (argc == N_FAULTER_ARGS);
+    assert(argc == N_FAULTER_ARGS);
     volatile ccnt_t *start = (volatile ccnt_t *) atol(argv[0]);
     seL4_CPtr done_ep = atol(argv[2]);
 
@@ -398,16 +398,18 @@ static void measure_fault_roundtrip_handler_fn(int argc, char **argv)
     fault_handler_done(ep, ip, done_ep, reply);
 }
 
-static inline void read_mapping_fault(char *address){
+static inline void read_mapping_fault(char *address)
+{
     char value;
     asm volatile("mov %[val], %[addr]"
                  : [val]"=r"(value)
                  : [addr]"r"(*address)
                  /* no clobbers */
-                 );
+                );
 }
 
-static inline void write_mapping_fault(char *address){
+static inline void write_mapping_fault(char *address)
+{
     char value = 'a';
     asm volatile("str %[val], [%[addr]]"
                  :
@@ -442,7 +444,8 @@ static void measure_vm_fault_map_fn(int argc, char **argv)
     seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
-static void measure_vm_fault_map_handler_fn(int argc, char **argv) {
+static void measure_vm_fault_map_handler_fn(int argc, char **argv)
+{
     seL4_CPtr ep, done_ep, reply, tcb;
     volatile ccnt_t *start;
     ccnt_t end;
