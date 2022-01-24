@@ -23,6 +23,9 @@ set(OPENSBI_PATH "${project_dir}/tools/opensbi" CACHE STRING "OpenSBI Folder loc
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 include(application_settings)
 
+# setup the configuration of the benchmark suite
+include(${CMAKE_CURRENT_LIST_DIR}/benchmark_list.cmake)
+
 include(${CMAKE_CURRENT_LIST_DIR}/easy-settings.cmake)
 
 if(VCPU)
