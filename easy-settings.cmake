@@ -27,7 +27,7 @@ set(MCS OFF CACHE BOOL "MCS kernel")
 
 # Set the list of benchmark applications to be included into the image
 set(HARDWARE OFF CACHE BOOL "Application to benchmark hardware-related operations")
-set(FAULT OFF CACHE BOOL "Application to benchmark seL4 faults")
+set(FAULT ON CACHE BOOL "Application to benchmark seL4 faults")
 set(VCPU OFF CACHE BOOL "Application to benchmark seL4 VCPU performance")
 set(SMP OFF CACHE BOOL "Application SMP benchmarks")
 set(IPC ON CACHE BOOL "Application to benchmark seL4 IPC")
