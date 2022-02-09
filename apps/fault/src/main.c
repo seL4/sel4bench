@@ -189,6 +189,7 @@ static void measure_vm_fault_handler_fn(int argc, char **argv)
     ccnt_t end;
     fault_results_t *results;
     seL4_Word badge = 0;
+    int msg = 0;
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
     parse_handler_args(argc, argv, &ep, &start, &results, &done_ep, &reply, &tcb);
@@ -206,7 +207,6 @@ static void measure_vm_fault_handler_fn(int argc, char **argv)
     for (int i = 0; i < N_RUNS; i++) {
         /* Clear MRs to ensure they get repopulated. */
         set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
-        int msg = 0;
         DO_REAL_REPLY_RECV_1(ep, msg, reply);
         SEL4BENCH_READ_CCNT(end);
         results->vm_fault[i] = end - *start;
@@ -254,6 +254,7 @@ static void measure_vm_fault_reply_handler_fn(int argc, char **argv)
     ccnt_t end;
     fault_results_t *results;
     seL4_Word badge = 0;
+    int msg = 0;
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
     parse_handler_args(argc, argv, &ep, &start, &results, &done_ep, &reply, &tcb);
@@ -271,7 +272,6 @@ static void measure_vm_fault_reply_handler_fn(int argc, char **argv)
         /* record time */
         SEL4BENCH_READ_CCNT(*start);
         /* wait for fault */
-        int msg = 0;
         DO_REAL_REPLY_RECV_1(ep, msg, reply);
     }
 
@@ -451,6 +451,7 @@ static void measure_vm_fault_map_handler_fn(int argc, char **argv)
     ccnt_t end;
     fault_results_t *results;
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    int msg = 0;
 
     parse_handler_args(argc, argv, &ep, &start, &results, &done_ep, &reply, &tcb);
     seL4_CPtr *caps = (seL4_CPtr *) atol(argv[6]);
@@ -468,7 +469,6 @@ static void measure_vm_fault_map_handler_fn(int argc, char **argv)
         err = seL4_ARCH_Page_Map(caps[i], SEL4UTILS_PD_SLOT, START_ADDR + i * (1 << seL4_PageBits), seL4_AllRights,
                                  seL4_ARCH_Default_VMAttributes);
 
-        int msg = 0;
         DO_REAL_REPLY_RECV_1(ep, msg, reply);
     }
 
