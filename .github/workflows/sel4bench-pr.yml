@@ -38,6 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         march: [armv7a, armv8a, nehalem, rv64imac]
+        compiler: [gcc, clang]
     steps:
     - name: Build
       uses: seL4/ci-actions/sel4bench@master
@@ -47,7 +48,9 @@ jobs:
     - name: Upload images
       uses: actions/upload-artifact@v2
       with:
-        name: images-${{ matrix.march }}
+        # The funky expression below is to work around lack of ternary operator,
+        # when 'gcc' is used there is no suffix, otherwise it's '-<compiler>'
+        name: images-${{ matrix.march }}${{ matrix.compiler != 'gcc' && format('-{0}', matrix.compiler) || '' }}
         path: '*-images.tar.gz'
 
   hw-run:
@@ -95,6 +98,7 @@ jobs:
       - name: Download image
         uses: actions/download-artifact@v2
         with:
+          # This works because there is no suffix for the gcc toolchain
           name: images-${{ steps.plat.outputs.march }}
       - name: Run
         uses: seL4/ci-actions/sel4bench-hw@master
