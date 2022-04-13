@@ -17,6 +17,10 @@
  */
 result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc);
 
+/*  For Early Processing configuration  */
+result_t process_result_early_proc(ccnt_t num, ccnt_t min, ccnt_t max,
+                                   ccnt_t sum, ccnt_t sum2, ccnt_t array[num]);
+
 /**
  * @param ncols    size of the 1st dimension of array.
  * @param nrows    size of the 2nd dimension of the array.
