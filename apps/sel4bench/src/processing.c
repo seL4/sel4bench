@@ -63,6 +63,12 @@ result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc)
     return calculate_results(size, array);
 }
 
+/* For Early Processing configuration */
+result_t process_result_early_proc(ccnt_t num, ccnt_t min, ccnt_t max, ccnt_t sum, ccnt_t sum2, ccnt_t array[num])
+{
+    return calculate_results_early_proc(num, min, max, sum, sum2, array);
+}
+
 void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
                      result_t results[ncols])
 {
