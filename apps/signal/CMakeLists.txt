@@ -18,6 +18,14 @@ config_option(
     DEPENDS
     "DefaultBenchDeps"
 )
+config_option(
+    AppSignalEarlyProcessing
+    APP_SIGNAL_EARLYPROC
+    "Apply early processing of the raw results for Signal benchmark"
+    DEFAULT
+    OFF
+)
+
 add_config_library(sel4benchsignal "${configure_string}")
 
 file(GLOB deps src/*.c)

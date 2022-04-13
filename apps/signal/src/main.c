@@ -81,6 +81,99 @@ void low_prio_signal_fn(int argc, char **argv)
     seL4_Wait(ntfn, NULL);
 }
 
+#if defined CONFIG_APP_SIGNAL_EARLYPROC
+
+/* The same as low_prio_signal_fn, but implements
+ * early processing of samples ("Early processing methodology")
+
+ * The methodology calculates min and max, as well as accumulates
+ * sum of samples and sum of squared samples. Raw sample values are dropped.
+ */
+
+/* Implementation note.
+ * "Runs Bitmask" is used to select which measured values will be ignored
+ * and which will be "counted".
+
+ * Use of a bitmask allows to avoid conditional branches inside the
+ * measurement loop which is critical to avoid instruction cache misses.
+
+ * The first N_IGNORED samples (so called warm-up samples) are not registered,
+ * corresponding mask bits are set to zeros. The following samples, up to
+ * (N_RUNS-1)th, have their mask bits set to "ones".
+
+ * TODO: to add check of N_RUNS and N_IGNORED values (selbenchsupport/signal.h)
+ * so they match the bitmask capacity: currently N_RUNS + N_IGNORED
+ * should not exceed 512 loops (64 bytes)
+ */
+
+/* bitmask size in bytes */
+#define RUNS_BITMASK_BYTES 64
+
+void low_prio_signal_early_proc_fn(int argc, char **argv)
+{
+    assert(argc == N_LO_SIGNAL_ARGS);
+    seL4_CPtr ntfn = (seL4_CPtr) atol(argv[0]);
+    volatile ccnt_t *end = (volatile ccnt_t *) atol(argv[1]);
+    signal_results_t *results = (signal_results_t *) atol(argv[2]);
+    seL4_CPtr done_ep = (seL4_CPtr) atol(argv[3]);
+    uint8_t runs_bitmask [RUNS_BITMASK_BYTES];
+
+
+    /* Preparing the mask */
+    memset((void *) runs_bitmask, 0xFF, RUNS_BITMASK_BYTES);
+
+    int n_complete_bytes = N_IGNORED / 8;
+    int n_remained_bits = N_IGNORED % 8;
+
+    memset((void *) runs_bitmask, 0, n_complete_bytes);
+
+    uint8_t tmp_mask = (1U << n_remained_bits) - 1;
+    runs_bitmask[n_complete_bytes] &= ~tmp_mask;
+
+    /* extract overhead value from the global structure */
+    ccnt_t overhead = results->overhead_min;
+
+    ccnt_t sample = 0;
+    ccnt_t min = -1;
+    ccnt_t max = 0;
+    ccnt_t sum = 0;
+    ccnt_t sum2 = 0;
+
+    for (int i = 0; i < N_RUNS; i++) {
+        ccnt_t start;
+
+        /* Cut out a flag bit */
+        uint8_t is_counted = runs_bitmask[ i / (1U << 3) ] &
+                             (1U << (i % 8));
+        is_counted >>= (i % 8);
+
+
+        SEL4BENCH_READ_CCNT(start);
+        DO_REAL_SIGNAL(ntfn);
+
+        sample = is_counted * ((*end - start) - overhead);
+
+        max = (sample > max) ? sample : max;
+        sum += sample;
+        sum2 += sample * sample;
+        sample = (is_counted * sample) + (is_counted - 1);
+        min = (sample < min) ? sample : min;
+
+    }
+
+    results->lo_max = max;
+    results->lo_min = min;
+    results->lo_sum = sum;
+    results->lo_sum2 = sum2;
+    results->lo_num = N_RUNS - N_IGNORED;
+
+    /* signal completion */
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    /* block */
+    seL4_Wait(ntfn, NULL);
+}
+#endif /* CONFIG_APP_SIGNAL_EARLYPROC */
+
 void high_prio_signal_fn(int argc, char **argv)
 {
     assert(argc == N_HI_SIGNAL_ARGS);
@@ -155,10 +248,17 @@ static void benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t
         .fn = (sel4utils_thread_entry_fn) wait_fn,
     };
 
+#if defined CONFIG_APP_SIGNAL_EARLYPROC
+    helper_thread_t signal = {
+        .argc = N_LO_SIGNAL_ARGS,
+        .fn = (sel4utils_thread_entry_fn) low_prio_signal_early_proc_fn,
+    };
+#else
     helper_thread_t signal = {
         .argc = N_LO_SIGNAL_ARGS,
         .fn = (sel4utils_thread_entry_fn) low_prio_signal_fn,
     };
+#endif
 
     ccnt_t end;
     UNUSED int error;
@@ -170,8 +270,15 @@ static void benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t
     benchmark_configure_thread(env, ep, seL4_MaxPrio - 1, "signal", &signal.thread);
 
     sel4utils_create_word_args(wait.argv_strings, wait.argv, wait.argc, ntfn, ep, (seL4_Word) &end);
+
+
+#if defined CONFIG_APP_SIGNAL_EARLYPROC
+    sel4utils_create_word_args(signal.argv_strings, signal.argv, signal.argc, ntfn,
+                               (seL4_Word) &end, (seL4_Word) results, ep);
+#else
     sel4utils_create_word_args(signal.argv_strings, signal.argv, signal.argc, ntfn,
                                (seL4_Word) &end, (seL4_Word) results->lo_prio_results, ep);
+#endif
 
     start_threads(&signal, &wait);
 
@@ -214,6 +321,28 @@ void measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
     }
 }
 
+#if defined CONFIG_APP_SIGNAL_EARLYPROC
+
+/*
+ * Execution flow for Early Processing: we have to calculate Min value
+ * of measured overhead before running Signal benchmark.
+ *
+ * In "Late Processing" flow all the data are processed
+ * after all the benchmarks has finished.
+ */
+ccnt_t getMinOverhead(ccnt_t overhead[N_RUNS])
+{
+    ccnt_t min = -1;
+
+    for (int i = 0; i < N_RUNS; i++) {
+        min = (overhead[i] < min) ? overhead[i] : min;
+    }
+
+    return min;
+}
+
+#endif /* CONFIG_APP_SIGNAL_EARLYPROC */
+
 static env_t *env;
 
 void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
@@ -255,6 +384,20 @@ int main(int argc, char **argv)
 
     /* measure overhead */
     measure_signal_overhead(ntfn.cptr, results->overhead);
+
+#if defined CONFIG_APP_SIGNAL_EARLYPROC
+
+    /* TODO: integrate checking stability of the overhead.
+     * Currently (04.06.2022) only x86_64 platform has unstable overhead and it's allowed,
+     * so we just blindly subtract "Min" overhead from all the measurements.
+     *
+     * Original workflow (late processing) has param "stable" in structure
+     * result_desc_t and CONFIG_ALLOW_UNSTABLE_OVERHEAD to deal with overhead.
+     * NB! CONFIG_ALLOW_UNSTABLE_OVERHEAD is not avail. in signal app.
+    */
+    results->overhead_min = getMinOverhead(results->overhead);
+
+#endif /* CONFIG_APP_SIGNAL_EARLYPROC */
 
     benchmark(env, done_ep.cptr, ntfn.cptr, results);
 
