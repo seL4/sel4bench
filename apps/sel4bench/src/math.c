@@ -155,42 +155,28 @@ result_t calculate_results(const size_t n, ccnt_t data[n])
     return result;
 }
 
-
-static double results_variance_early_proc(const size_t n, const ccnt_t sum, const ccnt_t sum2, const ccnt_t mean)
+static double results_variance_early_proc(const size_t num, const ccnt_t sum,
+                                          const ccnt_t sum2, const ccnt_t mean)
 {
     long double variance = 0;
     long double dm = mean, dsum = sum, dsum2 = sum2;
 
-    /* sigma = ( sum(x^2) - 2m*sum(x) + n*m^2 ) / n */
+    /* sigma = ( sum(x^2) - 2m*sum(x) + n*m^2 ) / num */
 
-    variance = (dsum2 - 2 * dm * dsum + n * dm * dm) / n;
+    variance = (dsum2 - 2 * dm * dsum + num * dm * dm) / num;
 
     return variance;
 }
 
-
-/*
- * received data:
- * data[0] - min
- * data[1] - max
- * data[2] - sum of samples
- * data[3] - sum of squared samples
- * array[num] -  raw data array, has to be fed to printing function
- */
-result_t calculate_results_early_proc(ccnt_t num, ccnt_t min, ccnt_t max, ccnt_t sum, ccnt_t sum2, ccnt_t array[num])
+result_t calculate_results_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2, ccnt_t array[num])
 {
 
     result_t result;
-    result.min = min;
-    result.max = max;
-    assert(result.min <= result.max);
+
+    memset((void *)&result, 0, sizeof(result));
     result.mean = sum / num;
     result.variance = results_variance_early_proc(num, sum, sum2, result.mean);
-    result.stddev = sqrt(result.variance * ((double) num / (double)(num - 1.0f)));
-    result.median = 0;
-    result.first_quantile = 0;
-    result.third_quantile = 0;
-    result.mode = 0;
+    result.stddev = sqrt(result.variance * ((double) num / (double)(num - 1.0f)));;
     result.raw_data = array;
     result.samples = num;
 
