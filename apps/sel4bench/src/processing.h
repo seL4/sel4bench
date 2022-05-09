@@ -17,9 +17,15 @@
  */
 result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc);
 
-/*  For Early Processing configuration  */
-result_t process_result_early_proc(ccnt_t num, ccnt_t min, ccnt_t max,
-                                   ccnt_t sum, ccnt_t sum2, ccnt_t array[num]);
+/* Compute the variance, standard deviation, mean for a set of values
+ * for benchmarks using Early Processing methodology
+ * @param num   number of values to process
+ * @param sum   sum of values
+ * @param sum2  sum of squared values
+ * @param array raw values to compute results for
+ */
+result_t process_result_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2,
+                                   ccnt_t array[num]);
 
 /**
  * @param ncols    size of the 1st dimension of array.

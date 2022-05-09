@@ -85,29 +85,16 @@ void low_prio_signal_fn(int argc, char **argv)
 
 /* The same as low_prio_signal_fn, but implements
  * early processing of samples ("Early processing methodology")
-
- * The methodology calculates min and max, as well as accumulates
- * sum of samples and sum of squared samples. Raw sample values are dropped.
+ *
+ * The methodology accumulates sum of samples and sum of squared samples
+ * that allows to calculate standard deviation and mean.
+ * Raw samples are dropped.
  */
 
 /* Implementation note.
- * "Runs Bitmask" is used to select which measured values will be ignored
- * and which will be "counted".
-
- * Use of a bitmask allows to avoid conditional branches inside the
- * measurement loop which is critical to avoid instruction cache misses.
-
- * The first N_IGNORED samples (so called warm-up samples) are not registered,
- * corresponding mask bits are set to zeros. The following samples, up to
- * (N_RUNS-1)th, have their mask bits set to "ones".
-
- * TODO: to add check of N_RUNS and N_IGNORED values (selbenchsupport/signal.h)
- * so they match the bitmask capacity: currently N_RUNS + N_IGNORED
- * should not exceed 512 loops (64 bytes)
+ * Variable "is_counted" indicates whether the sample will be
+ * dropped (as warm-up one) or "counted".
  */
-
-/* bitmask size in bytes */
-#define RUNS_BITMASK_BYTES 64
 
 void low_prio_signal_early_proc_fn(int argc, char **argv)
 {
@@ -116,53 +103,29 @@ void low_prio_signal_early_proc_fn(int argc, char **argv)
     volatile ccnt_t *end = (volatile ccnt_t *) atol(argv[1]);
     signal_results_t *results = (signal_results_t *) atol(argv[2]);
     seL4_CPtr done_ep = (seL4_CPtr) atol(argv[3]);
-    uint8_t runs_bitmask [RUNS_BITMASK_BYTES];
-
-
-    /* Preparing the mask */
-    memset((void *) runs_bitmask, 0xFF, RUNS_BITMASK_BYTES);
-
-    int n_complete_bytes = N_IGNORED / 8;
-    int n_remained_bits = N_IGNORED % 8;
-
-    memset((void *) runs_bitmask, 0, n_complete_bytes);
-
-    uint8_t tmp_mask = (1U << n_remained_bits) - 1;
-    runs_bitmask[n_complete_bytes] &= ~tmp_mask;
 
     /* extract overhead value from the global structure */
     ccnt_t overhead = results->overhead_min;
 
     ccnt_t sample = 0;
-    ccnt_t min = -1;
-    ccnt_t max = 0;
     ccnt_t sum = 0;
     ccnt_t sum2 = 0;
 
-    for (int i = 0; i < N_RUNS; i++) {
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
         ccnt_t start;
+        seL4_Word is_counted;
 
-        /* Cut out a flag bit */
-        uint8_t is_counted = runs_bitmask[ i / (1U << 3) ] &
-                             (1U << (i % 8));
-        is_counted >>= (i % 8);
-
+        is_counted = (~(i - N_IGNORED)) >> (seL4_WordBits - 1);
 
         SEL4BENCH_READ_CCNT(start);
         DO_REAL_SIGNAL(ntfn);
 
-        sample = is_counted * ((*end - start) - overhead);
+        sample = is_counted * (*end - start - overhead);
 
-        max = (sample > max) ? sample : max;
         sum += sample;
         sum2 += sample * sample;
-        sample = (is_counted * sample) + (is_counted - 1);
-        min = (sample < min) ? sample : min;
-
     }
 
-    results->lo_max = max;
-    results->lo_min = min;
     results->lo_sum = sum;
     results->lo_sum2 = sum2;
     results->lo_num = N_RUNS - N_IGNORED;
@@ -172,6 +135,7 @@ void low_prio_signal_early_proc_fn(int argc, char **argv)
     /* block */
     seL4_Wait(ntfn, NULL);
 }
+
 #endif /* CONFIG_APP_SIGNAL_EARLYPROC */
 
 void high_prio_signal_fn(int argc, char **argv)

@@ -36,8 +36,8 @@ static json_t *signal_process(void *results)
     desc.overhead = result.min;
 
 #if defined CONFIG_APP_SIGNAL_EARLYPROC
-    result = process_result_early_proc(raw_results->lo_num, raw_results->lo_min,
-                                       raw_results->lo_max, raw_results->lo_sum, raw_results->lo_sum2,
+    result = process_result_early_proc(raw_results->lo_num,
+                                       raw_results->lo_sum, raw_results->lo_sum2,
                                        raw_results->lo_prio_results);
 #else
     result = process_result(N_RUNS, raw_results->lo_prio_results, desc);
