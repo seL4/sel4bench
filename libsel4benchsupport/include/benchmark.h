@@ -28,6 +28,25 @@
 
 #define MAX_TIMER_IRQS 4
 
+/* Data collection support macros, to be used in individual benchmark apps*/
+
+/* Declare and init internal parameters: "sample" and "is_counted" */
+#define DATACOLLECT_INIT()    ccnt_t sample = 0; seL4_Word is_counted;
+
+/* Find out if "i"-th sample will be recorded (if "i" less than "n",
+ * the sample will be ignored.
+ * Then calculate sample using start value "s", end value "e" and
+ * value of overhead "o".
+ * Then accumulate sum of samples "par_sum" and sum of squared samples
+ * "par_sum2".
+ */
+#define DATACOLLECT_GET_SUMS(i, n, s, e, o, par_sum, par_sum2) \
+{\
+is_counted = ( ~(i - n) ) >> (seL4_WordBits - 1);\
+sample = is_counted * (e - s - o);\
+par_sum += sample; par_sum2 += sample * sample;\
+}
+
 /* benchmarking environment set up by root task */
 typedef struct env {
     /* vka interface for allocating *fast* objects in the benchmark */

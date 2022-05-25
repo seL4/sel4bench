@@ -81,8 +81,6 @@ void low_prio_signal_fn(int argc, char **argv)
     seL4_Wait(ntfn, NULL);
 }
 
-#if defined CONFIG_APP_SIGNAL_EARLYPROC
-
 /* The same as low_prio_signal_fn, but implements
  * early processing of samples ("Early processing methodology")
  *
@@ -95,7 +93,6 @@ void low_prio_signal_fn(int argc, char **argv)
  * Variable "is_counted" indicates whether the sample will be
  * dropped (as warm-up one) or "counted".
  */
-
 void low_prio_signal_early_proc_fn(int argc, char **argv)
 {
     assert(argc == N_LO_SIGNAL_ARGS);
@@ -107,23 +104,17 @@ void low_prio_signal_early_proc_fn(int argc, char **argv)
     /* extract overhead value from the global structure */
     ccnt_t overhead = results->overhead_min;
 
-    ccnt_t sample = 0;
     ccnt_t sum = 0;
     ccnt_t sum2 = 0;
 
+    DATACOLLECT_INIT();
+
     for (seL4_Word i = 0; i < N_RUNS; i++) {
         ccnt_t start;
-        seL4_Word is_counted;
-
-        is_counted = (~(i - N_IGNORED)) >> (seL4_WordBits - 1);
 
         SEL4BENCH_READ_CCNT(start);
         DO_REAL_SIGNAL(ntfn);
-
-        sample = is_counted * (*end - start - overhead);
-
-        sum += sample;
-        sum2 += sample * sample;
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, start, *end, overhead, sum, sum2);
     }
 
     results->lo_sum = sum;
@@ -135,8 +126,6 @@ void low_prio_signal_early_proc_fn(int argc, char **argv)
     /* block */
     seL4_Wait(ntfn, NULL);
 }
-
-#endif /* CONFIG_APP_SIGNAL_EARLYPROC */
 
 void high_prio_signal_fn(int argc, char **argv)
 {
@@ -212,17 +201,15 @@ static void benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t
         .fn = (sel4utils_thread_entry_fn) wait_fn,
     };
 
-#if defined CONFIG_APP_SIGNAL_EARLYPROC
-    helper_thread_t signal = {
-        .argc = N_LO_SIGNAL_ARGS,
-        .fn = (sel4utils_thread_entry_fn) low_prio_signal_early_proc_fn,
-    };
-#else
     helper_thread_t signal = {
         .argc = N_LO_SIGNAL_ARGS,
         .fn = (sel4utils_thread_entry_fn) low_prio_signal_fn,
     };
-#endif
+
+    helper_thread_t signal_early_proc = {
+        .argc = N_LO_SIGNAL_ARGS,
+        .fn = (sel4utils_thread_entry_fn) low_prio_signal_early_proc_fn,
+    };
 
     ccnt_t end;
     UNUSED int error;
@@ -232,23 +219,29 @@ static void benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t
     /* first benchmark signalling to a higher prio thread */
     benchmark_configure_thread(env, ep, seL4_MaxPrio, "wait", &wait.thread);
     benchmark_configure_thread(env, ep, seL4_MaxPrio - 1, "signal", &signal.thread);
+    benchmark_configure_thread(env, ep, seL4_MaxPrio - 1, "signal early", &signal_early_proc.thread);
 
     sel4utils_create_word_args(wait.argv_strings, wait.argv, wait.argc, ntfn, ep, (seL4_Word) &end);
 
-
-#if defined CONFIG_APP_SIGNAL_EARLYPROC
-    sel4utils_create_word_args(signal.argv_strings, signal.argv, signal.argc, ntfn,
-                               (seL4_Word) &end, (seL4_Word) results, ep);
-#else
     sel4utils_create_word_args(signal.argv_strings, signal.argv, signal.argc, ntfn,
                                (seL4_Word) &end, (seL4_Word) results->lo_prio_results, ep);
-#endif
 
+    sel4utils_create_word_args(signal_early_proc.argv_strings, signal_early_proc.argv, signal_early_proc.argc, ntfn,
+                               (seL4_Word) &end, (seL4_Word) results, ep);
+
+    /* Late processing run*/
     start_threads(&signal, &wait);
 
     benchmark_wait_children(ep, "children of notification benchmark", 2);
 
     stop_threads(&signal, &wait);
+
+    /* Early processing run*/
+    start_threads(&signal_early_proc, &wait);
+
+    benchmark_wait_children(ep, "children of notification benchmark", 2);
+
+    stop_threads(&signal_early_proc, &wait);
 
     seL4_CPtr auth = simple_get_tcb(&env->simple);
     /* now benchmark signalling to a lower prio thread */
@@ -285,8 +278,6 @@ void measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
     }
 }
 
-#if defined CONFIG_APP_SIGNAL_EARLYPROC
-
 /*
  * Execution flow for Early Processing: we have to calculate Min value
  * of measured overhead before running Signal benchmark.
@@ -304,8 +295,6 @@ ccnt_t getMinOverhead(ccnt_t overhead[N_RUNS])
 
     return min;
 }
-
-#endif /* CONFIG_APP_SIGNAL_EARLYPROC */
 
 static env_t *env;
 
@@ -349,8 +338,6 @@ int main(int argc, char **argv)
     /* measure overhead */
     measure_signal_overhead(ntfn.cptr, results->overhead);
 
-#if defined CONFIG_APP_SIGNAL_EARLYPROC
-
     /* TODO: integrate checking stability of the overhead.
      * Currently (04.06.2022) only x86_64 platform has unstable overhead and it's allowed,
      * so we just blindly subtract "Min" overhead from all the measurements.
@@ -360,8 +347,6 @@ int main(int argc, char **argv)
      * NB! CONFIG_ALLOW_UNSTABLE_OVERHEAD is not avail. in signal app.
     */
     results->overhead_min = getMinOverhead(results->overhead);
-
-#endif /* CONFIG_APP_SIGNAL_EARLYPROC */
 
     benchmark(env, done_ep.cptr, ntfn.cptr, results);
 
