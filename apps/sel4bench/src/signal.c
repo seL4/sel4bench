@@ -35,17 +35,16 @@ static json_t *signal_process(void *results)
     desc.stable = false;
     desc.overhead = result.min;
 
-#if defined CONFIG_APP_SIGNAL_EARLYPROC
     result = process_result_early_proc(raw_results->lo_num,
                                        raw_results->lo_sum, raw_results->lo_sum2,
-                                       raw_results->lo_prio_results);
-#else
-    result = process_result(N_RUNS, raw_results->lo_prio_results, desc);
-#endif
+                                       raw_results->diag_results);
 
-    set.name = "Signal to high prio thread";
+    set.name = "Signal to high prio thread (early processing)";
     json_array_append_new(array, result_set_to_json(set));
 
+    result = process_result(N_RUNS, raw_results->lo_prio_results, desc);
+    set.name = "Signal to high prio thread";
+    json_array_append_new(array, result_set_to_json(set));
 
     result = process_result(N_RUNS, raw_results->hi_prio_results, desc);
     set.name = "Signal to low prio thread";
