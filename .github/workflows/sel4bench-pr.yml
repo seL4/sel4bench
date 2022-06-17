@@ -28,6 +28,7 @@ jobs:
       with:
         manifest_repo: sel4bench-manifest
         manifest: master.xml
+        sha: ${{ github.event.pull_request.head.sha }}
 
   build:
     name: Build
