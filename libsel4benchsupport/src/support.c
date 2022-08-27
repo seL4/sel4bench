@@ -40,10 +40,10 @@ char _cpio_archive[1];
 char _cpio_archive_end[1];
 
 /* so malloc works */
-#define MORE_CORE_SIZE 3000000
+#define MORE_CORE_SIZE 0x300000
 extern char *morecore_area;
 extern size_t morecore_size;
-static char app_morecore_area[MORE_CORE_SIZE];
+static char ALIGN(0x1000) app_morecore_area[MORE_CORE_SIZE];
 
 /* allocator */
 #define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 20)
