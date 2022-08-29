@@ -163,3 +163,4 @@ if(NOT Sel4benchAllowSettingsOverride)
         set(AppSyncBench OFF CACHE BOOL "" FORCE)
     endif()
 endif()
+
