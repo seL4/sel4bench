@@ -49,6 +49,25 @@ void measure_nullsyscall(ccnt_t *results)
 
 }
 
+void measure_nullsyscall_ep(hardware_results_t *results)
+{
+    ccnt_t start, end, sum = 0, sum2 = 0, overhead;
+
+    overhead = results->overhead_min;
+    DATACOLLECT_INIT();
+
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
+        SEL4BENCH_READ_CCNT(start);
+        DO_REAL_NULLSYSCALL();
+        SEL4BENCH_READ_CCNT(end);
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, start, end, overhead, sum, sum2);
+    }
+
+    results->nullSyscall_ep_sum = sum;
+    results->nullSyscall_ep_sum2 = sum2;
+    results->nullSyscall_ep_num = N_RUNS - N_IGNORED;
+}
+
 static env_t *env;
 
 void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
@@ -75,6 +94,7 @@ int main(int argc, char **argv)
     /* measure overhead */
     measure_nullsyscall_overhead(results->nullSyscall_overhead);
     measure_nullsyscall(results->nullSyscall_results);
+    measure_nullsyscall_ep(results);
 
     /* done -> results are stored in shared memory so we can now return */
     benchmark_finished(EXIT_SUCCESS);

@@ -75,6 +75,41 @@ void ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
     seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
+void ticker_fn_ep(int argc, char **argv)
+{
+    if (argc != 5) {
+        abort();
+    }
+    ccnt_t overhead = (ccnt_t) atol(argv[0]);
+    ccnt_t *results_sum = (ccnt_t *) atol(argv[1]);
+    ccnt_t *results_sum2 = (ccnt_t *) atol(argv[2]);
+    ccnt_t *results_num = (ccnt_t *) atol(argv[3]);
+    volatile ccnt_t *current_time = (volatile ccnt_t *) atol(argv[4]);
+
+    seL4_Word start, end_low;
+    ccnt_t end, sum = 0, sum2 = 0;
+    seL4_Word badge;
+
+    DATACOLLECT_INIT();
+
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
+        /* wait for irq */
+        seL4_Wait(timer_signal, &badge);
+        /* record result */
+        SEL4BENCH_READ_CCNT(end);
+        sel4platsupport_irq_handle(irq_ops, timer_ntfn_id, badge);
+        end_low = (seL4_Word) end;
+        start = (seL4_Word) * current_time;
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, start, end_low, overhead, sum, sum2);
+    }
+
+    *results_sum = sum;
+    *results_sum2 = sum2;
+    *results_num = N_RUNS - N_IGNORED;
+
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
+}
+
 static env_t *env;
 
 void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
@@ -132,6 +167,9 @@ int main(int argc, char **argv)
         results->overheads[i] = end - start;
     }
 
+    /* find the minimum overhead for early processing run */
+    results->overhead_min = getMinOverhead(results->overheads, N_RUNS);
+
     /* create a frame for the shared time variable so we can share it between processes */
     ccnt_t *local_current_time = (ccnt_t *) vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
     if (local_current_time == NULL) {
@@ -165,6 +203,31 @@ int main(int argc, char **argv)
     error = seL4_TCB_Suspend(ticker.tcb.cptr);
     assert(error == seL4_NoError);
 
+    /* run the benchmark again with early processing */
+    char ticker_ep_strings[5][WORD_STRING_SIZE];
+    char *ticker_ep_argv[5];
+    sel4utils_create_word_args(ticker_ep_strings, ticker_ep_argv, 5, (seL4_Word) results->overhead_min,
+                               &results->thread_results_ep_sum,
+                               &results->thread_results_ep_sum2, &results->thread_results_ep_num, (seL4_Word) local_current_time);
+    error = sel4utils_start_thread(&ticker, (sel4utils_thread_entry_fn) ticker_fn_ep, (void *) 5, (void *) ticker_ep_argv,
+                                   true);
+    if (error) {
+        ZF_LOGF("Failed to start ticker");
+    }
+
+    error = sel4utils_start_thread(&spinner, (sel4utils_thread_entry_fn) spinner_fn, (void *) 1, (void *) spinner_argv,
+                                   true);
+    assert(!error);
+
+    benchmark_wait_children(endpoint.cptr, "child of irq-user", 1);
+
+    /* stop spinner thread */
+    error = seL4_TCB_Suspend(spinner.tcb.cptr);
+    assert(error == seL4_NoError);
+
+    error = seL4_TCB_Suspend(ticker.tcb.cptr);
+    assert(error == seL4_NoError);
+
     /* now run the benchmark again, but run the spinner in another address space */
 
     /* restart ticker */
@@ -180,6 +243,30 @@ int main(int argc, char **argv)
                                                  (void *) local_current_time, 1, seL4_PageBits,
                                                  seL4_AllRights, true);
     assert(current_time_remote != NULL);
+
+    /* start the spinner process */
+    sel4utils_create_word_args(strings, spinner_argv, 1, (seL4_Word) current_time_remote);
+    error = benchmark_spawn_process(&spinner_process, &env->slab_vka, &env->vspace, 1, spinner_argv, 1);
+    if (error) {
+        ZF_LOGF("Failed to start spinner process");
+    }
+
+    benchmark_wait_children(endpoint.cptr, "child of irq-user", 1);
+
+    /* stop threads */
+    error = seL4_TCB_Suspend(spinner_process.thread.tcb.cptr);
+    assert(error == seL4_NoError);
+
+    error = seL4_TCB_Suspend(ticker.tcb.cptr);
+    assert(error == seL4_NoError);
+
+    /* run the benchmark again but with early processing */
+    sel4utils_create_word_args(ticker_ep_strings, ticker_ep_argv, 5, (seL4_Word) results->overhead_min,
+                               &results->process_results_ep_sum,
+                               &results->process_results_ep_sum2, &results->process_results_ep_num, (seL4_Word) local_current_time);
+    error = sel4utils_start_thread(&ticker, (sel4utils_thread_entry_fn) ticker_fn_ep, (void *) 5, (void *) ticker_ep_argv,
+                                   true);
+    assert(!error);
 
     /* start the spinner process */
     sel4utils_create_word_args(strings, spinner_argv, 1, (seL4_Word) current_time_remote);

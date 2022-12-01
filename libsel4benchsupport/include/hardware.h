@@ -13,4 +13,12 @@
 typedef struct hardware_results {
     ccnt_t nullSyscall_results[N_RUNS];
     ccnt_t nullSyscall_overhead[N_RUNS];
+
+    /* Data for early processing */
+    ccnt_t overhead_min;
+
+    ccnt_t nullSyscall_ep_sum;
+    ccnt_t nullSyscall_ep_sum2;
+    ccnt_t nullSyscall_ep_num;
+    ccnt_t nullSyscall_ep[N_RUNS];
 } hardware_results_t;

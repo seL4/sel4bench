@@ -278,24 +278,6 @@ void measure_signal_overhead(seL4_CPtr ntfn, ccnt_t *results)
     }
 }
 
-/*
- * Execution flow for Early Processing: we have to calculate Min value
- * of measured overhead before running Signal benchmark.
- *
- * In "Late Processing" flow all the data are processed
- * after all the benchmarks has finished.
- */
-ccnt_t getMinOverhead(ccnt_t overhead[N_RUNS])
-{
-    ccnt_t min = -1;
-
-    for (int i = 0; i < N_RUNS; i++) {
-        min = (overhead[i] < min) ? overhead[i] : min;
-    }
-
-    return min;
-}
-
 static env_t *env;
 
 void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
@@ -346,7 +328,7 @@ int main(int argc, char **argv)
      * result_desc_t and CONFIG_ALLOW_UNSTABLE_OVERHEAD to deal with overhead.
      * NB! CONFIG_ALLOW_UNSTABLE_OVERHEAD is not avail. in signal app.
     */
-    results->overhead_min = getMinOverhead(results->overhead);
+    results->overhead_min = getMinOverhead(results->overhead, N_RUNS);
 
     benchmark(env, done_ep.cptr, ntfn.cptr, results);
 

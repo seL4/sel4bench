@@ -74,6 +74,20 @@ static json_t *sync_process(void *results)
         json_array_append_new(array, result_set_to_json(set));
     }
 
+    result = process_result_early_proc(raw_results->producer_to_consumer_ep_num,
+                                       raw_results->producer_to_consumer_ep_sum,
+                                       raw_results->producer_to_consumer_ep_sum2,
+                                       raw_results->producer_to_consumer_ep);
+    set.name = "Producer to consumer (early processing)";
+    json_array_append_new(array, result_set_to_json(set));
+
+    result = process_result_early_proc(raw_results->consumer_to_producer_ep_num,
+                                       raw_results->consumer_to_producer_ep_sum,
+                                       raw_results->consumer_to_producer_ep_sum2,
+                                       raw_results->consumer_to_producer_ep);
+    set.name = "Consumer to producer (early processing)";
+    json_array_append_new(array, result_set_to_json(set));
+
     return array;
 }
 

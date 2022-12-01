@@ -23,6 +23,18 @@ typedef struct scheduler_results_t {
     ccnt_t overhead_ccnt[N_RUNS];
     ccnt_t average_yield[N_RUNS][NUM_AVERAGE_EVENTS];
 
+    /* Data for early processing */
+    ccnt_t overhead_ccnt_min;
+
+    ccnt_t thread_yield_ep_sum;
+    ccnt_t thread_yield_ep_sum2;
+    ccnt_t thread_yield_ep_num;
+    ccnt_t thread_yield_ep[N_RUNS];
+
+    ccnt_t process_yield_ep_sum;
+    ccnt_t process_yield_ep_sum2;
+    ccnt_t process_yield_ep_num;
+    ccnt_t process_yield_ep[N_RUNS];
 } scheduler_results_t;
 
 static inline uint8_t gen_next_prio(int i)

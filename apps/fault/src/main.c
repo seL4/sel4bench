@@ -115,6 +115,34 @@ static void measure_fault_handler_fn(int argc, char **argv)
     fault_handler_done(ep, ip, done_ep, reply);
 }
 
+static void measure_fault_handler_fn_ep(int argc, char **argv)
+{
+    seL4_CPtr ep, done_ep, reply;
+    volatile ccnt_t *start;
+    ccnt_t end, sum = 0, sum2 = 0, overhead;
+    fault_results_t *results;
+    DATACOLLECT_INIT();
+
+    parse_handler_args(argc, argv, &ep, &start, &results, &done_ep, &reply);
+
+    overhead = results->fault_ep_min_overhead;
+
+    seL4_Word ip = fault_handler_start(ep, done_ep, reply);
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
+        ip += UD_INSTRUCTION_SIZE;
+        DO_REAL_REPLY_RECV_1(ep, ip, reply);
+
+        SEL4BENCH_READ_CCNT(end);
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, *start, end, overhead, sum, sum2);
+    }
+
+    results->fault_ep_sum = sum;
+    results->fault_ep_sum2 = sum2;
+    results->fault_ep_num = N_RUNS - N_IGNORED;
+
+    fault_handler_done(ep, ip, done_ep, reply);
+}
+
 /* Pair for measuring fault handler -> faultee path */
 static void measure_fault_reply_fn(int argc, char **argv)
 {
@@ -153,6 +181,35 @@ static void measure_fault_reply_handler_fn(int argc, char **argv)
     fault_handler_done(ep, ip, done_ep, reply);
 }
 
+/* measure_fault_reply_fn with early processing */
+static void measure_fault_reply_fn_ep(int argc, char **argv)
+{
+    assert(argc == N_FAULTER_ARGS);
+    volatile ccnt_t *start = (volatile ccnt_t *) atol(argv[0]);
+    fault_results_t *results = (fault_results_t *) atol(argv[1]);
+    seL4_CPtr done_ep = atol(argv[2]);
+    ccnt_t overhead, sum = 0, sum2 = 0;
+    DATACOLLECT_INIT();
+
+    overhead = results->fault_reply_ep_min_overhead;
+
+    /* handle 1 fault first to make sure start is set */
+    fault();
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
+        fault();
+        ccnt_t end;
+        SEL4BENCH_READ_CCNT(end);
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, *start, end, overhead, sum, sum2);
+    }
+    fault();
+
+    results->fault_reply_ep_sum = sum;
+    results->fault_reply_ep_sum2 = sum2;
+    results->fault_reply_ep_num = N_RUNS - N_IGNORED;
+
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
+}
+
 /* round_trip fault handling pair */
 static void measure_fault_roundtrip_fn(int argc, char **argv)
 {
@@ -167,6 +224,32 @@ static void measure_fault_roundtrip_fn(int argc, char **argv)
         SEL4BENCH_READ_CCNT(end);
         results->round_trip[i] = end - start;
     }
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
+}
+
+static void measure_fault_roundtrip_fn_ep(int argc, char **argv)
+{
+    assert(argc == N_FAULTER_ARGS);
+    fault_results_t *results = (fault_results_t *) atol(argv[1]);
+    seL4_CPtr done_ep = atol(argv[2]);
+    ccnt_t sum = 0, sum2 = 0, overhead;
+    DATACOLLECT_INIT();
+
+    overhead = results->round_trip_ep_min_overhead;
+
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
+        ccnt_t start, end;
+        SEL4BENCH_READ_CCNT(start);
+        fault();
+        SEL4BENCH_READ_CCNT(end);
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, start, end, overhead, sum, sum2);
+    }
+    fault();
+
+    results->round_trip_ep_sum = sum;
+    results->round_trip_ep_sum2 = sum2;
+    results->round_trip_ep_num = N_RUNS - N_IGNORED;
+
     seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
@@ -250,11 +333,23 @@ static void run_fault_benchmark(env_t *env, fault_results_t *results)
     /* benchmark fault */
     run_benchmark(measure_fault_fn, measure_fault_handler_fn, done_ep.cptr);
 
+    /* benchmark fault early processing */
+    results->fault_ep_min_overhead = getMinOverhead(results->reply_recv_overhead, N_RUNS);
+    run_benchmark(measure_fault_fn, measure_fault_handler_fn_ep, done_ep.cptr);
+
     /* benchmark reply */
     run_benchmark(measure_fault_reply_fn, measure_fault_reply_handler_fn, done_ep.cptr);
 
+    /* benchmark reply early processing */
+    results->fault_reply_ep_min_overhead = getMinOverhead(results->ccnt_overhead, N_RUNS);
+    run_benchmark(measure_fault_reply_fn_ep, measure_fault_reply_handler_fn, done_ep.cptr);
+
     /* benchmark round_trip */
     run_benchmark(measure_fault_roundtrip_fn, measure_fault_roundtrip_handler_fn, done_ep.cptr);
+
+    /* benchmark round_trip early processing */
+    results->round_trip_ep_min_overhead = getMinOverhead(results->reply_recv_overhead, N_RUNS);
+    run_benchmark(measure_fault_roundtrip_fn_ep, measure_fault_roundtrip_handler_fn, done_ep.cptr);
 }
 
 void measure_overhead(fault_results_t *results)

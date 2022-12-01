@@ -102,6 +102,25 @@ static void benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
     benchmark_wait_children(ep, "yielder", 1);
 }
 
+static void benchmark_yield_ep(seL4_CPtr ep, ccnt_t overhead, ccnt_t *result_sum, ccnt_t *result_sum2,
+                               ccnt_t *result_num, volatile ccnt_t *end)
+{
+    ccnt_t start, sum = 0, sum2 = 0;
+    DATACOLLECT_INIT();
+    /* run the benchmark */
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
+        SEL4BENCH_READ_CCNT(start);
+        seL4_Yield();
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, start, *end, overhead, sum, sum2);
+    }
+
+    *result_sum = sum;
+    *result_sum2 = sum2;
+    *result_num = N_RUNS - N_IGNORED;
+
+    benchmark_wait_children(ep, "yielder", 1);
+}
+
 static void benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
 {
     sel4utils_thread_t thread;
@@ -114,6 +133,22 @@ static void benchmark_yield_thread(env_t *env, seL4_CPtr ep, ccnt_t *results)
     sel4utils_start_thread(&thread, (sel4utils_thread_entry_fn) yield_fn, (void *) N_YIELD_ARGS, (void *) argv, 1);
 
     benchmark_yield(ep, results, &end);
+    seL4_TCB_Suspend(thread.tcb.cptr);
+}
+
+static void benchmark_yield_thread_ep(env_t *env, seL4_CPtr ep, scheduler_results_t *results)
+{
+    sel4utils_thread_t thread;
+    volatile ccnt_t end;
+    char args_strings[N_YIELD_ARGS][WORD_STRING_SIZE];
+    char *argv[N_YIELD_ARGS];
+
+    benchmark_configure_thread(env, ep, seL4_MaxPrio, "yielder", &thread);
+    sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, ep, (seL4_Word) &end);
+    sel4utils_start_thread(&thread, (sel4utils_thread_entry_fn) yield_fn, (void *) N_YIELD_ARGS, (void *) argv, 1);
+
+    benchmark_yield_ep(ep, results->overhead_ccnt_min, &results->thread_yield_ep_sum, &results->thread_yield_ep_sum2,
+                       &results->thread_yield_ep_num, &end);
     seL4_TCB_Suspend(thread.tcb.cptr);
 }
 
@@ -150,6 +185,43 @@ static void benchmark_yield_process(env_t *env, seL4_CPtr ep, ccnt_t *results)
     assert(error == seL4_NoError);
 
     benchmark_yield(ep, results, (volatile ccnt_t *) start);
+    seL4_TCB_Suspend(process.thread.tcb.cptr);
+}
+
+static void benchmark_yield_process_ep(env_t *env, seL4_CPtr ep, scheduler_results_t *results)
+{
+    sel4utils_process_t process;
+    void *start;
+    void *remote_start;
+    seL4_CPtr remote_ep;
+    char args_strings[N_YIELD_ARGS][WORD_STRING_SIZE];
+    char *argv[N_YIELD_ARGS];
+    UNUSED int error;
+    cspacepath_t path;
+
+    /* allocate a page to share for the start cycle count */
+    start = vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
+    assert(start != NULL);
+
+    benchmark_shallow_clone_process(env, &process, seL4_MaxPrio, yield_fn, "yield process");
+
+    /* share memory for shared variable */
+    remote_start = vspace_share_mem(&env->vspace, &process.vspace, start, 1, seL4_PageBits,
+                                    seL4_AllRights, 1);
+    assert(remote_start != NULL);
+
+    /* copy ep cap */
+    vka_cspace_make_path(&env->slab_vka, ep, &path);
+    remote_ep = sel4utils_copy_path_to_process(&process, path);
+    assert(remote_ep != seL4_CapNull);
+
+    sel4utils_create_word_args(args_strings, argv, N_YIELD_ARGS, remote_ep, (seL4_Word) remote_start);
+
+    error = benchmark_spawn_process(&process, &env->slab_vka, &env->vspace, N_YIELD_ARGS, argv, 1);
+    assert(error == seL4_NoError);
+
+    benchmark_yield_ep(ep, results->overhead_ccnt_min, &results->process_yield_ep_sum, &results->process_yield_ep_sum2,
+                       &results->process_yield_ep_num, (volatile ccnt_t *) start);
     seL4_TCB_Suspend(process.thread.tcb.cptr);
 }
 
@@ -367,6 +439,9 @@ int main(int argc, char **argv)
     measure_signal_overhead(produce.cptr, results->overhead_signal);
     measure_yield_overhead(results->overhead_ccnt);
 
+    /* extract the minimum overhead for early processing benchmarks */
+    results->overhead_ccnt_min = getMinOverhead(results->overhead_ccnt, N_RUNS);
+
     benchmark_prio_threads(env, done_ep.cptr, produce.cptr, consume.cptr,
                            results->thread_results);
     benchmark_prio_processes(env, done_ep.cptr, produce.cptr, consume.cptr,
@@ -375,7 +450,9 @@ int main(int argc, char **argv)
 
     /* thread yield benchmarks */
     benchmark_yield_thread(env, done_ep.cptr, results->thread_yield);
+    benchmark_yield_thread_ep(env, done_ep.cptr, results);
     benchmark_yield_process(env, done_ep.cptr, results->process_yield);
+    benchmark_yield_process_ep(env, done_ep.cptr, results);
     benchmark_yield_average(results->average_yield);
 
     /* done -> results are stored in shared memory so we can now return */
