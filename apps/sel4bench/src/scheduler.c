@@ -28,8 +28,18 @@ static void process_yield_results(scheduler_results_t *results, ccnt_t overhead,
     result = process_result(N_RUNS, results->thread_yield, desc);
     json_array_append_new(array, result_set_to_json(set));
 
+    set.name = "Thread yield (early processing)";
+    result = process_result_early_proc(results->thread_yield_ep_num, results->thread_yield_ep_sum,
+                                       results->thread_yield_ep_sum2, results->thread_yield_ep);
+    json_array_append_new(array, result_set_to_json(set));
+
     set.name = "Process yield";
     result = process_result(N_RUNS, results->process_yield, desc);
+    json_array_append_new(array, result_set_to_json(set));
+
+    set.name = "Process yield (early processing)";
+    result = process_result_early_proc(results->process_yield_ep_num, results->process_yield_ep_sum,
+                                       results->process_yield_ep_sum2, results->process_yield_ep);
     json_array_append_new(array, result_set_to_json(set));
 
     result_t average_results[NUM_AVERAGE_EVENTS];

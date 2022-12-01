@@ -44,6 +44,17 @@ typedef struct sync_results {
 
     ccnt_t producer_to_consumer[N_PROD_CONS_BENCHMARKS][N_RUNS];
     ccnt_t consumer_to_producer[N_PROD_CONS_BENCHMARKS][N_RUNS];
+
+    /* Data for early processing */
+    ccnt_t producer_to_consumer_ep_sum;
+    ccnt_t producer_to_consumer_ep_sum2;
+    ccnt_t producer_to_consumer_ep_num;
+    ccnt_t producer_to_consumer_ep[N_RUNS];
+
+    ccnt_t consumer_to_producer_ep_sum;
+    ccnt_t consumer_to_producer_ep_sum2;
+    ccnt_t consumer_to_producer_ep_num;
+    ccnt_t consumer_to_producer_ep[N_RUNS];
 } sync_results_t;
 
 typedef void (*helper_func_t)(int argc, char *argv[]);

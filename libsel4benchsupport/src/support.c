@@ -9,6 +9,7 @@
 
 #include <autoconf.h>
 
+#include <sel4bench/sel4bench.h>
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/io.h>
 #include <sel4rpc/client.h>
@@ -49,6 +50,18 @@ static char ALIGN(0x1000) app_morecore_area[MORE_CORE_SIZE];
 #define ALLOCATOR_STATIC_POOL_SIZE ((1 << seL4_PageBits) * 20)
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 #define ALLOCMAN_VIRTUAL_SIZE BIT(20)
+
+/* early processing helper function */
+ccnt_t getMinOverhead(ccnt_t *overhead, seL4_Word overhead_size)
+{
+    ccnt_t min = -1;
+
+    for (int i = 0; i < overhead_size; i++) {
+        min = (overhead[i] < min) ? overhead[i] : min;
+    }
+
+    return min;
+}
 
 /* serial server */
 static serial_client_context_t context;

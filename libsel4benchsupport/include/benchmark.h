@@ -47,6 +47,18 @@ sample = is_counted * (e - s - o);\
 par_sum += sample; par_sum2 += sample * sample;\
 }
 
+/*
+ * Execution flow for Early Processing: we have to calculate min value
+ * of measured overheads before running benchmark.
+ *
+ * In "Late Processing" flow all the data is processed
+ * after all the benchmarks have finished.
+ *
+ * @param overhead array of overhead measurements
+ * @param overhead_size number of overhead measurements taken
+ */
+ccnt_t getMinOverhead(ccnt_t *overhead, seL4_Word overhead_size);
+
 /* benchmarking environment set up by root task */
 typedef struct env {
     /* vka interface for allocating *fast* objects in the benchmark */

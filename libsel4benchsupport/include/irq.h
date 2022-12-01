@@ -23,4 +23,17 @@ typedef struct irquser_results_t {
     ccnt_t overheads[N_RUNS];
     ccnt_t thread_results[N_RUNS];
     ccnt_t process_results[N_RUNS];
+
+    /* Data for early processing */
+    ccnt_t overhead_min;
+
+    ccnt_t thread_results_ep_sum;
+    ccnt_t thread_results_ep_sum2;
+    ccnt_t thread_results_ep_num;
+    ccnt_t thread_results_ep[N_RUNS];
+
+    ccnt_t process_results_ep_sum;
+    ccnt_t process_results_ep_sum2;
+    ccnt_t process_results_ep_num;
+    ccnt_t process_results_ep[N_RUNS];
 } irquser_results_t;
