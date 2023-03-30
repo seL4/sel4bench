@@ -76,13 +76,15 @@ applications as well, since they'll be using an unexpected kernel build.
 
 
 # Adding a new benchmark
+
 Contributing a new benchmark to seL4bench requires a few steps:
+
 * Under `apps`, create a directory for your new benchmark and:
-    * Provide a CMakelists.txt file that defines a new executable.
+    * Provide a `CMakelists.txt` file that defines a new executable.
     * Provide a `src` folder that contains the source code for your
       benchmark.
 * Under `apps/sel4bench`:
-    * Update CMakeLists.txt to add your new benchmark to the list of
+    * Update `CMakeLists.txt` to add your new benchmark to the list of
       benchmarks.
     * Under `src`:
         * Update `benchmark.h` to include your generated config for your benchmark, as well as provide a function declaration that will act as the entry point for your benchmark.
