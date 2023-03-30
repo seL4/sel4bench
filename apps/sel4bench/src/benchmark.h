@@ -106,6 +106,7 @@ benchmark_t *sync_benchmark_new(void);
 benchmark_t *page_mapping_benchmark_new(void);
 benchmark_t *smp_benchmark_new(void);
 benchmark_t *vcpu_benchmark_new(void);
+/* Add new benchmarks here */
 
 static inline void blank_init(UNUSED vka_t *vka, UNUSED simple_t *simple, UNUSED sel4utils_process_t *process)
 {

@@ -162,4 +162,6 @@ if(NOT Sel4benchAllowSettingsOverride)
     else()
         set(AppSyncBench OFF CACHE BOOL "" FORCE)
     endif()
+
+    # Add new app-specific configuration here
 endif()

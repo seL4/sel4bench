@@ -26,6 +26,7 @@ set(ARM_HYP OFF CACHE BOOL "ARM EL2 hypervisor features on or off")
 set(MCS OFF CACHE BOOL "MCS kernel")
 
 # Set the list of benchmark applications to be included into the image
+# Add any new benchmark applications to this list
 
 # default is OFF
 set(HARDWARE OFF CACHE BOOL "Application to benchmark hardware-related operations")
