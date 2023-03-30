@@ -87,7 +87,7 @@ Contributing a new benchmark to seL4bench requires a few steps:
     * Update `CMakeLists.txt` to add your new benchmark to the list of
       benchmarks.
     * Under `src`:
-        * Update `benchmark.h` to include your generated config for your benchmark, as well as provide a function declaration that will act as the entry point for your benchmark.
+        * Update `benchmark.h` to include your generated config for your benchmark, and provide a function declaration that will act as the entry point for your benchmark.
         * Provide a `<benchmark_name>.c` file that implements the above function declaration. This function should return a `benchmark_t` struct. Construct this struct accordingly. The struct expects a function to process the results of the benchmark, which you should provide in this file as well
         * Inside `main.c`, add your entry point function that was declared/defined above to the array of `benchmark_t` present.
 * Update `easy-settings.cmake` to add your new benchmark. You can define here whether the benchmark should be enabled by default or not.
