@@ -73,3 +73,24 @@ hardware tests.
 Since this benchmark will cause the kernel image to be an EL2 image, it
 will have an impact on the observed numbers for the other benchmark
 applications as well, since they'll be using an unexpected kernel build.
+
+
+# Adding a new benchmark
+
+Contributing a new benchmark to seL4bench requires a few steps:
+
+* Under `apps`, create a directory for your new benchmark and:
+    * Provide a `CMakelists.txt` file that defines a new executable.
+    * Provide a `src` folder that contains the source code for your
+      benchmark.
+* Under `apps/sel4bench`:
+    * Update `CMakeLists.txt` to add your new benchmark to the list of
+      benchmarks.
+    * Under `src`:
+        * Update `benchmark.h` to include your generated config for your benchmark, and provide a function declaration that will act as the entry point for your benchmark.
+        * Provide a `<benchmark_name>.c` file that implements the above function declaration. This function should return a `benchmark_t` struct. Construct this struct accordingly. The struct expects a function to process the results of the benchmark, which you should provide in this file as well
+        * Inside `main.c`, add your entry point function that was declared/defined above to the array of `benchmark_t` present.
+* Update `easy-settings.cmake` to add your new benchmark. You can define here whether the benchmark should be enabled by default or not.
+* Under `libsel4benchsupport/include`:
+    * Provide a `<benchmark_name.h>` file that provides any extra definitions that your benchmark may need. You will also generally provide a `benchmark_name_results_t` struct here, which will be used to store the results of your benchmark when processing.
+* Update `settings.cmake` to include your new benchmark.
