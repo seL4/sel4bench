@@ -16,13 +16,7 @@
 #define START_ADDR 0x60000000
 #define NUM_ARGS 3
 
-#if defined(CONFIG_ARCH_X86_64)
-#define DEFAULT_DEPTH 64
-#elif defined(CONFIG_ARCH_AARCH64)
-#define DEFAULT_DEPTH 64
-#else
-#define DEFAULT_DEPTH 32
-#endif
+#define DEFAULT_DEPTH seL4_WordBits
 
 #define PAGE_PER_TABLE BIT(seL4_PageTableBits - seL4_WordSizeBits)
 #define untyped_retype_root(a,b,c,e)\
@@ -52,7 +46,9 @@ static void inline prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyp
 
         err = seL4_ARCH_PageTable_Map(pt, SEL4UTILS_PD_SLOT, addr,
                                       seL4_ARCH_Default_VMAttributes);
-#if defined(CONFIG_ARCH_X86_64)
+#if defined(CONFIG_ARCH_IA32)
+        assert(err == 0);
+#elif defined(CONFIG_ARCH_X86_64)
         if (err) {
             seL4_CPtr pd = *free_slot;
             err = untyped_retype_root(untyped, seL4_X86_PageDirectoryObject,
@@ -77,7 +73,6 @@ static void inline prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyp
             err = seL4_ARCH_PageTable_Map(pt, SEL4UTILS_PD_SLOT, addr,
                                           seL4_ARCH_Default_VMAttributes);
         }
-
         assert(err == 0);
 #elif defined(CONFIG_ARCH_AARCH64)
         while (err != seL4_DeleteFirst) {
@@ -215,18 +210,18 @@ bench_proc(int argc UNUSED, char *argv[])
 
     /* Cleaning up the page table structures */
     for (int i = pt_ptr_start; i < page_ptr_start; i++) {
-#ifdef CONFIG_ARCH_X86_64
+#if defined(CONFIG_ARCH_X86_64)
         err = seL4_X86_PDPT_Unmap(i);
         if (err) {
             err = seL4_X86_PageDirectory_Unmap(i);
             if (err) {
                 err = seL4_ARCH_PageTable_Unmap(i);
-                ZF_LOGF_IFERR(err, "ummap page table\n");
+                ZF_LOGF_IFERR(err, "ummap page table failed\n");
             }
         }
-#else
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_IA32)
         seL4_ARCH_PageTable_Unmap(i);
-        ZF_LOGF_IFERR(err, "ummap page table\n");
+        ZF_LOGF_IFERR(err, "ummap page table failed\n");
 #endif
     }
 
