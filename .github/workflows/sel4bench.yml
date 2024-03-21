@@ -152,9 +152,9 @@ jobs:
         manifest_sha: ${{ steps.deploy.outputs.manifest_sha }}
     - name: Deploy web page
       run: |
-        mv index.html content/About/Performance/
+        mv index.html About/Performance/
         git config user.name "seL4 CI"
         git config user.email "ci@sel4.systems"
-        git add content/About/Performance/index.html
+        git add About/Performance/index.html
         git commit -s -m "CI: update performance results"
         git push origin master
