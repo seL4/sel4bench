@@ -4,7 +4,7 @@
 
 # Build and run sel4bench on pull requests
 
-name: seL4Bench PR
+name: seL4Bench-PR
 
 on:
   pull_request_target:
@@ -15,6 +15,12 @@ on:
 # downgrade permissions to read-only as you would have in a standard PR action
 permissions:
   contents: read
+
+# Cancel older runs of this workflow that are still not finished for the
+# current PR. This reduces the CI load.
+concurrency:
+  group: ${{ github.workflow }}-pr-${{ github.event.number }}
+  cancel-in-progress: true
 
 jobs:
   code:
