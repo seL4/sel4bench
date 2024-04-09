@@ -30,7 +30,7 @@ jobs:
       xml: ${{ steps.repo.outputs.xml }}
     steps:
     - id: repo
-      uses: seL4/ci-actions/repo-checkout@master
+      uses: axel-h/ci-actions/repo-checkout@patch-axel-16
       with:
         manifest_repo: sel4bench-manifest
         manifest: master.xml
@@ -46,7 +46,7 @@ jobs:
         march: [armv7a, armv8a, nehalem, rv64imac]
     steps:
     - name: Build
-      uses: seL4/ci-actions/sel4bench@master
+      uses: axel-h/ci-actions/sel4bench@patch-axel-16
       with:
         xml: ${{ needs.code.outputs.xml }}
         march: ${{ matrix.march }}
@@ -94,7 +94,7 @@ jobs:
           path: machine_queue
       - name: Get march
         id: plat
-        uses: seL4/ci-actions/march-of-platform@master
+        uses: axel-h/ci-actions/march-of-platform@patch-axel-16
         with:
           platform: ${{ matrix.platform }}
       - name: Download image
@@ -102,7 +102,7 @@ jobs:
         with:
           name: images-${{ steps.plat.outputs.march }}
       - name: Run
-        uses: seL4/ci-actions/sel4bench-hw@master
+        uses: axel-h/ci-actions/sel4bench-hw@patch-axel-16
         with:
           platform: ${{ matrix.platform }}
           req: ${{ matrix.req }}
