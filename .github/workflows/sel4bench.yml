@@ -40,16 +40,18 @@ jobs:
       fail-fast: false
       matrix:
         march: [armv7a, armv8a, nehalem, rv64imac]
+        compiler: [gcc, clang]
     steps:
     - name: Build
       uses: axel-h/ci-actions/sel4bench@patch-axel-16
       with:
         xml: ${{ needs.code.outputs.xml }}
         march: ${{ matrix.march }}
+        compiler: ${{ matrix.compiler }}
     - name: Upload images
       uses: actions/upload-artifact@v4
       with:
-        name: images-${{ matrix.march }}
+        name: images-${{ matrix.march }}-${{matrix.compiler}}
         path: '*-images.tar.gz'
 
   hw-run:
@@ -90,7 +92,7 @@ jobs:
       - name: Download image
         uses: actions/download-artifact@v4
         with:
-          name: images-${{ steps.plat.outputs.march }}
+          name: images-${{ steps.plat.outputs.march }}-${{matrix.compiler}}
       - name: Run
         uses: axel-h/ci-actions/sel4bench-hw@patch-axel-16
         with:
@@ -103,7 +105,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # funky expression below is to work around lack of ternary operator
-          name: sel4bench-results-${{ matrix.platform }}${{ matrix.req != '' && format('-{0}', matrix.req) || '' }}
+          name: sel4bench-results-${{ matrix.platform }}${{ matrix.req != '' && format('-{0}', matrix.req) || '' }}-${{matrix.compiler}}
           path: '*.json'
 
   deploy:
@@ -128,23 +130,23 @@ jobs:
     - name: Get results for web deployment (sabre)
       uses: actions/download-artifact@v4
       with:
-        name: sel4bench-results-sabre
+        name: sel4bench-results-sabre-gcc
     - name: Get results for web deployment (haswell)
       uses: actions/download-artifact@v4
       with:
-        name: sel4bench-results-pc99-haswell3
+        name: sel4bench-results-pc99-haswell3-gcc
     - name: Get results for web deployment (skylake)
       uses: actions/download-artifact@v4
       with:
-        name: sel4bench-results-pc99-skylake
+        name: sel4bench-results-pc99-skylake-gcc
     - name: Get results for web deployment (tx1)
       uses: actions/download-artifact@v4
       with:
-        name: sel4bench-results-tx1
+        name: sel4bench-results-tx1-gcc
     - name: Get results for web deployment (hifive)
       uses: actions/download-artifact@v4
       with:
-        name: sel4bench-results-hifive
+        name: sel4bench-results-hifive-gcc
     - name: Generate web page
       uses: axel-h/ci-actions/sel4bench-web@patch-axel-16
       with:

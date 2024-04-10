@@ -14,5 +14,5 @@
     ); \
 } while (0);
 
-#define DO_REAL_NULLSYSCALL()     DO_NULLSYSCALL("swi $0")
+#define DO_REAL_NULLSYSCALL()     DO_NULLSYSCALL("swi #0")
 #define DO_NOP_NULLSYSCALL()      DO_NULLSYSCALL("nop")
