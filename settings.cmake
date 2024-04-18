@@ -64,7 +64,14 @@ if(NOT Sel4benchAllowSettingsOverride)
     # This option is controlled by ApplyCommonReleaseVerificationSettings
     mark_as_advanced(CMAKE_BUILD_TYPE)
     if(RELEASE)
-        if(NOT KernelArchRiscV)
+        # Known issues with KernelFWholeProgram ('-fwhole-program'):
+        # - the RISC-V kernel build with gcc currently fails due to a missing
+        #   compiler runtime helper function.
+        # - this option is not supposed by 'clang' at all. Note that we can't
+        #   check CMAKE_C_COMPILER_ID here, because it is empty, as this file
+        #   might get processed before CMake does any compiler evaluation. Thus,
+        #   the only option is checking if TRIPLE is set or not.
+        if((NOT KernelArchRiscV) AND (TRIPLE STREQUAL ""))
             set(KernelFWholeProgram ON CACHE BOOL "" FORCE)
         endif()
     endif()

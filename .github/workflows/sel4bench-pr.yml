@@ -44,16 +44,18 @@ jobs:
       fail-fast: false
       matrix:
         march: [armv7a, armv8a, nehalem, rv64imac]
+        compiler: [gcc, clang]
     steps:
     - name: Build
       uses: axel-h/ci-actions/sel4bench@patch-axel-16
       with:
         xml: ${{ needs.code.outputs.xml }}
         march: ${{ matrix.march }}
+        compiler: ${{ matrix.compiler }}
     - name: Upload images
       uses: actions/upload-artifact@v4
       with:
-        name: images-${{ matrix.march }}
+        name: images-${{ matrix.march }}-${{matrix.compiler}}
         path: '*-images.tar.gz'
 
   hw-run:
@@ -100,7 +102,7 @@ jobs:
       - name: Download image
         uses: actions/download-artifact@v4
         with:
-          name: images-${{ steps.plat.outputs.march }}
+          name: images-${{ steps.plat.outputs.march }}-${{matrix.compiler}}
       - name: Run
         uses: axel-h/ci-actions/sel4bench-hw@patch-axel-16
         with:
@@ -113,5 +115,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # funky expression below is to work around lack of ternary operator
-          name: sel4bench-results-${{ matrix.platform }}${{ matrix.req != '' && format('-{0}', matrix.req) || '' }}
+          name: sel4bench-results-${{ matrix.platform }}${{ matrix.req != '' && format('-{0}', matrix.req) || '' }}-${{matrix.compiler}}
           path: '*.json'
