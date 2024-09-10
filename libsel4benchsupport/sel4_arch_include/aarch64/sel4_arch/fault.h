@@ -33,8 +33,7 @@
     register seL4_Word mr3 asm("x5"); \
     asm volatile(NOPS swi NOPS \
         : "+r"(src), "+r"(info), "+r" (mr0), "+r" (mr1), "+r" (mr2), "+r" (mr3) \
-        : "r"(scno), "r" (ro_copy)\
-        : \
+        : "r"(scno), "r" (ro_copy) \
     ); \
     m0 = mr0; \
     m1 = mr1; \

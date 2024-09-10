@@ -578,7 +578,7 @@ static void run_fault_benchmark(env_t *env, fault_results_t *results)
     run_benchmark(measure_fault_roundtrip_fn_ep, measure_fault_roundtrip_handler_fn, done_ep.cptr,
                   N_HANDLER_ARGS, handler_argv);
 
-#ifdef CONFIG_ARCH_AARCH64
+#ifndef CONFIG_ARCH_IA32
     /* benchmark vm fault */
     run_benchmark(measure_vm_fault_fn, measure_vm_fault_handler_fn, done_ep.cptr,
                   N_VM_HANDLER_ARGS, vm_handler_argv);
@@ -605,12 +605,14 @@ void measure_overhead(fault_results_t *results)
         results->reply_recv_1_overhead[i] = (end - start);
     }
 
+#ifndef CONFIG_ARCH_IA32
     for (int i = 0; i < N_RUNS; i++) {
-        SEL4BENCH_READ_CCNT(start)
+        SEL4BENCH_READ_CCNT(start);
         DO_NOP_REPLY_0_RECV_4(ep, mr0, mr1, mr2, mr3, reply);
         SEL4BENCH_READ_CCNT(end);
         results->reply_0_recv_4_overhead[i] = (end - start);
     }
+#endif
 
     /* overhead of cycle count */
     for (int i = 0; i < N_RUNS; i++) {
