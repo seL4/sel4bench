@@ -16,7 +16,7 @@ config_option(
     DEFAULT
     ON
     DEPENDS
-    "DefaultBenchDeps; KernelSel4ArchAarch64 OR KernelArchX86"
+    "DefaultBenchDeps; KernelSel4ArchAarch64 OR KernelArchX86 OR KernelArchRiscV"
 )
 add_config_library(sel4benchpagemapping "${configure_string}")
 

@@ -74,7 +74,7 @@ static void inline prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyp
                                           seL4_ARCH_Default_VMAttributes);
         }
         assert(err == 0);
-#elif defined(CONFIG_ARCH_AARCH64)
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV)
         while (err != seL4_DeleteFirst) {
             pt = *free_slot;
             err = untyped_retype_root(untyped, seL4_ARCH_PageTableObject,
@@ -219,7 +219,7 @@ bench_proc(int argc UNUSED, char *argv[])
                 ZF_LOGF_IFERR(err, "ummap page table failed\n");
             }
         }
-#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_IA32)
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_IA32) || defined(CONFIG_ARCH_RISCV)
         seL4_ARCH_PageTable_Unmap(i);
         ZF_LOGF_IFERR(err, "ummap page table failed\n");
 #endif
