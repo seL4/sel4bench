@@ -39,6 +39,7 @@ if(
     (KernelArchX86 AND KernelExportPMCUser AND KernelX86DangerousMSR)
     OR (KernelArchARM AND KernelArmExportPMUUser)
     OR (KernelArchArmCortexA8 AND KernelDangerousCodeInjection)
+    OR (KernelArchRiscV)
 )
     set(DefaultBenchDeps TRUE)
 else()
