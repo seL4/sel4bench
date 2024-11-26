@@ -9,8 +9,9 @@
 
 #ifdef CONFIG_KERNEL_MCS
 #define DO_REPLY_RECV_1(ep, ip, ro, swi) do { \
+    seL4_MessageInfo_t m = seL4_MessageInfo_new(0, 0, 0, 1); \
     register seL4_Word src asm("x0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("x1") = seL4_MessageInfo_new(0, 0, 0, 1); \
+    register seL4_Word info asm("x1") = m.words[0]; \
     register seL4_Word scno asm("x7") = seL4_SysReplyRecv; \
     register seL4_Word ro_copy asm("x6") = (seL4_Word) ro; \
     register seL4_Word mr0 asm("x2") = ip; \
@@ -25,8 +26,9 @@
 
 #else
 #define DO_REPLY_RECV_1(ep, ip, ro, swi) do { \
+    seL4_MessageInfo_t m = seL4_MessageInfo_new(0, 0, 0, 1); \
     register seL4_Word src asm("x0") = (seL4_Word)ep; \
-    register seL4_MessageInfo_t info asm("x1") = seL4_MessageInfo_new(0, 0, 0, 1); \
+    register seL4_Word info asm("x1") = m.words[0]; \
     register seL4_Word scno asm("x7") = seL4_SysReplyRecv; \
     register seL4_Word mr0 asm("x2") = ip; \
     asm volatile(NOPS swi NOPS \
