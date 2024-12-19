@@ -86,7 +86,8 @@ static void yield_fn(int argc, char **argv)
         seL4_Yield();
     }
 
-    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    /* Do a blocking call that doens't return: */
+    seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
 static void benchmark_yield(seL4_CPtr ep, ccnt_t *results, volatile ccnt_t *end)
