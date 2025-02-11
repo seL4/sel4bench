@@ -13,9 +13,6 @@
 #include <sync.h>
 #include <sync/bin_sem.h>
 #include <sync/condition_var.h>
-#include <sel4runtime.h>
-#include <muslcsys/vsyscall.h>
-#include <utils/attribute.h>
 
 #define NOPS ""
 
@@ -302,10 +299,15 @@ void benchmark_producer_consumer_ep(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep
     seL4_TCB_Suspend(consumer.tcb.cptr);
 }
 
-static env_t *env;
-
-void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+int main(int argc, char **argv)
 {
+    env_t *env;
+    UNUSED int error;
+    vka_object_t done_ep, block_ep;
+    sync_results_t *results;
+    sync_bin_sem_t lock;
+    sync_cv_t cv, producer_cv, consumer_cv;
+
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = N_WAITERS + 3,
 #ifdef CONFIG_KERNEL_MCS
@@ -316,22 +318,7 @@ void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
         [seL4_NotificationObject] = 5,
     };
 
-    env = benchmark_get_env(
-              sel4runtime_argc(),
-              sel4runtime_argv(),
-              sizeof(sync_results_t),
-              object_freq
-          );
-}
-
-int main(int argc, char **argv)
-{
-    UNUSED int error;
-    vka_object_t done_ep, block_ep;
-    sync_results_t *results;
-    sync_bin_sem_t lock;
-    sync_cv_t cv, producer_cv, consumer_cv;
-
+    env = benchmark_get_env(argc, argv, sizeof(sync_results_t), object_freq);
     results = (sync_results_t *) env->results;
 
     sel4bench_init();
