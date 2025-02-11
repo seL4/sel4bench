@@ -318,8 +318,6 @@ static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
 {
     seL4_BootInfo *info;
     UNUSED int error;
-    UNUSED reservation_t virtual_reservation;
-    void *vaddr;
 
     info  = platsupport_get_bootinfo();
     simple_default_init_bootinfo(&global_env.simple, info);
@@ -342,16 +340,18 @@ static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
     muslc_this_vspace = &global_env.vspace;
     muslc_brk_reservation.res = &malloc_res;
     ZF_LOGF_IF(error, "Failed to set up dynamic malloc");
+}
+
+int main(void)
+{
+    UNUSED reservation_t virtual_reservation;
+    UNUSED int error;
+    void *vaddr;
 
     virtual_reservation = vspace_reserve_range(&global_env.vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights,
                                                1, &vaddr);
     assert(virtual_reservation.res);
     bootstrap_configure_virtual_pool(allocman, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&global_env.simple));
-}
-
-int main(void)
-{
-    UNUSED int error;
 
     /* init serial */
     platsupport_serial_setup_simple(&global_env.vspace, &global_env.simple, &global_env.vka);
