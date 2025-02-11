@@ -12,8 +12,6 @@
 #include <allocman/vka.h>
 #include <assert.h>
 
-#include <sel4runtime.h>
-
 #include <simple/simple.h>
 #include <simple-default/simple-default.h>
 
@@ -351,17 +349,8 @@ static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
     bootstrap_configure_virtual_pool(allocman, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&global_env.simple));
 }
 
-/* When the root task exists, it should simply suspend itself */
-static void sel4bench_exit(int code)
-{
-    seL4_TCB_Suspend(seL4_CapInitThreadTCB);
-}
-
 int main(void)
 {
-    /* Set exit handler */
-    sel4runtime_set_exit(sel4bench_exit);
-
     UNUSED int error;
 
     /* init serial */
