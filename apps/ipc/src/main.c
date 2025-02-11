@@ -21,9 +21,6 @@
 #include <string.h>
 #include <utils/util.h>
 #include <vka/vka.h>
-#include <sel4runtime.h>
-#include <muslcsys/vsyscall.h>
-#include <utils/attribute.h>
 
 #include <benchmark.h>
 #include <ipc.h>
@@ -358,10 +355,12 @@ void run_bench(env_t *env, cspacepath_t result_ep_path, seL4_CPtr ep,
     timing_destroy();
 }
 
-static env_t *env;
-
-void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+int main(int argc, char **argv)
 {
+    env_t *env;
+    vka_object_t ep, result_ep;
+    cspacepath_t ep_path, result_ep_path;
+
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 4,
         [seL4_EndpointObject] = 2,
@@ -371,19 +370,7 @@ void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
 #endif
     };
 
-    env = benchmark_get_env(
-              sel4runtime_argc(),
-              sel4runtime_argv(),
-              sizeof(ipc_results_t),
-              object_freq
-          );
-}
-
-int main(int argc, char **argv)
-{
-    vka_object_t ep, result_ep;
-    cspacepath_t ep_path, result_ep_path;
-
+    env = benchmark_get_env(argc, argv, sizeof(ipc_results_t), object_freq);
     ipc_results_t *results = (ipc_results_t *) env->results;
 
     /* allocate benchmark endpoint - the IPC's that we benchmark

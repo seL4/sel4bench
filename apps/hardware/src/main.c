@@ -10,9 +10,6 @@
 
 #include <sel4/sel4.h>
 #include <sel4bench/arch/sel4bench.h>
-#include <sel4runtime.h>
-#include <muslcsys/vsyscall.h>
-#include <utils/attribute.h>
 
 #include <benchmark.h>
 #include <hardware.h>
@@ -68,25 +65,14 @@ void measure_nullsyscall_ep(hardware_results_t *results)
     results->nullSyscall_ep_num = N_RUNS - N_IGNORED;
 }
 
-static env_t *env;
-
-void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
-{
-    static size_t object_freq[seL4_ObjectTypeCount] = {0};
-
-    env = benchmark_get_env(
-              sel4runtime_argc(),
-              sel4runtime_argv(),
-              sizeof(hardware_results_t),
-              object_freq
-          );
-}
-
 int main(int argc, char **argv)
 {
+    env_t *env;
     UNUSED int error;
     hardware_results_t *results;
 
+    static size_t object_freq[seL4_ObjectTypeCount] = {0};
+    env = benchmark_get_env(argc, argv, sizeof(hardware_results_t), object_freq);
     results = (hardware_results_t *) env->results;
 
     sel4bench_init();

@@ -5,9 +5,6 @@
  */
 #include <autoconf.h>
 #include <sel4benchscheduler/gen_config.h>
-#include <sel4runtime.h>
-#include <muslcsys/vsyscall.h>
-#include <utils/attribute.h>
 #include <stdio.h>
 
 #include <sel4/sel4.h>
@@ -395,10 +392,13 @@ void benchmark_yield_average(ccnt_t results[N_RUNS][NUM_AVERAGE_EVENTS])
     }
 }
 
-static env_t *env;
-
-void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+int main(int argc, char **argv)
 {
+    env_t *env;
+    UNUSED int error;
+    vka_object_t done_ep, produce, consume;
+    scheduler_results_t *results;
+
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 6,
 #ifdef CONFIG_KERNEL_MCS
@@ -409,20 +409,7 @@ void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
         [seL4_NotificationObject] = 2,
     };
 
-    env = benchmark_get_env(
-              sel4runtime_argc(),
-              sel4runtime_argv(),
-              sizeof(scheduler_results_t),
-              object_freq
-          );
-}
-
-int main(int argc, char **argv)
-{
-    UNUSED int error;
-    vka_object_t done_ep, produce, consume;
-    scheduler_results_t *results;
-
+    env = benchmark_get_env(argc, argv, sizeof(scheduler_results_t), object_freq);
     results = (scheduler_results_t *) env->results;
 
     sel4bench_init();

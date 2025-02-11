@@ -9,9 +9,6 @@
 #include <sel4bench/arch/sel4bench.h>
 #include <benchmark.h>
 #include <page_mapping.h>
-#include <sel4runtime.h>
-#include <muslcsys/vsyscall.h>
-#include <utils/attribute.h>
 
 #define START_ADDR 0x60000000
 #define NUM_ARGS 3
@@ -239,10 +236,14 @@ static void measure_overhead(page_mapping_results_t *results)
     sel4bench_destroy();
 }
 
-static env_t *env;
-
-void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
+int main(int argc, char *argv[])
 {
+    env_t *env;
+    page_mapping_results_t *results;
+    vka_object_t result_ep, untyped_obj;
+    cspacepath_t result_ep_path, untyped_path;
+    helper_thread_t proc;
+
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 1,
         [seL4_EndpointObject] = 1,
@@ -252,21 +253,8 @@ void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
 #endif
     };
 
-    env = benchmark_get_env(
-              sel4runtime_argc(),
-              sel4runtime_argv(),
-              sizeof(page_mapping_results_t),
-              object_freq
-          );
-}
-
-int main(int argc, char *argv[])
-{
-    page_mapping_results_t *results;
-    vka_object_t result_ep, untyped_obj;
-    cspacepath_t result_ep_path, untyped_path;
-    helper_thread_t proc;
-
+    env = benchmark_get_env(argc, argv, sizeof(page_mapping_results_t),
+                            object_freq);
     results = (page_mapping_results_t *)env->results;
 
     /* allocate result end point */

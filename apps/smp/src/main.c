@@ -6,9 +6,6 @@
 
 #include <autoconf.h>
 #include <smp/gen_config.h>
-#include <sel4runtime.h>
-#include <muslcsys/vsyscall.h>
-#include <utils/attribute.h>
 
 #include <sel4platsupport/timer.h>
 #include <utils/time.h>
@@ -223,29 +220,18 @@ static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *result
     }
 }
 
-static env_t *env;
-
-void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
-{
-    static size_t object_freq[seL4_ObjectTypeCount] = {
-        [seL4_TCBObject] = 2 * CONFIG_MAX_NUM_NODES,
-        [seL4_EndpointObject] = CONFIG_MAX_NUM_NODES,
-    };
-
-    env = benchmark_get_env(
-              sel4runtime_argc(),
-              sel4runtime_argv(),
-              sizeof(smp_results_t),
-              object_freq
-          );
-}
-
 int main(int argc, char *argv[])
 {
+    env_t *env;
     UNUSED int error;
     smp_results_t *results;
     int nr_cores;
 
+    static size_t object_freq[seL4_ObjectTypeCount] = {
+        [seL4_TCBObject] = 2 * CONFIG_MAX_NUM_NODES,
+        [seL4_EndpointObject] = CONFIG_MAX_NUM_NODES,
+    };
+    env = benchmark_get_env(argc, argv, sizeof(smp_results_t), object_freq);
     benchmark_init_timer(env);
     results = (smp_results_t *) env->results;
     nr_cores = simple_get_core_count(&env->simple);
