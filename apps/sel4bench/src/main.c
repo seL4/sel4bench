@@ -26,11 +26,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <utils/util.h>
-#include <utils/attribute.h>
 #include <vka/object.h>
 #include <vka/capops.h>
 #include <libfdt.h>
-#include <muslcsys/vsyscall.h>
 
 #include <ipc.h>
 #include <benchmark_types.h>
@@ -312,12 +310,14 @@ void *main_continued(void *arg)
 extern vspace_t *muslc_this_vspace;
 extern reservation_t muslc_brk_reservation;
 extern void *muslc_brk_reservation_start;
-static allocman_t *allocman;
 
-static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
+int main(void)
 {
     seL4_BootInfo *info;
+    allocman_t *allocman;
+    UNUSED reservation_t virtual_reservation;
     UNUSED int error;
+    void *vaddr;
 
     info  = platsupport_get_bootinfo();
     simple_default_init_bootinfo(&global_env.simple, info);
@@ -340,13 +340,6 @@ static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
     muslc_this_vspace = &global_env.vspace;
     muslc_brk_reservation.res = &malloc_res;
     ZF_LOGF_IF(error, "Failed to set up dynamic malloc");
-}
-
-int main(void)
-{
-    UNUSED reservation_t virtual_reservation;
-    UNUSED int error;
-    void *vaddr;
 
     virtual_reservation = vspace_reserve_range(&global_env.vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights,
                                                1, &vaddr);
