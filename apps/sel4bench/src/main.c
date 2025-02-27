@@ -352,6 +352,10 @@ int main(void)
     muslc_brk_reservation.res = &malloc_res;
     ZF_LOGF_IF(error, "Failed to set up dynamic malloc");
 
+    // NOTE: MALLOC Cannot be called before this part of the process bootstrap.
+    // muslc_thsi_vspace & muslc_brk_reservation are used by the libsel4muslcsys/morecore allocator that provides
+    // memory for malloc to use.
+
     virtual_reservation = vspace_reserve_range(&global_env.vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights,
                                                1, &vaddr);
     assert(virtual_reservation.res);
