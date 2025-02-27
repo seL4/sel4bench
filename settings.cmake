@@ -59,6 +59,13 @@ if(NOT Sel4benchAllowSettingsOverride)
 
     endif()
 
+    if (KernelSel4ArchAarch32)
+        set(KernelArmTLSReg tpidruro CACHE STRING "" FORCE)
+    endif()
+    if (KernelSel4ArchAarch64)
+        set(KernelArmTLSReg tpidru CACHE STRING "" FORCE)
+    endif()
+
     # Setup flags for RELEASE (performance optimized builds)
     ApplyCommonReleaseVerificationSettings(${RELEASE} OFF)
     # This option is controlled by ApplyCommonReleaseVerificationSettings
