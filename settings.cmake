@@ -71,9 +71,7 @@ if(NOT Sel4benchAllowSettingsOverride)
     # This option is controlled by ApplyCommonReleaseVerificationSettings
     mark_as_advanced(CMAKE_BUILD_TYPE)
     if(RELEASE)
-        if(NOT KernelArchRiscV)
-            set(KernelFWholeProgram ON CACHE BOOL "" FORCE)
-        endif()
+        set(KernelFWholeProgram ON CACHE BOOL "" FORCE)
     endif()
 
     if(FASTPATH)
