@@ -23,4 +23,6 @@ jobs:
   sel4bench:
     name: seL4Bench
     uses: seL4/ci-actions/.github/workflows/sel4bench-hw.yml@master
+    with:
+      always_build: true
     secrets: inherit
