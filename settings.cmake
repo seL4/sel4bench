@@ -175,4 +175,18 @@ if(NOT Sel4benchAllowSettingsOverride)
     endif()
 
     # Add new app-specific configuration here
+
+
+    # Benchmarks that don't have a timer can't use the benchmarks which need
+    # a timer.
+    if(LibPlatSupportNoPlatformLtimer)
+        if(AppIrqUserBench)
+            message(WARNING "Platform has no timer, disabling IRQUSER bench")
+            set(AppIrqUserBench OFF CACHE BOOL "" FORCE)
+        endif()
+        if(AppSmpBench)
+            message(WARNING "Platform has no timer, disabling SMP bench")
+            set(AppSmpBench OFF CACHE BOOL "" FORCE)
+        endif()
+    endif()
 endif()
