@@ -10,18 +10,12 @@ project(sel4benchapp C)
 set(configure_string "")
 
 config_option(
-    AllowUnstableOverhead
-    ALLOW_UNSTABLE_OVERHEAD
-    "Do not fail when stable values are not stable."
-    DEFAULT
-    OFF
+    AllowUnstableOverhead ALLOW_UNSTABLE_OVERHEAD "Do not fail when stable values are not stable."
+    DEFAULT OFF
 )
 config_option(
-    OutputRawResults
-    OUTPUT_RAW_RESULTS
-    "As well as outputting statistics, dump raw results in JSON format."
-    DEFAULT
-    ON
+    OutputRawResults OUTPUT_RAW_RESULTS
+    "As well as outputting statistics, dump raw results in JSON format." DEFAULT ON
 )
 config_string(
     JsonIndent
@@ -35,10 +29,11 @@ config_string(
 
 # Default dependencies on kernel benchmarking features. Declared here so that
 # all the benchmark applications can use it
-if(
-    (KernelArchX86 AND KernelExportPMCUser AND KernelX86DangerousMSR)
-    OR (KernelArchARM AND KernelArmExportPMUUser)
-    OR (KernelArchArmCortexA8 AND KernelDangerousCodeInjection)
+if((KernelArchX86
+    AND KernelExportPMCUser
+    AND KernelX86DangerousMSR)
+   OR (KernelArchARM AND KernelArmExportPMUUser)
+   OR (KernelArchArmCortexA8 AND KernelDangerousCodeInjection)
 )
     set(DefaultBenchDeps TRUE)
 else()
@@ -51,14 +46,21 @@ find_package(seL4_libs REQUIRED)
 find_package(sel4_projects_libs REQUIRED)
 find_package(projects_libs REQUIRED)
 
-# This sets up environment build flags and imports musllibc and runtime libraries.
+# This sets up environment build flags and imports musllibc and runtime
+# libraries.
 musllibc_setup_build_environment_with_sel4runtime()
 sel4_import_libsel4()
 util_libs_import_libraries()
-set(LibSel4MuslcSysMorecoreBytes 0 CACHE STRING "" FORCE)
+set(LibSel4MuslcSysMorecoreBytes
+    0
+    CACHE STRING "" FORCE
+)
 sel4_libs_import_libraries()
 projects_libs_import_libraries()
-set(LibNanopb ON CACHE BOOL "" FORCE)
+set(LibNanopb
+    ON
+    CACHE BOOL "" FORCE
+)
 sel4_projects_libs_import_libraries()
 
 add_subdirectory(../fault fault)
@@ -85,7 +87,7 @@ if(Sel4Bench)
 
     get_property(sel4benchapps GLOBAL PROPERTY sel4benchapps_property)
     include(cpio)
-    MakeCPIO(archive.o "${sel4benchapps}")
+    makecpio(archive.o "${sel4benchapps}")
     add_executable(sel4benchapp EXCLUDE_FROM_ALL ${static} archive.o)
 
     target_link_libraries(
@@ -111,5 +113,5 @@ if(Sel4Bench)
         # Add new benchmark configs here
     )
     include(rootserver)
-    DeclareRootserver(sel4benchapp)
+    declarerootserver(sel4benchapp)
 endif()

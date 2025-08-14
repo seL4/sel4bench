@@ -9,9 +9,17 @@ cmake_minimum_required(VERSION 3.16.0)
 project(irq C)
 
 set(configure_string "")
-config_option(AppIrqBench APP_IRQBENCH "Application to benchmark seL4 IRQs from inside the kernel.\
+config_option(
+    AppIrqBench
+    APP_IRQBENCH
+    "Application to benchmark seL4 IRQs from inside the kernel.\
     Requires tracepoints (see irq-tracepoint branch or kernel.\
-    This app currently doesn't build." DEFAULT OFF DEPENDS "DefaultBenchDeps")
+    This app currently doesn't build."
+    DEFAULT
+    OFF
+    DEPENDS
+    "DefaultBenchDeps"
+)
 add_config_library(sel4benchirq "${configure_string}")
 
 file(GLOB deps src/*.c)

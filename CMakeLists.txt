@@ -17,25 +17,64 @@ find_package(elfloader-tool REQUIRED)
 if(NOT Sel4benchAllowSettingsOverride)
     if(KernelArchARM)
         if(KernelPlatformOMAP3 OR KernelPlatformAM335X)
-            set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
+            set(KernelDangerousCodeInjection
+                ON
+                CACHE BOOL "" FORCE
+            )
         else()
-            set(KernelArmExportPMUUser ON CACHE BOOL "" FORCE)
+            set(KernelArmExportPMUUser
+                ON
+                CACHE BOOL "" FORCE
+            )
         endif()
     else()
-        set(KernelArmExportPMUUser OFF CACHE BOOL "" FORCE)
+        set(KernelArmExportPMUUser
+            OFF
+            CACHE BOOL "" FORCE
+        )
     endif()
     if(KernelArchX86)
-        set(KernelExportPMCUser ON CACHE BOOL "" FORCE)
-        set(KernelX86DangerousMSR ON CACHE BOOL "" FORCE)
-        set(AllowUnstableOverhead ON CACHE BOOL "" FORCE)
-        set(KernelX86MicroArch "haswell" CACHE STRING "" FORCE)
-        set(KernelXSaveFeatureSet 7 CACHE STRING "" FORCE)
-        set(KernelXSaveSize 832 CACHE STRING "" FORCE)
+        set(KernelExportPMCUser
+            ON
+            CACHE BOOL "" FORCE
+        )
+        set(KernelX86DangerousMSR
+            ON
+            CACHE BOOL "" FORCE
+        )
+        set(AllowUnstableOverhead
+            ON
+            CACHE BOOL "" FORCE
+        )
+        set(KernelX86MicroArch
+            "haswell"
+            CACHE STRING "" FORCE
+        )
+        set(KernelXSaveFeatureSet
+            7
+            CACHE STRING "" FORCE
+        )
+        set(KernelXSaveSize
+            832
+            CACHE STRING "" FORCE
+        )
     endif()
-    set(KernelRootCNodeSizeBits 13 CACHE STRING "" FORCE)
-    set(KernelTimeSlice 500 CACHE STRING "" FORCE)
-    set(KernelTimerTickMS 1000 CACHE STRING "" FORCE)
-    set(KernelVerificationBuild OFF CACHE BOOL "" FORCE)
+    set(KernelRootCNodeSizeBits
+        13
+        CACHE STRING "" FORCE
+    )
+    set(KernelTimeSlice
+        500
+        CACHE STRING "" FORCE
+    )
+    set(KernelTimerTickMS
+        1000
+        CACHE STRING "" FORCE
+    )
+    set(KernelVerificationBuild
+        OFF
+        CACHE BOOL "" FORCE
+    )
 endif()
 sel4_import_kernel()
 
@@ -54,10 +93,16 @@ GenerateSimulateScript()
 if(LibPlatSupportNoPlatformLtimer)
     if(AppIrqUserBench)
         message(WARNING "Platform has no timer, disabling IRQUSER bench")
-        set(AppIrqUserBench OFF CACHE BOOL "" FORCE)
+        set(AppIrqUserBench
+            OFF
+            CACHE BOOL "" FORCE
+        )
     endif()
     if(AppSmpBench)
         message(WARNING "Platform has no timer, disabling SMP bench")
-        set(AppSmpBench OFF CACHE BOOL "" FORCE)
+        set(AppSmpBench
+            OFF
+            CACHE BOOL "" FORCE
+        )
     endif()
 endif()

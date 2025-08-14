@@ -4,7 +4,10 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-set(SEL4_BENCH_SUPPORT_DIR "${CMAKE_CURRENT_LIST_DIR}/libsel4benchsupport" CACHE STRING "")
+set(SEL4_BENCH_SUPPORT_DIR
+    "${CMAKE_CURRENT_LIST_DIR}/libsel4benchsupport"
+    CACHE STRING ""
+)
 mark_as_advanced(SEL4_BENCH_SUPPORT_DIR)
 
 macro(sel4benchsupport_import_libraries)
@@ -12,4 +15,4 @@ macro(sel4benchsupport_import_libraries)
 endmacro()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(sel4benchsupport DEFAULT_MSG SEL4_BENCH_SUPPORT_DIR)
+find_package_handle_standard_args(sel4benchsupport DEFAULT_MSG SEL4_BENCH_SUPPORT_DIR)

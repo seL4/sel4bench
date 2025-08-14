@@ -24,12 +24,7 @@ file(GLOB deps src/*.c)
 list(SORT deps)
 add_executable(sync EXCLUDE_FROM_ALL ${deps})
 target_link_libraries(
-    sync
-    sel4_autoconf
-    sel4benchsync_Config
-    sel4benchsupport
-    sel4sync
-    sel4muslcsys
+    sync sel4_autoconf sel4benchsync_Config sel4benchsupport sel4sync sel4muslcsys
 )
 
 if(AppSyncBench)

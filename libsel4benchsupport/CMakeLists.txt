@@ -13,8 +13,8 @@ list(SORT deps)
 
 add_library(sel4benchsupport EXCLUDE_FROM_ALL ${deps})
 target_include_directories(
-    sel4benchsupport
-    PUBLIC "include/" "arch_include/${KernelArch}/" "sel4_arch_include/${KernelSel4Arch}/"
+    sel4benchsupport PUBLIC "include/" "arch_include/${KernelArch}/"
+                            "sel4_arch_include/${KernelSel4Arch}/"
 )
 target_link_libraries(
     sel4benchsupport
