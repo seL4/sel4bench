@@ -7,9 +7,6 @@
 #include <sel4benchirq/gen_config.h>
 
 #include <stdio.h>
-#include <sel4runtime.h>
-#include <muslcsys/vsyscall.h>
-#include <utils/attribute.h>
 
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/timer.h>
@@ -29,24 +26,13 @@ void abort(void)
     benchmark_finished(EXIT_FAILURE);
 }
 
-static env_t *env;
-
-void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY) init_env(void)
-{
-    static size_t object_freq[seL4_ObjectTypeCount] = {0};
-
-    env = benchmark_get_env(
-              sel4runtime_argc(),
-              sel4runtime_argv(),
-              sizeof(irq_results_t),
-              object_freq
-          );
-}
-
 int main(int argc, char **argv)
 {
+    env_t *env;
     irq_results_t *results;
 
+    static size_t object_freq[seL4_ObjectTypeCount] = {0};
+    env = benchmark_get_env(argc, argv, sizeof(irq_results_t), object_freq);
     results = (irq_results_t *) env->results;
 
     ZF_LOGF_IF(timer_periodic(env->timeout_timer->timer, INTERRUPT_PERIOD_NS) != 0,

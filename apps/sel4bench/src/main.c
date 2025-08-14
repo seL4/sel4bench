@@ -28,11 +28,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <utils/util.h>
-#include <utils/attribute.h>
 #include <vka/object.h>
 #include <vka/capops.h>
 #include <libfdt.h>
-#include <muslcsys/vsyscall.h>
 
 #include <ipc.h>
 #include <benchmark_types.h>
@@ -314,15 +312,23 @@ void *main_continued(void *arg)
 extern vspace_t *muslc_this_vspace;
 extern reservation_t muslc_brk_reservation;
 extern void *muslc_brk_reservation_start;
-static allocman_t *allocman;
-static sel4utils_res_t malloc_res;
+/* When the root task exists, it should simply suspend itself */
+static void sel4bench_exit(int code)
+{
+    seL4_TCB_Suspend(seL4_CapInitThreadTCB);
+}
 
-static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
+
+int main(void)
 {
     seL4_BootInfo *info;
-    UNUSED int error;
+    allocman_t *allocman;
     UNUSED reservation_t virtual_reservation;
+    UNUSED int error;
     void *vaddr;
+
+    /* Set exit handler */
+    sel4runtime_set_exit(sel4bench_exit);
 
     info  = platsupport_get_bootinfo();
     simple_default_init_bootinfo(&global_env.simple, info);
@@ -339,30 +345,21 @@ static void CONSTRUCTOR(MUSLCSYS_WITH_VSYSCALL_PRIORITY)  init_malloc(void)
                                                            &global_env.vka, info);
 
     /* set up malloc */
+    sel4utils_res_t malloc_res;
     error = sel4utils_reserve_range_no_alloc(&global_env.vspace, &malloc_res, seL4_LargePageBits, seL4_AllRights, 1,
                                              &muslc_brk_reservation_start);
     muslc_this_vspace = &global_env.vspace;
     muslc_brk_reservation.res = &malloc_res;
     ZF_LOGF_IF(error, "Failed to set up dynamic malloc");
 
+    // NOTE: MALLOC Cannot be called before this part of the process bootstrap.
+    // muslc_thsi_vspace & muslc_brk_reservation are used by the libsel4muslcsys/morecore allocator that provides
+    // memory for malloc to use.
+
     virtual_reservation = vspace_reserve_range(&global_env.vspace, ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights,
                                                1, &vaddr);
     assert(virtual_reservation.res);
     bootstrap_configure_virtual_pool(allocman, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&global_env.simple));
-}
-
-/* When the root task exists, it should simply suspend itself */
-static void sel4bench_exit(int code)
-{
-    seL4_TCB_Suspend(seL4_CapInitThreadTCB);
-}
-
-int main(void)
-{
-    /* Set exit handler */
-    sel4runtime_set_exit(sel4bench_exit);
-
-    UNUSED int error;
 
     /* init serial */
     platsupport_serial_setup_simple(&global_env.vspace, &global_env.simple, &global_env.vka);

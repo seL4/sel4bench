@@ -59,6 +59,13 @@ if(NOT Sel4benchAllowSettingsOverride)
 
     endif()
 
+    if (KernelSel4ArchAarch32)
+        set(KernelArmTLSReg tpidruro CACHE STRING "" FORCE)
+    endif()
+    if (KernelSel4ArchAarch64)
+        set(KernelArmTLSReg tpidru CACHE STRING "" FORCE)
+    endif()
+
     # Setup flags for RELEASE (performance optimized builds)
     ApplyCommonReleaseVerificationSettings(${RELEASE} OFF)
     # This option is controlled by ApplyCommonReleaseVerificationSettings
@@ -96,7 +103,11 @@ if(NOT Sel4benchAllowSettingsOverride)
 
     if(SMP)
         if(RELEASE)
-            set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
+            if(KernelPlatformIMX93)
+                set(KernelMaxNumNodes 2 CACHE STRING "" FORCE)
+            else()
+                set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
+            endif()
             set(AppSmpBench ON CACHE BOOL "" FORCE)
             if(KernelPlatImx6)
                 set(ElfloaderMode "secure supervisor" CACHE STRING "" FORCE)
