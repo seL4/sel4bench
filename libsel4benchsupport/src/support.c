@@ -509,8 +509,12 @@ void benchmark_init_timer(env_t *env)
 
     rpc_client = &env->rpc_client;
 
+#ifdef CONFIG_LIB_PLAT_SUPPORT_HAVE_TIMER
     int error = ltimer_default_init(&env->ltimer, env->io_ops, NULL, NULL);
     ZF_LOGF_IF(error, "Failed to init timer");
+#else
+    ZF_LOGF("Platform does not support ltimers");
+#endif /* CONFIG_LIB_PLAT_SUPPORT_HAVE_TIMER */
 
     /* Restore the vka utspace functions */
     env->slab_vka.utspace_alloc_at = utspace_alloc_copy;
