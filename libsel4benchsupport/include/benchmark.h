@@ -94,7 +94,7 @@ typedef struct env {
 } env_t;
 
 /* initialise the benchmarking environment and return it */
-env_t *benchmark_get_env(int argc, char const *const *argv, size_t results_size,
+env_t *benchmark_get_env(int argc, char **argv, size_t results_size,
                          size_t object_freq[seL4_ObjectTypeCount]);
 /* signal to the benchmark driver process that we are done */
 NORETURN void benchmark_finished(int exit_code);
