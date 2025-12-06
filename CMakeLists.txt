@@ -84,6 +84,17 @@ if((NOT Sel4benchAllowSettingsOverride) AND (KernelArchARM OR KernelArchRiscV))
 endif()
 elfloader_import_project()
 
+# Avoid compilers from using SIMD instructions for integer code.
+# If the program faults on a SIMD instruction for your platform,
+# update this code or find another work-around.
+function(general_regs_only target)
+    include(CheckCCompilerFlag OPTIONAL)
+    check_c_compiler_flag(-mgeneral-regs-only HAS_GENERAL_REGS_ONLY)
+    if(HAS_GENERAL_REGS_ONLY)
+        target_compile_options(${target} PRIVATE -mgeneral-regs-only)
+    endif()
+endfunction()
+
 add_subdirectory(apps/sel4bench)
 
 include(simulation)

@@ -651,3 +651,16 @@ ccnt_t get_result(seL4_CPtr ep)
 
     return result;
 }
+
+void configure_fpu(seL4_CPtr tcb, bool fpu_on)
+{
+    seL4_TCB_SetFlags_t res;
+    seL4_TCBFlag flags_clear = seL4_TCBFlag_NoFlag, flags_set = seL4_TCBFlag_fpuDisabled;
+
+    if (fpu_on) {
+        flags_clear = seL4_TCBFlag_fpuDisabled;
+        flags_set = seL4_TCBFlag_NoFlag;
+    }
+    res = seL4_TCB_SetFlags(tcb, flags_clear, flags_set);
+    assert(res.error == seL4_NoError);
+}
