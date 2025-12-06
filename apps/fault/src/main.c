@@ -323,6 +323,7 @@ static void run_fault_benchmark(env_t *env, fault_results_t *results)
 
     /* create fault handler */
     benchmark_configure_thread(env, seL4_CapNull, seL4_MinPrio, "fault handler", &fault_handler);
+    configure_fpu(fault_handler.tcb.cptr, false);
     sel4utils_create_word_args(handler_args, handler_argv, N_HANDLER_ARGS,
                                fault_endpoint.cptr, (seL4_Word) &start,
                                (seL4_Word) results, done_ep.cptr, fault_handler.reply.cptr);

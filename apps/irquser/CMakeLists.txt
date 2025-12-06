@@ -44,3 +44,5 @@ target_link_libraries(
 if(AppIrqUserBench)
     set_property(GLOBAL APPEND PROPERTY sel4benchapps_property "$<TARGET_FILE:irquser>")
 endif()
+
+general_regs_only(irquser)

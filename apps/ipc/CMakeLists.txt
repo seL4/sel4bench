@@ -93,3 +93,5 @@ target_link_libraries(
 if(AppIpcBench)
     set_property(GLOBAL APPEND PROPERTY sel4benchapps_property "$<TARGET_FILE:ipc>")
 endif()
+
+general_regs_only(ipc)

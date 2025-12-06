@@ -50,3 +50,5 @@ target_link_libraries(
 if(AppFaultBench)
     set_property(GLOBAL APPEND PROPERTY sel4benchapps_property "$<TARGET_FILE:fault>")
 endif()
+
+general_regs_only(fault)
