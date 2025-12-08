@@ -184,16 +184,14 @@ bench_proc(int argc UNUSED, char *argv[])
     send_result(result_ep, end - start);
 
     /* cleaning */
-    long err;
     for (int i = 0; i < npage; i++) {
-        err = seL4_ARCH_Page_Unmap(page_ptr_start + i);
-        ZF_LOGF_IFERR(err, "ummap page failed\n");
+        /* TODO: removed the logs for now because the logging structures are not remapped
+         * in the child process and it would be causing faults */
+        seL4_ARCH_Page_Unmap(page_ptr_start + i);
     }
 
     for (int i = 0; i < NUM_PAGE_TABLE(npage); i++) {
-        err = seL4_ARCH_PageTable_Unmap(pt_ptr_start + i);
-        ZF_LOGF_IFERR(err, "ummap page table failed\n");
-
+        seL4_ARCH_PageTable_Unmap(pt_ptr_start + i);
     }
 
     sel4bench_destroy();
