@@ -25,13 +25,6 @@ process and collects, processes, and outputs results.
 
 This is a hot-cache benchmark of the IPC path.
 
-## irq
-
-This is a hot-cache benchmark of the IRQ path, measured from inside the
-kernel.  It requires
-[tracepoints](https://docs.sel4.systems/BenchmarkingGuide.html#in-kernel-log-buffer)
-to be placed on the IRQ path where the meaurements are to be taken from.
-
 ## irquser
 
 This is a hot-cache benchmark of the IRQ path, measured from user space.

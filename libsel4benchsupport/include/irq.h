@@ -5,7 +5,6 @@
  */
 #pragma once
 
-#include <sel4bench/kernel_logging.h>
 #include <sel4bench/logging.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
@@ -13,11 +12,6 @@
 
 #define N_IGNORED 10
 #define N_RUNS (100 + N_IGNORED)
-
-typedef struct irq_results {
-    kernel_log_entry_t kernel_log[KERNEL_MAX_NUM_LOG_ENTRIES];
-    int n;
-} irq_results_t;
 
 typedef struct irquser_results_t {
     ccnt_t overheads[N_RUNS];

@@ -71,12 +71,6 @@ set(IPC
     CACHE BOOL "Application to benchmark seL4 IPC"
 )
 
-# see apps/irq/CMakeLists.txt for current state of the benchmark default is OFF
-set(IRQ
-    OFF
-    CACHE BOOL "Application to benchmark seL4 IRQs from inside the kernel"
-)
-
 # default is ON
 set(IRQUSER
     ON
