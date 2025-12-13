@@ -226,19 +226,6 @@ if(NOT Sel4benchAllowSettingsOverride)
         )
     endif()
 
-    # see apps/irq/CMakeLists.txt for current state of the benchmark
-    if(IRQ)
-        set(AppIrqBench
-            ON
-            CACHE BOOL "" FORCE
-        )
-    else()
-        set(AppIrqBench
-            OFF
-            CACHE BOOL "" FORCE
-        )
-    endif()
-
     if(IRQUSER)
         set(AppIrqUserBench
             ON

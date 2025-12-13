@@ -9,7 +9,6 @@
 #include <sel4benchfault/gen_config.h>
 #include <hardware/gen_config.h>
 #include <sel4benchipc/gen_config.h>
-#include <sel4benchirq/gen_config.h>
 #include <sel4benchirquser/gen_config.h>
 #include <sel4benchpagemapping/gen_config.h>
 #include <sel4benchscheduler/gen_config.h>
@@ -96,7 +95,6 @@ typedef struct {
 } result_desc_t;
 
 benchmark_t *ipc_benchmark_new(void);
-benchmark_t *irq_benchmark_new(void);
 benchmark_t *irquser_benchmark_new(void);
 benchmark_t *scheduler_benchmark_new(void);
 benchmark_t *signal_benchmark_new(void);

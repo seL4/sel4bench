@@ -66,7 +66,6 @@ sel4_projects_libs_import_libraries()
 add_subdirectory(../fault fault)
 add_subdirectory(../hardware hardware)
 add_subdirectory(../ipc ipc)
-add_subdirectory(../irq irq)
 add_subdirectory(../irquser irquser)
 add_subdirectory(../page_mapping page_mapping)
 add_subdirectory(../scheduler scheduler)
@@ -102,7 +101,6 @@ if(Sel4Bench)
         sel4benchfault_Config
         hardware_Config
         sel4benchipc_Config
-        sel4benchirq_Config
         sel4benchirquser_Config
         sel4benchpagemapping_Config
         sel4benchscheduler_Config
