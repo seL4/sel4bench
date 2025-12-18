@@ -267,17 +267,16 @@ void *main_continued(void *arg)
     /* list of benchmarks */
     benchmark_t *benchmarks[] = {
         ipc_benchmark_new(),
-        irq_benchmark_new(),
         irquser_benchmark_new(),
         scheduler_benchmark_new(),
         signal_benchmark_new(),
         fault_benchmark_new(),
         hardware_benchmark_new(),
         sync_benchmark_new(),
-        /* add new benchmarks here */
         page_mapping_benchmark_new(),
         smp_benchmark_new(),
         vcpu_benchmark_new(),
+        /* add new benchmarks here */
 
         /* null terminator */
         NULL

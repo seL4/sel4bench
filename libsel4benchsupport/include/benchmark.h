@@ -191,3 +191,6 @@ void send_result(seL4_CPtr ep, ccnt_t result);
  * @param ep The endpoint the result will be received from
  */
 ccnt_t get_result(seL4_CPtr ep);
+
+/* Enable or disable the FPU for a task */
+void configure_fpu(seL4_CPtr tcb, bool fpu_on);

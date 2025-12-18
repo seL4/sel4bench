@@ -31,13 +31,7 @@
 #include <arch/ipc.h>
 
 #define NUM_ARGS 3
-/* Ensure that enough warmups are performed to prevent the FPU from
- * being restored. */
-#ifdef CONFIG_FPU_MAX_RESTORES_SINCE_SWITCH
-#define WARMUPS (RUNS + CONFIG_FPU_MAX_RESTORES_SINCE_SWITCH)
-#else
 #define WARMUPS RUNS
-#endif
 #define OVERHEAD_RETRIES 4
 
 #ifndef CONFIG_CYCLE_COUNT
@@ -421,6 +415,8 @@ int main(int argc, char **argv)
         ZF_LOGI("--------------------------------------------------\n");
         for (j = 0; j < ARRAY_SIZE(benchmark_params); j++) {
             const struct benchmark_params *params = &benchmark_params[j];
+            seL4_CPtr client_tcb = client.process.thread.tcb.cptr;
+
             ZF_LOGI("%s\t: IPC duration (%s), client prio: %3d server prio %3d, %s vspace, %s, length %2d\n",
                     params->name,
                     params->direction == DIR_TO ? "client --> server" : "server --> client",
@@ -428,17 +424,26 @@ int main(int argc, char **argv)
                     params->same_vspace ? "same" : "diff",
                     (config_set(CONFIG_KERNEL_MCS) && params->passive) ? "passive" : "active", params->length);
 
+            /* Enable client FPU explicitly, even though it's on by default: */
+            configure_fpu(client_tcb, true);
+
             /* set up client for benchmark */
-            int error = seL4_TCB_SetPriority(client.process.thread.tcb.cptr, auth, params->client_prio);
+            int error = seL4_TCB_SetPriority(client_tcb, auth, params->client_prio);
             ZF_LOGF_IF(error, "Failed to set client prio");
             client.process.entry_point = bench_funcs[params->client_fn];
 
             if (params->same_vspace) {
-                error = seL4_TCB_SetPriority(server_thread.process.thread.tcb.cptr, auth, params->server_prio);
+                seL4_CPtr tcb = server_thread.process.thread.tcb.cptr;
+
+                configure_fpu(tcb, params->server_fpu);
+                error = seL4_TCB_SetPriority(tcb, auth, params->server_prio);
                 assert(error == seL4_NoError);
                 server_thread.process.entry_point = bench_funcs[params->server_fn];
             } else {
-                error = seL4_TCB_SetPriority(server_process.process.thread.tcb.cptr, auth, params->server_prio);
+                seL4_CPtr tcb = server_process.process.thread.tcb.cptr;
+
+                configure_fpu(tcb, params->server_fpu);
+                error = seL4_TCB_SetPriority(tcb, auth, params->server_prio);
                 assert(error == seL4_NoError);
                 server_process.process.entry_point = bench_funcs[params->server_fn];
             }

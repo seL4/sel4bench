@@ -47,6 +47,8 @@ void spinner_fn(int argc, char **argv)
 static seL4_CPtr done_ep;
 /* ntfn for ticker to wait for timer irqs on */
 static seL4_CPtr timer_signal;
+/* tcb for ticker to enable/disable FPU */
+static seL4_CPtr ticker_tcb;
 /* initialised IRQ interface */
 static ps_irq_ops_t *irq_ops;
 /* ntfn_id of the timer notification provided to the IRQ interface */
@@ -59,10 +61,12 @@ void ticker_fn(ccnt_t *results, volatile ccnt_t *current_time)
     seL4_Word badge;
 
     for (int i = 0; i < N_RUNS; i++) {
+        configure_fpu(ticker_tcb, false);
         /* wait for irq */
         seL4_Wait(timer_signal, &badge);
         /* record result */
         SEL4BENCH_READ_CCNT(end);
+        configure_fpu(ticker_tcb, true);
         sel4platsupport_irq_handle(irq_ops, timer_ntfn_id, badge);
         end_low = (seL4_Word) end;
         start = (seL4_Word) * current_time;
@@ -166,6 +170,10 @@ int main(int argc, char **argv)
     /* first run the benchmark between two threads in the current address space */
     benchmark_configure_thread(env, endpoint.cptr, seL4_MaxPrio - 1, "ticker", &ticker);
     benchmark_configure_thread(env, endpoint.cptr, seL4_MaxPrio - 2, "spinner", &spinner);
+
+    /* Test timing with FPU enabled for normal code and disabled for IRQ handler */
+    configure_fpu(spinner.tcb.cptr, true);
+    ticker_tcb = ticker.tcb.cptr;
 
     error = sel4utils_start_thread(&ticker, (sel4utils_thread_entry_fn) ticker_fn, (void *) results->thread_results,
                                    (void *) local_current_time, true);

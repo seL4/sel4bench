@@ -218,6 +218,10 @@ static void benchmark(env_t *env, seL4_CPtr ep, seL4_CPtr ntfn, signal_results_t
     benchmark_configure_thread(env, ep, seL4_MaxPrio - 1, "signal", &signal.thread);
     benchmark_configure_thread(env, ep, seL4_MaxPrio - 1, "signal early", &signal_early_proc.thread);
 
+    configure_fpu(wait.thread.tcb.cptr, false);
+    configure_fpu(signal.thread.tcb.cptr, false);
+    configure_fpu(signal_early_proc.thread.tcb.cptr, false);
+
     sel4utils_create_word_args(wait.argv_strings, wait.argv, wait.argc, ntfn, ep, (seL4_Word) &end);
 
     sel4utils_create_word_args(signal.argv_strings, signal.argv, signal.argc, ntfn,
