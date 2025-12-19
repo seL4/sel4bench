@@ -39,7 +39,7 @@ static json_t *hardware_process(void *results)
 
     set.name = "Hardware null_syscall thread (early processing)";
     result = process_result_early_proc(raw_results->nullSyscall_ep_num, raw_results->nullSyscall_ep_sum,
-                                       raw_results->nullSyscall_ep_sum2, raw_results->nullSyscall_ep);
+                                       raw_results->nullSyscall_ep_sum2);
     json_array_append_new(array, result_set_to_json(set));
 
     set.name = "Nop syscall overhead";
