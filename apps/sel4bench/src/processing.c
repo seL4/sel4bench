@@ -75,3 +75,10 @@ void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], res
         results[i] = process_result(nrows, array[i], desc);
     }
 }
+
+void process_results_early_proc(ccnt_t ncols, ccnt_t nums[ncols], ccnt_t sums[ncols], ccnt_t sum2s[ncols], result_t results[ncols])
+{
+    for (int i = 0; i < ncols; i++) {
+        results[i] = process_result_early_proc(nums[i], sums[i], sum2s[i], NULL);
+    }
+}

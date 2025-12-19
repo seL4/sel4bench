@@ -52,7 +52,7 @@ static void result_to_json(result_t result, json_t *j)
     json_t *raw_results = json_array();
     assert(raw_results != NULL);
 
-    if (config_set(CONFIG_OUTPUT_RAW_RESULTS)) {
+    if (config_set(CONFIG_OUTPUT_RAW_RESULTS) && result.raw_data != NULL) {
         for (size_t i = 0; i < result.samples; i++) {
             error = json_array_append_new(raw_results, json_integer(result.raw_data[i]));
             assert(error == 0);
