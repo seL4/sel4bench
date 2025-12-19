@@ -63,9 +63,9 @@ result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc)
     return calculate_results(size, array);
 }
 
-result_t process_result_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2, ccnt_t array[num])
+result_t process_result_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2)
 {
-    return calculate_results_early_proc(num, sum, sum2, array);
+    return calculate_results_early_proc(num, sum, sum2);
 }
 
 void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], result_desc_t desc,
@@ -79,6 +79,6 @@ void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], res
 void process_results_early_proc(ccnt_t ncols, ccnt_t nums[ncols], ccnt_t sums[ncols], ccnt_t sum2s[ncols], result_t results[ncols])
 {
     for (int i = 0; i < ncols; i++) {
-        results[i] = process_result_early_proc(nums[i], sums[i], sum2s[i], NULL);
+        results[i] = process_result_early_proc(nums[i], sums[i], sum2s[i]);
     }
 }

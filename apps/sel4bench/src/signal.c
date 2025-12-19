@@ -36,8 +36,7 @@ static json_t *signal_process(void *results)
     desc.overhead = result.min;
 
     result = process_result_early_proc(raw_results->lo_num,
-                                       raw_results->lo_sum, raw_results->lo_sum2,
-                                       raw_results->diag_results);
+                                       raw_results->lo_sum, raw_results->lo_sum2);
 
     set.name = "Signal to high prio thread (early processing)";
     json_array_append_new(array, result_set_to_json(set));

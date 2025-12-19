@@ -16,11 +16,8 @@ result_t calculate_results(const size_t n, ccnt_t data[n]);
  * @param num - number of samples
  * @param sum - sum of samples
  * @param sum2 - sum of squared samples
- * @param array - array of raw data which are zeros for Early Processing methodology
- * but the array is required for results output function
  */
-result_t calculate_results_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2,
-                                      ccnt_t array[num]);
+result_t calculate_results_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2);
 
 /* The function calculates variance using sum, sum of squared values and mean
  * @param num - number of samples
