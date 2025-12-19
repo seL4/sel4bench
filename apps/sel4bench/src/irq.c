@@ -129,13 +129,11 @@ static json_t *irquser_process(void *r)
     results[1] = process_result(N_RUNS, raw_results->thread_results, desc);
     results[2] = process_result_early_proc(raw_results->thread_results_ep_num,
                                            raw_results->thread_results_ep_sum,
-                                           raw_results->thread_results_ep_sum2,
-                                           raw_results->thread_results_ep);
+                                           raw_results->thread_results_ep_sum2);
     results[3] = process_result(N_RUNS, raw_results->process_results, desc);
     results[4] = process_result_early_proc(raw_results->process_results_ep_num,
                                            raw_results->process_results_ep_sum,
-                                           raw_results->process_results_ep_sum2,
-                                           raw_results->process_results_ep);
+                                           raw_results->process_results_ep_sum2);
 
     char *types[] = {"Measurement overhead", "Without context switch",
                      "Without context switch (early processing)", "With context switch",

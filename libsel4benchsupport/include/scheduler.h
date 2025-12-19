@@ -29,7 +29,6 @@ typedef struct scheduler_results_t {
     ccnt_t thread_yield_ep_sum;
     ccnt_t thread_yield_ep_sum2;
     ccnt_t thread_yield_ep_num;
-    ccnt_t thread_yield_ep[N_RUNS];
 
     ccnt_t thread_results_ep_sum[N_PRIOS];
     ccnt_t thread_results_ep_sum2[N_PRIOS];
@@ -38,12 +37,10 @@ typedef struct scheduler_results_t {
     ccnt_t process_yield_ep_sum;
     ccnt_t process_yield_ep_sum2;
     ccnt_t process_yield_ep_num;
-    ccnt_t process_yield_ep[N_RUNS];
 
     ccnt_t process_results_ep_sum[N_PRIOS];
     ccnt_t process_results_ep_sum2[N_PRIOS];
     ccnt_t process_results_ep_num[N_PRIOS];
-
 } scheduler_results_t;
 
 static inline uint8_t gen_next_prio(int i)

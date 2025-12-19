@@ -30,10 +30,8 @@ typedef struct irquser_results_t {
     ccnt_t thread_results_ep_sum;
     ccnt_t thread_results_ep_sum2;
     ccnt_t thread_results_ep_num;
-    ccnt_t thread_results_ep[N_RUNS];
 
     ccnt_t process_results_ep_sum;
     ccnt_t process_results_ep_sum2;
     ccnt_t process_results_ep_num;
-    ccnt_t process_results_ep[N_RUNS];
 } irquser_results_t;

@@ -42,7 +42,7 @@ static json_t *fault_process(void *results)
 
     set.name = "fault round trip (early processing)";
     result = process_result_early_proc(raw_results->round_trip_ep_num, raw_results->round_trip_ep_sum,
-                                       raw_results->round_trip_ep_sum2, raw_results->round_trip_ep);
+                                       raw_results->round_trip_ep_sum2);
     json_array_append_new(array, result_set_to_json(set));
 
     set.name = "faulter -> fault handler";
@@ -51,7 +51,7 @@ static json_t *fault_process(void *results)
 
     set.name = "faulter -> fault handler (early processing)";
     result = process_result_early_proc(raw_results->fault_ep_num, raw_results->fault_ep_sum,
-                                       raw_results->fault_ep_sum2, raw_results->fault_ep);
+                                       raw_results->fault_ep_sum2);
     json_array_append_new(array, result_set_to_json(set));
 
     /* calculate the overhead of reading the cycle count (fault handler -> faulter path
@@ -73,7 +73,7 @@ static json_t *fault_process(void *results)
     /* fault to fault handler does not */
     set.name = "fault handler -> faulter (early processing)";
     result = process_result_early_proc(raw_results->fault_reply_ep_num, raw_results->fault_reply_ep_sum,
-                                       raw_results->fault_reply_ep_sum2, raw_results->fault_reply_ep);
+                                       raw_results->fault_reply_ep_sum2);
     json_array_append_new(array, result_set_to_json(set));
 
     return array;

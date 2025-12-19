@@ -22,10 +22,8 @@ result_t process_result(size_t n, ccnt_t array[n], result_desc_t desc);
  * @param num   number of values to process
  * @param sum   sum of values
  * @param sum2  sum of squared values
- * @param array raw values to compute results for
  */
-result_t process_result_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2,
-                                   ccnt_t array[num]);
+result_t process_result_early_proc(ccnt_t num, ccnt_t sum, ccnt_t sum2);
 
 /**
  * @param ncols    size of the 1st dimension of array.
@@ -53,4 +51,12 @@ void process_results(size_t ncols, size_t nrows, ccnt_t array[ncols][nrows], res
  */
 void process_average_results(int rows, int cols, ccnt_t array[rows][cols], result_t results[cols]);
 
+/* Process a set of early processing results. Compute the variance, standard deviation, mean for each set of values
+ * for benchmarks using Early Processing methodology
+ * @param ncols   number of values in each array
+ * @param nums    array of number of samples in each run
+ * @param sums    array of sum of values
+ * @param sum2s   array of sum of squared values
+ * @param results array of results to fill in
+ */
 void process_results_early_proc(ccnt_t ncols, ccnt_t nums[ncols], ccnt_t sums[ncols], ccnt_t sum2s[ncols], result_t results[ncols]);

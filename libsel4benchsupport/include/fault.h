@@ -27,17 +27,14 @@ typedef struct {
     ccnt_t round_trip_ep_sum2;
     ccnt_t round_trip_ep_num;
     ccnt_t round_trip_ep_min_overhead;
-    ccnt_t round_trip_ep[N_RUNS];
 
     ccnt_t fault_ep_sum;
     ccnt_t fault_ep_sum2;
     ccnt_t fault_ep_num;
     ccnt_t fault_ep_min_overhead;
-    ccnt_t fault_ep[N_RUNS];
 
     ccnt_t fault_reply_ep_sum;
     ccnt_t fault_reply_ep_sum2;
     ccnt_t fault_reply_ep_num;
     ccnt_t fault_reply_ep_min_overhead;
-    ccnt_t fault_reply_ep[N_RUNS];
 } fault_results_t;
