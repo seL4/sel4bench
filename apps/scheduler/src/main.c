@@ -16,7 +16,7 @@
 #define NOPS ""
 
 #include <arch/signal.h>
-#define N_LOW_ARGS 5
+#define N_LOW_ARGS 8
 #define N_HIGH_ARGS 4
 #define N_YIELD_ARGS 2
 
@@ -63,6 +63,38 @@ void low_fn(int argc, char **argv)
         results[i] = (end - *start);
         DO_REAL_SIGNAL(consume);
     }
+
+    /* signal completion */
+    seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    /* block */
+    seL4_Wait(produce, NULL);
+}
+
+void low_fn_ep(int argc, char **argv)
+{
+    assert(argc == N_LOW_ARGS);
+    seL4_CPtr produce = (seL4_CPtr) atol(argv[0]);
+    volatile ccnt_t *start = (volatile ccnt_t *) atol(argv[1]);
+    ccnt_t overhead = (ccnt_t) atol(argv[2]);
+    ccnt_t *out_sum = (ccnt_t*) atol(argv[3]);
+    ccnt_t *out_sum2 = (ccnt_t*) atol(argv[4]);
+    ccnt_t *out_num = (ccnt_t*) atol(argv[5]);
+    seL4_CPtr done_ep = (seL4_CPtr) atol(argv[6]);
+    seL4_CPtr consume = (seL4_CPtr) atol(argv[7]);
+
+    ccnt_t sum = 0, sum2 = 0;
+    DATACOLLECT_INIT();
+    for (seL4_Word i = 0; i < N_RUNS; i++) {
+        ccnt_t end;
+        DO_REAL_WAIT(produce);
+        SEL4BENCH_READ_CCNT(end);
+        DATACOLLECT_GET_SUMS(i, N_IGNORED, *start, end, overhead, sum, sum2);
+        DO_REAL_SIGNAL(consume);
+    }
+
+    *out_sum = sum;
+    *out_sum2 = sum2;
+    *out_num = N_RUNS - N_IGNORED;
 
     /* signal completion */
     seL4_Send(done_ep, seL4_MessageInfo_new(0, 0, 0, 0));
@@ -260,6 +292,47 @@ static void benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, 
     seL4_TCB_Suspend(low.tcb.cptr);
 }
 
+static void benchmark_prio_threads_ep(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume, scheduler_results_t *results)
+{
+    sel4utils_thread_t high, low;
+    char high_args_strings[N_HIGH_ARGS][WORD_STRING_SIZE];
+    char *high_argv[N_HIGH_ARGS];
+    char low_args_strings[N_LOW_ARGS][WORD_STRING_SIZE];
+    char *low_argv[N_LOW_ARGS];
+    ccnt_t start;
+    UNUSED int error;
+
+    benchmark_configure_thread(env, ep, seL4_MinPrio, "high", &high);
+    benchmark_configure_thread(env, ep, seL4_MinPrio, "low", &low);
+
+    sel4utils_create_word_args(high_args_strings, high_argv, N_HIGH_ARGS, produce,
+                               ep, (seL4_Word) &start, consume);
+
+    for (int i = 0; i < N_PRIOS; i++) {
+        uint8_t prio = gen_next_prio(i);
+        error = seL4_TCB_SetPriority(high.tcb.cptr, simple_get_tcb(&env->simple), prio);
+        assert(error == seL4_NoError);
+
+        sel4utils_create_word_args(low_args_strings, low_argv, N_LOW_ARGS, produce,
+                                   (seL4_Word) &start,
+                                   (seL4_Word) results->overhead_ccnt_min,
+                                   (seL4_Word) &results->thread_results_ep_sum[i],
+                                   (seL4_Word) &results->thread_results_ep_sum2[i],
+                                   (seL4_Word) &results->thread_results_ep_num[i],
+                                   ep, consume);
+
+        error = sel4utils_start_thread(&low, (sel4utils_thread_entry_fn) low_fn_ep, (void *) N_LOW_ARGS, (void *) low_argv, 1);
+        assert(error == seL4_NoError);
+        error = sel4utils_start_thread(&high, (sel4utils_thread_entry_fn) high_fn, (void *) N_HIGH_ARGS, (void *) high_argv, 1);
+        assert(error == seL4_NoError);
+
+        benchmark_wait_children(ep, "children of scheduler benchmark", 2);
+    }
+
+    seL4_TCB_Suspend(high.tcb.cptr);
+    seL4_TCB_Suspend(low.tcb.cptr);
+}
+
 static void benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume,
                                      ccnt_t results[N_PRIOS][N_RUNS])
 {
@@ -313,6 +386,75 @@ static void benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce
                                    (seL4_Word) start, (seL4_Word) &results[i], ep, consume);
 
         error = sel4utils_start_thread(&low, (sel4utils_thread_entry_fn) low_fn, (void *) N_LOW_ARGS, (void *) low_argv, 1);
+        assert(error == seL4_NoError);
+
+        error = benchmark_spawn_process(&high, &env->slab_vka, &env->vspace, N_HIGH_ARGS, high_argv, 1);
+        assert(error == seL4_NoError);
+
+        benchmark_wait_children(ep, "children of scheduler benchmark", 2);
+    }
+
+    seL4_TCB_Suspend(high.thread.tcb.cptr);
+    seL4_TCB_Suspend(low.tcb.cptr);
+}
+
+static void benchmark_prio_processes_ep(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume, scheduler_results_t *results)
+{
+    sel4utils_process_t high;
+    sel4utils_thread_t low;
+    char high_args_strings[N_HIGH_ARGS][WORD_STRING_SIZE];
+    char *high_argv[N_HIGH_ARGS];
+    char low_args_strings[N_LOW_ARGS][WORD_STRING_SIZE];
+    char *low_argv[N_LOW_ARGS];
+    void *start, *remote_start;
+    seL4_CPtr remote_ep, remote_produce, remote_consume;
+    UNUSED int error;
+    cspacepath_t path;
+
+    /* allocate a page to share for the start cycle count */
+    start = vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
+    assert(start != NULL);
+
+    benchmark_shallow_clone_process(env, &high, seL4_MinPrio, high_fn, "high");
+    /* run low in the same thread as us so we don't have to copy the results across */
+    benchmark_configure_thread(env, ep, seL4_MinPrio, "low", &low);
+
+    /* share memory for shared variable */
+    remote_start = vspace_share_mem(&env->vspace, &high.vspace, start, 1, seL4_PageBits, seL4_AllRights, 1);
+    assert(remote_start != NULL);
+
+    /* copy ep cap */
+    vka_cspace_make_path(&env->slab_vka, ep, &path);
+    remote_ep = sel4utils_copy_path_to_process(&high, path);
+    assert(remote_ep != seL4_CapNull);
+
+    /* copy ntfn cap */
+    vka_cspace_make_path(&env->slab_vka, produce, &path);
+    remote_produce = sel4utils_copy_path_to_process(&high, path);
+    assert(remote_produce != seL4_CapNull);
+
+    /* copy ntfn cap */
+    vka_cspace_make_path(&env->slab_vka, consume, &path);
+    remote_consume = sel4utils_copy_path_to_process(&high, path);
+    assert(remote_consume != seL4_CapNull);
+
+    sel4utils_create_word_args(high_args_strings, high_argv, N_HIGH_ARGS, remote_produce,
+                               remote_ep, (seL4_Word) remote_start, remote_consume);
+
+    for (int i = 0; i < N_PRIOS; i++) {
+        uint8_t prio = gen_next_prio(i);
+        error = seL4_TCB_SetPriority(high.thread.tcb.cptr, simple_get_tcb(&env->simple), prio);
+        assert(error == 0);
+
+        sel4utils_create_word_args(low_args_strings, low_argv, N_LOW_ARGS, produce,
+                                   (seL4_Word) start,
+                                   (seL4_Word) results->overhead_ccnt_min,
+                                   (seL4_Word) &results->process_results_ep_sum[i],
+                                   (seL4_Word) &results->process_results_ep_sum2[i],
+                                   (seL4_Word) &results->process_results_ep_num[i],
+                                   ep, consume);
+
+        error = sel4utils_start_thread(&low, (sel4utils_thread_entry_fn) low_fn_ep, (void *) N_LOW_ARGS, (void *) low_argv, 1);
         assert(error == seL4_NoError);
 
         error = benchmark_spawn_process(&high, &env->slab_vka, &env->vspace, N_HIGH_ARGS, high_argv, 1);
@@ -432,8 +574,10 @@ int main(int argc, char **argv)
 
     benchmark_prio_threads(env, done_ep.cptr, produce.cptr, consume.cptr,
                            results->thread_results);
+    benchmark_prio_threads_ep(env, done_ep.cptr, produce.cptr, consume.cptr, results);
     benchmark_prio_processes(env, done_ep.cptr, produce.cptr, consume.cptr,
                              results->process_results);
+    benchmark_prio_processes_ep(env, done_ep.cptr, produce.cptr, consume.cptr, results);
     benchmark_set_prio_average(results->set_prio_average, simple_get_tcb(&env->simple));
 
     /* thread yield benchmarks */
