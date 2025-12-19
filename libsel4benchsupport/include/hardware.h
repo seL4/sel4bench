@@ -20,5 +20,4 @@ typedef struct hardware_results {
     ccnt_t nullSyscall_ep_sum;
     ccnt_t nullSyscall_ep_sum2;
     ccnt_t nullSyscall_ep_num;
-    ccnt_t nullSyscall_ep[N_RUNS];
 } hardware_results_t;
