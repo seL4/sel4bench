@@ -95,7 +95,8 @@ static void process_scheduler_results(scheduler_results_t *results, json_t *arra
 
     /* signal to thread of higher prio (early processing) */
     result_t per_prio_result_ep[N_PRIOS];
-    process_results_early_proc(N_PRIOS, results->thread_results_ep_num, results->thread_results_ep_sum, results->thread_results_ep_sum2, per_prio_result_ep);
+    process_results_early_proc(N_PRIOS, results->thread_results_ep_num, results->thread_results_ep_sum,
+                               results->thread_results_ep_sum2, per_prio_result_ep);
 
     set.name = "Signal to thread of higher prio (early processing)";
     set.results = per_prio_result_ep;
@@ -106,7 +107,8 @@ static void process_scheduler_results(scheduler_results_t *results, json_t *arra
     json_array_append_new(array, result_set_to_json(set));
 
     /* signal to process of higher prio (early processing) */
-    process_results_early_proc(N_PRIOS, results->process_results_ep_num, results->process_results_ep_sum, results->process_results_ep_sum2, per_prio_result_ep);
+    process_results_early_proc(N_PRIOS, results->process_results_ep_num, results->process_results_ep_sum,
+                               results->process_results_ep_sum2, per_prio_result_ep);
 
     set.name = "Signal to process of higher prio (early processing)";
     set.results = per_prio_result_ep;

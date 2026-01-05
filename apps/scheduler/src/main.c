@@ -292,7 +292,8 @@ static void benchmark_prio_threads(env_t *env, seL4_CPtr ep, seL4_CPtr produce, 
     seL4_TCB_Suspend(low.tcb.cptr);
 }
 
-static void benchmark_prio_threads_ep(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume, scheduler_results_t *results)
+static void benchmark_prio_threads_ep(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume,
+                                      scheduler_results_t *results)
 {
     sel4utils_thread_t high, low;
     char high_args_strings[N_HIGH_ARGS][WORD_STRING_SIZE];
@@ -398,7 +399,8 @@ static void benchmark_prio_processes(env_t *env, seL4_CPtr ep, seL4_CPtr produce
     seL4_TCB_Suspend(low.tcb.cptr);
 }
 
-static void benchmark_prio_processes_ep(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume, scheduler_results_t *results)
+static void benchmark_prio_processes_ep(env_t *env, seL4_CPtr ep, seL4_CPtr produce, seL4_CPtr consume,
+                                        scheduler_results_t *results)
 {
     sel4utils_process_t high;
     sel4utils_thread_t low;
