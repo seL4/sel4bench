@@ -23,7 +23,7 @@ static double results_mean(const size_t n, const ccnt_t array[n])
     for (i = 0; i < n; i++) {
         mean += (array[i] - mean) / (i + 1);
     }
-    return mean;
+    return roundl(mean);
 }
 
 static double results_variance(const size_t n, const ccnt_t array[n], const ccnt_t mean)
@@ -38,7 +38,7 @@ static double results_variance(const size_t n, const ccnt_t array[n], const ccnt
         variance += (delta * delta - variance) / (i + 1);
     }
 
-    return (double) variance;
+    return round((double) variance);
 }
 
 static double results_stddev(const size_t n, const ccnt_t array[n], const long double variance)

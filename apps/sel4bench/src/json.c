@@ -8,6 +8,11 @@
 #include <math.h>
 #include "json.h"
 
+static inline double round_to_3_decimal_places(double val)
+{
+    return nearbyint(val * 1000.0) / 1000.0;
+}
+
 static inline json_t *json_real_check(double val)
 {
     json_t *real = json_real(val);
@@ -28,7 +33,7 @@ static void result_to_json(result_t result, json_t *j)
     error = json_object_set_new(j, "Mean", json_real_check(result.mean));
     assert(error == 0);
 
-    error = json_object_set_new(j, "Stddev", json_real_check(result.stddev));
+    error = json_object_set_new(j, "Stddev", json_real_check(round_to_3_decimal_places(result.stddev)));
     assert(error == 0);
 
     error = json_object_set_new(j, "Variance", json_real_check(result.variance));
