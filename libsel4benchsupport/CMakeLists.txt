@@ -27,3 +27,5 @@ target_link_libraries(
     sel4rpc
     sel4serialserver
 )
+
+general_regs_only(sel4benchsupport)
