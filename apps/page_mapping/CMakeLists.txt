@@ -47,3 +47,5 @@ target_link_libraries(
 if(AppPageMappingBench)
     set_property(GLOBAL APPEND PROPERTY sel4benchapps_property "$<TARGET_FILE:page_mapping>")
 endif()
+
+general_regs_only(page_mapping)
