@@ -96,7 +96,7 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
           req: ${{ matrix.req }}
-          index: $${{ strategy.job-index }}
+          index: ${{ strategy.job-index }}
         env:
           HW_SSH: ${{ secrets.HW_SSH }}
       - name: Upload results
