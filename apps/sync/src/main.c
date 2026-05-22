@@ -255,10 +255,10 @@ void benchmark_producer_consumer(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, s
         seL4_Wait(block_ep, NULL); \
     }
 
-SYNC_PRODUCER_CONSUMER_FUNC_EP(consumer_func_ep, (*fifo_head == 0), sync_cv_wait, (*fifo_head)--, consumer_to_producer)
+SYNC_PRODUCER_CONSUMER_FUNC_EP(consumer_func_ep, (*fifo_head == 0), sync_cv_wait, (*fifo_head)--, producer_to_consumer)
 
 SYNC_PRODUCER_CONSUMER_FUNC_EP(producer_func_ep, (*fifo_head == FIFO_SIZE), sync_cv_wait, (*fifo_head)++,
-                               producer_to_consumer)
+                               consumer_to_producer)
 
 void benchmark_producer_consumer_ep(env_t *env, seL4_CPtr ep, seL4_CPtr block_ep, sync_bin_sem_t *lock,
                                     sync_cv_t *producer_cv, sync_cv_t *consumer_cv, sync_results_t *results)
