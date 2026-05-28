@@ -47,7 +47,7 @@ jobs:
         xml: ${{ needs.code.outputs.xml }}
         march: ${{ matrix.march }}
     - name: Upload images
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: images-${{ matrix.march }}
         path: '*-images.tar.gz'
@@ -78,7 +78,7 @@ jobs:
     concurrency: sel4bench-hw-${{ strategy.job-index }}
     steps:
       - name: Get machine queue
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: seL4/machine_queue
           path: machine_queue
@@ -88,7 +88,7 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
       - name: Download image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: images-${{ steps.plat.outputs.march }}
       - name: Run
@@ -100,7 +100,7 @@ jobs:
         env:
           HW_SSH: ${{ secrets.HW_SSH }}
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # funky expression below is to work around lack of ternary operator
           name: sel4bench-results-${{ matrix.platform }}${{ matrix.req != '' && format('-{0}', matrix.req) || '' }}
@@ -121,28 +121,28 @@ jobs:
       env:
         GH_SSH: ${{ secrets.CI_SSH }}
     - name: Check out website repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: seL4/website
         token: ${{ secrets.PRIV_REPO_TOKEN }}
     - name: Get results for web deployment (sabre)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: sel4bench-results-sabre
     - name: Get results for web deployment (haswell)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: sel4bench-results-pc99-haswell3
     - name: Get results for web deployment (skylake)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: sel4bench-results-pc99-skylake
     - name: Get results for web deployment (tx1)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: sel4bench-results-tx1
     - name: Get results for web deployment (hifive)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: sel4bench-results-hifive
     - name: Generate json results
