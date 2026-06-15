@@ -124,36 +124,34 @@ jobs:
       uses: actions/checkout@v6
       with:
         repository: seL4/website
+        path: website
         token: ${{ secrets.PRIV_REPO_TOKEN }}
-    - name: Get results for web deployment (sabre)
+    - name: Check out results repo
+      uses: actions/checkout@v6
+      with:
+        repository: seL4/sel4bench-results
+        path: sel4bench-results
+        token: ${{ secrets.PRIV_REPO_TOKEN }}
+    - name: Get all result artifacts
       uses: actions/download-artifact@v8
       with:
-        name: sel4bench-results-sabre
-    - name: Get results for web deployment (haswell)
-      uses: actions/download-artifact@v8
-      with:
-        name: sel4bench-results-pc99-haswell3
-    - name: Get results for web deployment (skylake)
-      uses: actions/download-artifact@v8
-      with:
-        name: sel4bench-results-pc99-skylake
-    - name: Get results for web deployment (tx1)
-      uses: actions/download-artifact@v8
-      with:
-        name: sel4bench-results-tx1
-    - name: Get results for web deployment (hifive)
-      uses: actions/download-artifact@v8
-      with:
-        name: sel4bench-results-hifive
-    - name: Generate json results
+        pattern: sel4bench-results-*
+        path: results
+        merge-multiple: true
+    - name: Generate website json
       uses: seL4/ci-actions/sel4bench-web@master
       with:
         manifest_sha: ${{ steps.deploy.outputs.manifest_sha }}
     - name: Deploy to web site
       run: |
-        mv benchmarks.json _data/
+        cd website
+        mv ../benchmarks.json _data/
         git config user.name "seL4 CI"
         git config user.email "ci@sel4.systems"
         git add _data/benchmarks.json
         git commit -s -m "CI: update performance results"
         git push origin master
+    - name: Extract and deploy results to sel4bench-results
+      uses: seL4/ci-actions/sel4bench-metrics@master
+      with:
+        manifest_sha: ${{ steps.deploy.outputs.manifest_sha }}
