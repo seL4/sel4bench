@@ -258,8 +258,8 @@ int main(int argc, char *argv[])
     }
     vka_cspace_make_path(&env->slab_vka, result_ep.cptr, &result_ep_path);
 
-    /* allocate untyped cap for pages */
-    if ((vka_alloc_untyped(&env->delegate_vka, env->args->untyped_size_bits - 2,
+    /* allocate untyped cap for max n=2048 pages + potential page tables )*/
+    if ((vka_alloc_untyped(&env->delegate_vka, seL4_PageBits + 12,
                            &untyped_obj)) != 0) {
         ZF_LOGF("alloc untyped fail\n");
     };
