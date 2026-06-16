@@ -13,16 +13,10 @@
 #define START_ADDR 0x60000000
 #define NUM_ARGS 3
 
-#if defined(CONFIG_ARCH_X86_64)
-#define DEFAULT_DEPTH 64
-#else
-#define DEFAULT_DEPTH 32
-#endif /* defined(CONFIG_ARCH_X86_64) */
-
 #define PAGE_PER_TABLE BIT(seL4_PageTableBits - seL4_WordSizeBits)
 #define untyped_retype_root(a,b,c,e)\
         seL4_Untyped_Retype(a,b,c,SEL4UTILS_CNODE_SLOT,\
-                        SEL4UTILS_CNODE_SLOT,DEFAULT_DEPTH,e,1)
+                        SEL4UTILS_CNODE_SLOT,seL4_WordBits,e,1)
 #define NUM_PAGE_TABLE(npage) DIV_ROUND_UP((npage), PAGE_PER_TABLE)
 
 typedef struct helper_thread {
