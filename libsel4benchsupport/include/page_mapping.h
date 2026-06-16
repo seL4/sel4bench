@@ -27,44 +27,8 @@ benchmark_params_t page_mapping_benchmark_params[] = {
         .npage  = 1,
     },
     {
-        .name   = "map 2",
-        .npage  = 2,
-    },
-    {
-        .name   = "map 4",
-        .npage  = 4,
-    },
-    {
-        .name   = "map 8",
-        .npage  = 8,
-    },
-    {
-        .name   = "map 16",
-        .npage  = 16,
-    },
-    {
-        .name   = "map 32",
-        .npage  = 32,
-    },
-    {
-        .name   = "map 64",
-        .npage  = 64,
-    },
-    {
-        .name   = "map 128",
-        .npage  = 128,
-    },
-    {
-        .name   = "map 256",
-        .npage  = 256,
-    },
-    {
         .name   = "map 512",
         .npage  = 512,
-    },
-    {
-        .name   = "map 1024",
-        .npage  = 1024,
     },
     {
         .name   = "map 2048",
