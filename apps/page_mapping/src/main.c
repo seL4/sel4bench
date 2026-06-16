@@ -106,6 +106,7 @@ static void inline map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
             err = seL4_ARCH_Page_Map(page_cap, SEL4UTILS_PD_SLOT, addr, right,\
                             seL4_ARCH_Default_VMAttributes);\
             assert(err == 0);\
+            addr += PAGE_SIZE_4K;\
             page_cap++;\
         }\
     }
