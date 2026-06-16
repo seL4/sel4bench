@@ -10,7 +10,14 @@
 #include <benchmark.h>
 #include <page_mapping.h>
 
+#if CONFIG_ARCH_AARCH64
+/* Pick START_ADDR below userTop, but high to avoid existing mapping in
+   top-level/2nd-level tables on AArch64. AArch64 Map does not return an error
+   for those, but maps deeper, which is harder to detect. */
+#define START_ADDR 0x8000000000
+#else
 #define START_ADDR 0x60000000
+#endif
 #define NUM_ARGS 3
 
 #define PAGE_PER_TABLE BIT(seL4_PageTableBits - seL4_WordSizeBits)
@@ -18,6 +25,39 @@
         seL4_Untyped_Retype(a,b,c,SEL4UTILS_CNODE_SLOT,\
                         SEL4UTILS_CNODE_SLOT,seL4_WordBits,e,1)
 #define NUM_PAGE_TABLE(npage) DIV_ROUND_UP((npage), PAGE_PER_TABLE)
+
+#ifdef CONFIG_ARCH_AARCH64
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT) && defined(CONFIG_ARM_PA_SIZE_BITS_40)
+#define NUM_PT_LEVELS 3
+#else
+#define NUM_PT_LEVELS 4
+#endif
+/* counted from 0 from bottom, so L2 means third table from bottom, L1 means page directory */
+#define PT_L2_Map       seL4_ARM_PageTable_Map
+#define PT_L2_BITS      seL4_PageTableBits
+#define PT_L2_OBJ       seL4_ARM_PageTableObject
+#define PT_L1_Map       seL4_ARM_PageTable_Map
+#define PT_L1_BITS      seL4_PageTableBits
+#define PT_L1_OBJ       seL4_ARM_PageTableObject
+#elif CONFIG_ARCH_X86_64
+#define PT_L2_Map       seL4_X86_PDPT_Map
+#define PT_L2_OBJ       seL4_X86_PDPTObject
+#define PT_L2_BITS      seL4_PDPTBits
+#define PT_L1_Map       seL4_X86_PageDirectory_Map
+#define PT_L1_OBJ       seL4_X86_PageDirectoryObject
+#define PT_L1_BITS      seL4_PageDirBits
+#define NUM_PT_LEVELS 4
+#elif CONFIG_ARCH_RISCV
+#define PT_L2_Map       seL4_RISCV_PageTable_Map
+#define PT_L2_OBJ       seL4_RISCV_PageTableObject
+#define PT_L2_BITS      seL4_PageTableBits
+#define PT_L1_Map       seL4_RISCV_PageTable_Map
+#define PT_L1_OBJ       seL4_RISCV_PageTableObject
+#define PT_L1_BITS      seL4_PageTableBits
+#define NUM_PT_LEVELS   CONFIG_PT_LEVELS
+#else
+#define NUM_PT_LEVELS 2
+#endif
 
 typedef struct helper_thread {
     sel4utils_process_t process;
@@ -32,46 +72,46 @@ static void inline prepare_page_table(seL4_Word addr, int npage, seL4_CPtr untyp
                                       seL4_CPtr *free_slot)
 {
     long err UNUSED;
+    seL4_CPtr pt_cslot = *free_slot;
+
+    /* If there are > 2 PT levels, we need to map intermediate tables first */
+#if NUM_PT_LEVELS == 4
+    /* L2/L1 is counted from bottom so that level number is constant here */
+    err = untyped_retype_root(untyped, PT_L2_OBJ, PT_L2_BITS, pt_cslot);
+    assert(err == 0);
+
+    err = PT_L2_Map(pt_cslot, SEL4UTILS_PD_SLOT, addr, seL4_ARCH_Default_VMAttributes);
+    /* DeleteFirst happens if the second level from the top is already mapped
+       for this address. If the next level works, this is fine. */
+    assert(err == 0 || err == seL4_DeleteFirst);
+
+    pt_cslot++;
+#endif
+
+#if NUM_PT_LEVELS >= 3
+    err = untyped_retype_root(untyped, PT_L1_OBJ, PT_L1_BITS, pt_cslot);
+    assert(err == 0);
+
+    err = PT_L1_Map(pt_cslot, SEL4UTILS_PD_SLOT, addr, seL4_ARCH_Default_VMAttributes);
+    assert(err == 0);
+
+    pt_cslot++;
+#endif
+
     for (int i = 0; i < NUM_PAGE_TABLE(npage); i++) {
-        seL4_CPtr pt = *free_slot;
         err = untyped_retype_root(untyped, seL4_ARCH_PageTableObject,
-                                  seL4_PageTableBits, pt);
+                                  seL4_PageTableBits, pt_cslot);
         assert(err == 0);
-        (*free_slot)++;
 
-        err = seL4_ARCH_PageTable_Map(pt, SEL4UTILS_PD_SLOT, addr,
+        err = seL4_ARCH_PageTable_Map(pt_cslot, SEL4UTILS_PD_SLOT, addr,
                                       seL4_ARCH_Default_VMAttributes);
-
-#if defined(CONFIG_ARCH_X86_64)
-        if (err) {
-            seL4_CPtr pd = *free_slot;
-            err = untyped_retype_root(untyped, seL4_X86_PageDirectoryObject,
-                                      seL4_PageDirBits, pd);
-            assert(err == 0);
-            (*free_slot)++;
-            err = seL4_X86_PageDirectory_Map(pd, SEL4UTILS_PD_SLOT, addr,
-                                             seL4_ARCH_Default_VMAttributes);
-
-            if (err) {
-                seL4_CPtr pdpt = *free_slot;
-                err = untyped_retype_root(untyped, seL4_X86_PDPTObject,
-                                          seL4_PDPTBits, pdpt);
-                assert(err == 0);
-                (*free_slot)++;
-                err = seL4_X86_PDPT_Map(pdpt, SEL4UTILS_PD_SLOT, addr,
-                                        seL4_ARCH_Default_VMAttributes);
-                err = seL4_X86_PageDirectory_Map(pd, SEL4UTILS_PD_SLOT, addr,
-                                                 seL4_ARCH_Default_VMAttributes);
-            }
-
-            err = seL4_ARCH_PageTable_Map(pt, SEL4UTILS_PD_SLOT, addr,
-                                          seL4_ARCH_Default_VMAttributes);
-        }
-
-#endif /* CONFIG_ARCH_X86_64 */
         assert(err == 0);
+
+        pt_cslot++;
         addr += PAGE_SIZE_4K * PAGE_PER_TABLE;
     }
+
+    *free_slot = pt_cslot;
 }
 
 static void inline prepare_pages(int npage, seL4_CPtr untyped,
@@ -177,19 +217,6 @@ bench_proc(int argc UNUSED, char *argv[])
     SEL4BENCH_READ_CCNT(end);
     COMPILER_MEMORY_FENCE();
     send_result(result_ep, end - start);
-
-    /* cleaning */
-    long err;
-    for (int i = 0; i < npage; i++) {
-        err = seL4_ARCH_Page_Unmap(page_ptr_start + i);
-        ZF_LOGF_IFERR(err, "ummap page failed\n");
-    }
-
-    for (int i = 0; i < NUM_PAGE_TABLE(npage); i++) {
-        err = seL4_ARCH_PageTable_Unmap(pt_ptr_start + i);
-        ZF_LOGF_IFERR(err, "ummap page table failed\n");
-
-    }
 
     sel4bench_destroy();
 
