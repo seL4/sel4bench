@@ -120,12 +120,6 @@ jobs:
         manifest_repo: sel4bench-manifest
       env:
         GH_SSH: ${{ secrets.CI_SSH }}
-    - name: Check out website repo
-      uses: actions/checkout@v6
-      with:
-        repository: seL4/website
-        path: website
-        token: ${{ secrets.PRIV_REPO_TOKEN }}
     - name: Check out results repo
       uses: actions/checkout@v6
       with:
@@ -138,6 +132,16 @@ jobs:
         pattern: sel4bench-results-*
         path: results
         merge-multiple: true
+    - name: Extract and deploy results to sel4bench-results
+      uses: seL4/ci-actions/sel4bench-metrics@master
+      with:
+        manifest_sha: ${{ steps.deploy.outputs.manifest_sha }}
+    - name: Check out website repo
+      uses: actions/checkout@v6
+      with:
+        repository: seL4/website
+        path: website
+        token: ${{ secrets.PRIV_REPO_TOKEN }}
     - name: Generate website json
       uses: seL4/ci-actions/sel4bench-web@master
       with:
@@ -151,7 +155,3 @@ jobs:
         git add _data/benchmarks.json
         git commit -s -m "CI: update performance results"
         git push origin master
-    - name: Extract and deploy results to sel4bench-results
-      uses: seL4/ci-actions/sel4bench-metrics@master
-      with:
-        manifest_sha: ${{ steps.deploy.outputs.manifest_sha }}
