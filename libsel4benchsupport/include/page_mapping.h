@@ -9,7 +9,7 @@
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
 
-#define RUNS 16
+#define RUNS 17
 #define TESTS ARRAY_SIZE(page_mapping_benchmark_params)
 #define NPHASE ARRAY_SIZE(phase_name)
 
