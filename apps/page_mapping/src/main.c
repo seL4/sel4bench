@@ -192,6 +192,9 @@ bench_proc(int argc UNUSED, char *argv[])
     }
 
     sel4bench_destroy();
+
+    /* block to avoid running off call stack */
+    api_wait(result_ep, NULL);
 }
 
 static void run_bench_child_proc(env_t *env,
