@@ -25,11 +25,7 @@ typedef struct benchmark_params {
 static const
 benchmark_params_t smp_benchmark_params[] = {
     { .name = "500 cycles",   .delay = 500.000, },
-    { .name = "1000 cycles",  .delay = 1000.00, },
-    { .name = "2000 cycles",  .delay = 2000.00, },
     { .name = "4000 cycles",  .delay = 4000.00, },
-    { .name = "8000 cycles",  .delay = 8000.00, },
-    { .name = "16000 cycles", .delay = 16000.0, },
     { .name = "32000 cycles", .delay = 32000.0, },
 };
 
