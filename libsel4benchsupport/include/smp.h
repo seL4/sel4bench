@@ -14,7 +14,7 @@
 #endif
 
 #define WARMUPS 2
-#define RUNS 5
+#define RUNS 10
 #define TESTS ARRAY_SIZE(smp_benchmark_params)
 
 typedef struct benchmark_params {
