@@ -127,7 +127,7 @@ static void inline prepare_pages(int npage, seL4_CPtr untyped,
     }
 }
 
-static void inline map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
+static void inline map_pages(seL4_Word addr, seL4_CPtr page_cap, int npage)
 {
     long err UNUSED;
     for (int i = 0; i < npage; i++) {
@@ -140,7 +140,7 @@ static void inline map_pages(seL4_CPtr addr, seL4_CPtr page_cap, int npage)
 }
 
 #define PROT_UNPROT_NPAGE(func, right)\
-    static void inline func(seL4_CPtr addr, seL4_CPtr page_cap, int npage){\
+    static void inline func(seL4_Word addr, seL4_CPtr page_cap, int npage){\
         long err UNUSED;\
         for(int i = 0; i < npage; i++){\
             err = seL4_ARCH_Page_Map(page_cap, SEL4UTILS_PD_SLOT, addr, right,\
