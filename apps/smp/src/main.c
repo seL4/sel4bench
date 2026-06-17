@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
     }
 
     ZF_LOGF_IF(ltimer_reset(&env->ltimer) != 0, "Failed to start timer\n");
-    ZF_LOGF_IF(ltimer_set_timeout(&env->ltimer, NS_IN_S, TIMEOUT_PERIODIC) != 0, "Failed to configure timer\n");
+    ZF_LOGF_IF(ltimer_set_timeout(&env->ltimer, 100 * NS_IN_MS, TIMEOUT_PERIODIC) != 0, "Failed to configure timer\n");
 
     for (int i = 0; i < nr_cores; i++) {
         size_t name_sz = strlen("ping") + WORD_STRING_SIZE + 1;
