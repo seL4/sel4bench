@@ -13,10 +13,3 @@
 #define READ_CYCLE_COUNTER(_r) do {         \
     (_r) = sel4bench_get_cycle_count();     \
 } while(0)
-#define RESET_CYCLE_COUNTER
-#define OVERHEAD_FIXUP(_c, _o) (_c)
-
-static inline ccnt_t smp_benchmark_check_overhead(void)
-{
-    return 0;
-}

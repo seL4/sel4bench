@@ -20,7 +20,6 @@
 #define ZIGSEED 12345678
 
 static double current_delay_cycle;
-static ccnt_t overhead;
 
 typedef struct _per_core_data {
     volatile uint32_t calls_completed;
@@ -58,13 +57,11 @@ static inline void ipc_normal_delay(int id)
 {
     ccnt_t start, now, delay;
 
-    RESET_CYCLE_COUNTER;
+    delay = current_delay_cycle;
     READ_CYCLE_COUNTER(start);
-    delay = OVERHEAD_FIXUP(REXP(id) * current_delay_cycle, overhead);
-    READ_CYCLE_COUNTER(now);
-    while (now < start + delay) {
+    do {
         READ_CYCLE_COUNTER(now);
-    }
+    } while (now - start < delay);
 }
 
 void *ping_fn(int argc, char **argv, void *x)
@@ -238,7 +235,6 @@ int main(int argc, char *argv[])
     benchmark_init_timer(env);
     results = (smp_results_t *) env->results;
     nr_cores = simple_get_core_count(&env->simple);
-    overhead = smp_benchmark_check_overhead();
 
     /* initialize random number generator for each core */
     for (int i = 0; i < nr_cores; i++) {
