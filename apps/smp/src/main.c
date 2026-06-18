@@ -14,6 +14,8 @@
 
 #include "rnorrexp.h"
 
+#define SAMPLE_TIME (100 * NS_IN_MS)
+
 #define N_ARGS 5
 #define ZIGSEED 12345678
 
@@ -156,7 +158,8 @@ static inline ccnt_t benchmark_multicore_do_ping_pong(env_t *env, int nr_cores)
         total += (end[i] - start[i]);
     }
 
-    return total;
+    /* normalise throughput to ipc/sec, force 64 bit against mult overflow */
+    return ((uint64_t) total * NS_IN_S) / SAMPLE_TIME;
 }
 
 static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
@@ -243,7 +246,7 @@ int main(int argc, char *argv[])
     }
 
     ZF_LOGF_IF(ltimer_reset(&env->ltimer) != 0, "Failed to start timer\n");
-    ZF_LOGF_IF(ltimer_set_timeout(&env->ltimer, 100 * NS_IN_MS, TIMEOUT_PERIODIC) != 0, "Failed to configure timer\n");
+    ZF_LOGF_IF(ltimer_set_timeout(&env->ltimer, SAMPLE_TIME, TIMEOUT_PERIODIC) != 0, "Failed to configure timer\n");
 
     for (int i = 0; i < nr_cores; i++) {
         size_t name_sz = strlen("ping") + WORD_STRING_SIZE + 1;
