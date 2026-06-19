@@ -46,13 +46,6 @@ static inline void wait_for_benchmark(env_t *env)
     sel4platsupport_irq_handle(&env->io_ops.irq_ops, env->ntfn_id, badge);
 }
 
-static inline void delay_warmup_period(env_t *env)
-{
-    for (int i = 0; i < WARMUPS; i++) {
-        wait_for_benchmark(env);
-    }
-}
-
 static inline void ipc_normal_delay(int id)
 {
     ccnt_t start, now, delay;
@@ -143,7 +136,6 @@ static inline ccnt_t benchmark_multicore_do_ping_pong(env_t *env, int nr_cores)
     ccnt_t total = 0;
     uint32_t start[nr_cores], end[nr_cores];
 
-    delay_warmup_period(env);
     for (int i = 0; i < nr_cores; i++) {
         start[i] = pp_threads[i].pp_ipcs.calls_completed;
     }
@@ -163,6 +155,9 @@ static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *result
 {
     int nr_cores = simple_get_core_count(&env->simple);
     int error;
+
+    /* Make future wait times more deterministic. */
+    wait_for_benchmark(env);
 
     for (int nr_test = 0; nr_test < TESTS; nr_test++) {
         current_delay_cycle = smp_benchmark_params[nr_test].delay;
@@ -206,8 +201,13 @@ static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *result
             sel4utils_checkpoint_thread(&pp_threads[core_idx].ping, &pp_threads[core_idx].ping_cp, false);
             sel4utils_checkpoint_thread(&pp_threads[core_idx].pong, &pp_threads[core_idx].pong_cp, false);
 
+            /* Wake up the tasks. */
             seL4_Signal(pp_threads[core_idx].ping_sync_ntfn.cptr);
             seL4_Signal(pp_threads[core_idx].pong_sync_ntfn.cptr);
+
+            /* Synchronise to start of timer period to measure the correct amount of time.
+             * This delay also lets the threads run and acts as a warm-up period. */
+            wait_for_benchmark(env);
 
             for (int it = 0; it < RUNS; it++) {
                 results->benchmarks_result[nr_test][core_idx][it] =
