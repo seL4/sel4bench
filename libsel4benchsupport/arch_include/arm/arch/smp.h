@@ -11,10 +11,6 @@
 
 #define CACHE_LN_SZ 64
 
-#define READ_CYCLE_COUNTER(_r) do {                                 \
-    SEL4BENCH_READ_CCNT(_r);                                        \
-} while(0)
-
 static inline void smp_benchmark_ping(seL4_CPtr ep)
 {
     seL4_CallWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, NULL, NULL, NULL);

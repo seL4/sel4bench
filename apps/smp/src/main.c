@@ -51,9 +51,9 @@ static inline void ipc_normal_delay(int id)
     ccnt_t start, now, delay;
 
     delay = current_delay_cycle;
-    READ_CYCLE_COUNTER(start);
+    start = sel4bench_get_cycle_count();
     do {
-        READ_CYCLE_COUNTER(now);
+        now = sel4bench_get_cycle_count();
     } while (now - start < delay);
 }
 
