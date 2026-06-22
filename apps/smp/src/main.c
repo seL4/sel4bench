@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include <autoconf.h>
 #include <smp/gen_config.h>
 
 #include <sel4platsupport/timer.h>
@@ -12,6 +11,12 @@
 #include <benchmark.h>
 #include <smp.h>
 
+/* Only used to avoid false cache line sharing between cores. */
+#ifdef CONFIG_L1_CACHE_LINE_SIZE_BITS
+#define CACHE_LN_SZ BIT(CONFIG_L1_CACHE_LINE_SIZE_BITS)
+#else
+#define CACHE_LN_SZ 64
+#endif
 #include "rnorrexp.h"
 
 #define SAMPLE_TIME (100 * NS_IN_MS)
@@ -38,6 +43,28 @@ struct _pp_threads {
 
     per_core_data_t pp_ipcs ALIGN(CACHE_LN_SZ);
 } pp_threads[CONFIG_MAX_NUM_NODES];
+
+#if seL4_FastMessageRegisters == 4
+#define MSG_REGS NULL, NULL, NULL, NULL
+#elif seL4_FastMessageRegisters == 2 // 32-bit x86
+#define MSG_REGS NULL, NULL
+#elif seL4_FastMessageRegisters == 1 // 32-bit x86 with MCS
+#define MSG_REGS NULL
+#endif
+
+static inline void smp_benchmark_ping(seL4_CPtr ep)
+{
+    seL4_CallWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), MSG_REGS);
+}
+
+static inline void smp_benchmark_pong(seL4_CPtr ep, seL4_CPtr reply)
+{
+#if CONFIG_KERNEL_MCS
+    seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, MSG_REGS, reply);
+#else
+    seL4_ReplyRecvWithMRs(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, MSG_REGS);
+#endif
+}
 
 static inline void wait_for_benchmark(env_t *env)
 {

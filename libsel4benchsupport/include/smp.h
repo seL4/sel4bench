@@ -9,9 +9,6 @@
 #include <autoconf.h>
 #include <sel4bench/sel4bench.h>
 #include <sel4utils/process.h>
-#if CONFIG_MAX_NUM_NODES > 1
-#include <arch/smp.h>
-#endif
 
 #define RUNS 10
 #define TESTS ARRAY_SIZE(smp_benchmark_params)
