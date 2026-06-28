@@ -215,9 +215,9 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
     return result;
 }
 
-json_t *launch_benchmark(benchmark_t *benchmark, env_t *env)
+json_t *launch_benchmark(benchmark_t *benchmark, env_t *env, int run)
 {
-    printf("\n%s Benchmarks\n==============\n\n", benchmark->name);
+    printf("\n%s Benchmarks (iteration %d)\n==============\n\n", benchmark->name, run);
 
     /* reserve memory for the results */
     void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark->results_pages, seL4_PageBits);
@@ -302,7 +302,7 @@ void *main_continued(void *arg)
     for (int i = 0; benchmarks[i] != NULL; i++) {
         if (benchmarks[i]->enabled) {
             for (int run = 0; run < CONFIG_ITERATIONS; run++) {
-                json_t *result = launch_benchmark(benchmarks[i], &global_env);
+                json_t *result = launch_benchmark(benchmarks[i], &global_env, run);
                 ZF_LOGF_IF(result == NULL, "Failed to run benchmark %s", benchmarks[i]->name);
                 add_iteration_tag(result, run);
                 error = json_array_extend(output, result);
