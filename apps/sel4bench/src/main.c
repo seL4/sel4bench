@@ -256,6 +256,18 @@ void find_untyped(vka_t *vka, vka_object_t *untyped)
     ZF_LOGF_IF(error, "Failed to find free untyped\n");
 }
 
+/* add iteration run number to each entry in the json result array */
+static void add_iteration_tag(json_t *result, int run)
+{
+    size_t idx;
+    json_t *result_set;
+    json_array_foreach(result, idx, result_set) {
+        /* result_set points to entry at index idx in json array */
+        int error = json_object_set_new(result_set, "Iteration", json_integer(run));
+        ZF_LOGF_IF(error != 0, "Failed to set iteration number");
+    }
+}
+
 void *main_continued(void *arg)
 {
 
@@ -286,13 +298,16 @@ void *main_continued(void *arg)
     assert(output != NULL);
     int error;
 
-    /* run the benchmarks */
+    /* run the benchmarks, each with ITERATIONS consecutive runs */
     for (int i = 0; benchmarks[i] != NULL; i++) {
         if (benchmarks[i]->enabled) {
-            json_t *result = launch_benchmark(benchmarks[i], &global_env);
-            ZF_LOGF_IF(result == NULL, "Failed to run benchmark %s", benchmarks[i]->name);
-            error = json_array_extend(output, result);
-            ZF_LOGF_IF(error != 0, "Failed to add benchmark results");
+            for (int run = 0; run < CONFIG_ITERATIONS; run++) {
+                json_t *result = launch_benchmark(benchmarks[i], &global_env);
+                ZF_LOGF_IF(result == NULL, "Failed to run benchmark %s", benchmarks[i]->name);
+                add_iteration_tag(result, run);
+                error = json_array_extend(output, result);
+                ZF_LOGF_IF(error != 0, "Failed to add benchmark results");
+            }
         }
     }
 

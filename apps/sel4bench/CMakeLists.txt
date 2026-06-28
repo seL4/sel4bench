@@ -26,6 +26,14 @@ config_string(
     0
     UNQUOTE
 )
+config_string(
+    ITERATIONS
+    ITERATIONS
+    "Number of times each benchmark runs consecutively. Useful for collecting between-run noise data."
+    DEFAULT
+    1
+    UNQUOTE
+)
 
 # Default dependencies on kernel benchmarking features. Declared here so that
 # all the benchmark applications can use it
