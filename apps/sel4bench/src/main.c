@@ -217,7 +217,11 @@ int run_benchmark(env_t *env, benchmark_t *benchmark, void *local_results_vaddr,
 
 json_t *launch_benchmark(benchmark_t *benchmark, env_t *env, int run)
 {
-    printf("\n%s Benchmarks (iteration %d)\n==============\n\n", benchmark->name, run);
+    int title_len = printf("\n%s Benchmarks (iteration %d)\n", benchmark->name, run) - 2;
+    for (int i = 0; i < title_len; i++) {
+        putchar('=');
+    }
+    printf("\n\n");
 
     /* reserve memory for the results */
     void *results = vspace_new_pages(&env->vspace, seL4_AllRights, benchmark->results_pages, seL4_PageBits);
