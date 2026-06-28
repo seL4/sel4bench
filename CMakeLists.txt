@@ -60,7 +60,7 @@ if(NOT Sel4benchAllowSettingsOverride)
         )
     endif()
     set(KernelRootCNodeSizeBits
-        13
+        15
         CACHE STRING "" FORCE
     )
     set(KernelTimeSlice
