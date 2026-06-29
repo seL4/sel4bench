@@ -15,72 +15,33 @@ find_package(elfloader-tool REQUIRED)
 
 # Configuration that applies to all apps
 if(NOT Sel4benchAllowSettingsOverride)
-    if(KernelArchARM)
-        if(KernelPlatformOMAP3 OR KernelPlatformAM335X)
-            set(KernelDangerousCodeInjection
-                ON
-                CACHE BOOL "" FORCE
-            )
-        else()
-            set(KernelArmExportPMUUser
-                ON
-                CACHE BOOL "" FORCE
-            )
-        endif()
+  if(KernelArchARM)
+    if(KernelPlatformOMAP3 OR KernelPlatformAM335X)
+      set(KernelDangerousCodeInjection ON CACHE BOOL "" FORCE)
     else()
-        set(KernelArmExportPMUUser
-            OFF
-            CACHE BOOL "" FORCE
-        )
+      set(KernelArmExportPMUUser ON CACHE BOOL "" FORCE)
     endif()
-    if(KernelArchX86)
-        set(KernelExportPMCUser
-            ON
-            CACHE BOOL "" FORCE
-        )
-        set(KernelX86DangerousMSR
-            ON
-            CACHE BOOL "" FORCE
-        )
-        set(AllowUnstableOverhead
-            ON
-            CACHE BOOL "" FORCE
-        )
-        set(KernelX86MicroArch
-            "haswell"
-            CACHE STRING "" FORCE
-        )
-        set(KernelXSaveFeatureSet
-            7
-            CACHE STRING "" FORCE
-        )
-        set(KernelXSaveSize
-            832
-            CACHE STRING "" FORCE
-        )
-    endif()
-    set(KernelRootCNodeSizeBits
-        15
-        CACHE STRING "" FORCE
-    )
-    set(KernelTimeSlice
-        500
-        CACHE STRING "" FORCE
-    )
-    set(KernelTimerTickMS
-        1000
-        CACHE STRING "" FORCE
-    )
-    set(KernelVerificationBuild
-        OFF
-        CACHE BOOL "" FORCE
-    )
+  else()
+    set(KernelArmExportPMUUser OFF CACHE BOOL "" FORCE)
+  endif()
+  if(KernelArchX86)
+    set(KernelExportPMCUser ON CACHE BOOL "" FORCE)
+    set(KernelX86DangerousMSR ON CACHE BOOL "" FORCE)
+    set(AllowUnstableOverhead ON CACHE BOOL "" FORCE)
+    set(KernelX86MicroArch "haswell" CACHE STRING "" FORCE)
+    set(KernelXSaveFeatureSet 7 CACHE STRING "" FORCE)
+    set(KernelXSaveSize 832 CACHE STRING "" FORCE)
+  endif()
+  set(KernelRootCNodeSizeBits 15 CACHE STRING "" FORCE)
+  set(KernelTimeSlice 500 CACHE STRING "" FORCE)
+  set(KernelTimerTickMS 1000 CACHE STRING "" FORCE)
+  set(KernelVerificationBuild OFF CACHE BOOL "" FORCE)
 endif()
 sel4_import_kernel()
 
 if((NOT Sel4benchAllowSettingsOverride) AND (KernelArchARM OR KernelArchRiscV))
-    # Elfloader settings that correspond to how Data61 sets its boards up.
-    ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
+  # Elfloader settings that correspond to how Data61 sets its boards up.
+  ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
 endif()
 elfloader_import_project()
 
@@ -88,11 +49,11 @@ elfloader_import_project()
 # If the program faults on a SIMD instruction for your platform,
 # update this code or find another work-around.
 function(general_regs_only target)
-    include(CheckCCompilerFlag OPTIONAL)
-    check_c_compiler_flag(-mgeneral-regs-only HAS_GENERAL_REGS_ONLY)
-    if(HAS_GENERAL_REGS_ONLY)
-        target_compile_options(${target} PRIVATE -mgeneral-regs-only)
-    endif()
+  include(CheckCCompilerFlag OPTIONAL)
+  check_c_compiler_flag(-mgeneral-regs-only HAS_GENERAL_REGS_ONLY)
+  if(HAS_GENERAL_REGS_ONLY)
+    target_compile_options(${target} PRIVATE -mgeneral-regs-only)
+  endif()
 endfunction()
 
 add_subdirectory(apps/sel4bench)
@@ -102,18 +63,12 @@ GenerateSimulateScript()
 
 # Platforms that don't have a timer can't use the benchmarks which need a timer.
 if(LibPlatSupportNoPlatformLtimer)
-    if(AppIrqUserBench)
-        message(WARNING "Platform has no timer, disabling IRQUSER bench")
-        set(AppIrqUserBench
-            OFF
-            CACHE BOOL "" FORCE
-        )
-    endif()
-    if(AppSmpBench)
-        message(WARNING "Platform has no timer, disabling SMP bench")
-        set(AppSmpBench
-            OFF
-            CACHE BOOL "" FORCE
-        )
-    endif()
+  if(AppIrqUserBench)
+    message(WARNING "Platform has no timer, disabling IRQUSER bench")
+    set(AppIrqUserBench OFF CACHE BOOL "" FORCE)
+  endif()
+  if(AppSmpBench)
+    message(WARNING "Platform has no timer, disabling SMP bench")
+    set(AppSmpBench OFF CACHE BOOL "" FORCE)
+  endif()
 endif()
