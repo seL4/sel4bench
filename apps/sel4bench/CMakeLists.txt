@@ -10,7 +10,7 @@ project(sel4benchapp C)
 set(configure_string "")
 
 config_option(
-    AllowUnstableOverhead ALLOW_UNSTABLE_OVERHEAD "Do not fail when stable values are not stable."
+    AllowUnstableOverhead ALLOW_UNSTABLE_OVERHEAD "Do not fail when overhead values are not stable."
     DEFAULT OFF
 )
 config_option(
