@@ -14,6 +14,11 @@ on:
 
   # allow manual trigger
   workflow_dispatch:
+    inputs:
+      iterations:
+        description: 'Number of sel4bench iterations'
+        type: number
+        default: 5
 
   # allow explict trigger from other repos when dependencies have changed
   repository_dispatch:
@@ -46,6 +51,8 @@ jobs:
       with:
         xml: ${{ needs.code.outputs.xml }}
         march: ${{ matrix.march }}
+        # empty when not triggered by workflow_dispatch:
+        iterations: ${{ inputs.iterations }}
     - name: Upload images
       uses: actions/upload-artifact@v7
       with:
