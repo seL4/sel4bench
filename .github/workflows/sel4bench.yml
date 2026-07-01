@@ -104,6 +104,8 @@ jobs:
           platform: ${{ matrix.platform }}
           req: ${{ matrix.req }}
           index: ${{ strategy.job-index }}
+          # empty when not triggered by workflow_dispatch:
+          iterations: ${{ inputs.iterations }}
         env:
           HW_SSH: ${{ secrets.HW_SSH }}
       - name: Upload results
