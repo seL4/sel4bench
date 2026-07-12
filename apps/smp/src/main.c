@@ -35,7 +35,7 @@ struct _pp_threads {
     vka_object_t ep;
     sel4utils_thread_t ping, pong;
     sel4utils_checkpoint_t ping_cp, pong_cp;
-    vka_object_t ping_sync_ntfn, pong_sync_ntfn;
+    vka_object_t ping_sync_ep, pong_sync_ep;
 
     /* arguments to pass to thread's main */
     char thread_args_strings[N_ARGS][WORD_STRING_SIZE];
@@ -89,13 +89,14 @@ void *ping_fn(int argc, char **argv, void *x)
     assert(argc == N_ARGS);
     seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
     int thread_id = (int) atol(argv[1]);
-    seL4_CPtr ntfn = (seL4_CPtr) atol(argv[3]);
+    seL4_CPtr sync_ep = (seL4_CPtr) atol(argv[3]);
     volatile uint32_t *calls_completed = &pp_threads[thread_id].pp_ipcs.calls_completed;
 
     sel4bench_init();
 
-    /* wait and let the main thread checkpoint our status */
-    api_wait(ntfn, NULL);
+    /* sync with main thread so we are guaranteed to be waiting when
+       sel4utils_checkpoint_thread is called on us */
+    seL4_Call(sync_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 
     while (1) {
         ipc_normal_delay(thread_id);
@@ -113,12 +114,13 @@ void *pong_fn(int argc, char **argv, void *x)
     seL4_CPtr ep = (seL4_CPtr) atol(argv[0]);
     int thread_id = (int) atol(argv[1]);
     seL4_CPtr reply = (seL4_CPtr) atol(argv[2]);
-    seL4_CPtr ntfn = (seL4_CPtr) atol(argv[4]);
+    seL4_CPtr sync_ep = (seL4_CPtr) atol(argv[4]);
 
     sel4bench_init();
 
-    /* wait and let the main thread convert us to passive (on MCS) and/or checkpoint our status */
-    api_wait(ntfn, NULL);
+    /* sync with main thread so we are guaranteed to be waiting when
+       sel4utils_checkpoint_thread is called on us */
+    seL4_Call(sync_ep, seL4_MessageInfo_new(0, 0, 0, 0));
 
     while (1) {
         smp_benchmark_pong(ep, reply);
@@ -126,6 +128,19 @@ void *pong_fn(int argc, char **argv, void *x)
     }
 
     /* we would never return... */
+}
+
+/* Sync with a benchmark thread at its sync endpoint and checkpoint it. */
+static void sync_and_checkpoint(sel4utils_thread_t *thread, sel4utils_checkpoint_t *checkpoint,
+                                seL4_CPtr sync_ep, seL4_CPtr reply,
+                                const char *name, int nr_test, int core_idx)
+{
+    api_recv(sync_ep, NULL, reply);
+
+    int error = sel4utils_checkpoint_thread(thread, checkpoint, false);
+    ZF_LOGF_IF(error != 0, "Failed to checkpoint %s (test %d, core %d)", name, nr_test, core_idx);
+
+    api_reply(reply, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
 static inline void benchmark_multicore_reset_test(int nr_cores)
@@ -136,7 +151,7 @@ static inline void benchmark_multicore_reset_test(int nr_cores)
         seL4_TCB_Suspend(pp_threads[i].pong.tcb.cptr);
         pp_threads[i].pp_ipcs.calls_completed = 0;
 
-        /* rebind ping's sc */
+        /* rebind ping's and pong's scheduling contexts to reset them */
         if (config_set(CONFIG_KERNEL_MCS)) {
             error = api_sc_unbind(pp_threads[i].ping.sched_context.cptr);
             ZF_LOGF_IF(error, "Failed to unbind pings sc");
@@ -145,9 +160,8 @@ static inline void benchmark_multicore_reset_test(int nr_cores)
                                 pp_threads[i].ping.tcb.cptr);
             ZF_LOGF_IF(error, "Failed to rebind pings sc");
 
-            /* give pong back it's sc */
             error = api_sc_unbind(pp_threads[i].pong.sched_context.cptr);
-            ZF_LOGF_IF(error, "Failed to unbind pong's sc from its notification");
+            ZF_LOGF_IF(error, "Failed to unbind pong's sc");
             error = api_sc_bind(pp_threads[i].pong.sched_context.cptr,
                                 pp_threads[i].pong.tcb.cptr);
             ZF_LOGF_IF(error, "Failed to rebind pong's sc");
@@ -178,10 +192,9 @@ static inline ccnt_t benchmark_multicore_do_ping_pong(env_t *env, int nr_cores)
     return ((uint64_t) total * NS_IN_S) / SAMPLE_TIME;
 }
 
-static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results)
+static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *results, seL4_CPtr sync_reply)
 {
     int nr_cores = simple_get_core_count(&env->simple);
-    int error;
 
     /* Make future wait times more deterministic. */
     wait_for_benchmark(env);
@@ -190,47 +203,17 @@ static void benchmark_multicore_ipc_throughput(env_t *env, smp_results_t *result
         current_delay_cycle = smp_benchmark_params[nr_test].delay;
 
         for (int core_idx = 0; core_idx < nr_cores; core_idx++) {
-            if (nr_test == 0) {
-                /* bump the priorities of the benchmark threads so that they can run
-                 * to the synchronisation point */
-                error = seL4_TCB_SetPriority(pp_threads[core_idx].ping.tcb.cptr, simple_get_tcb(&env->simple), seL4_MaxPrio);
-                ZF_LOGF_IF(error != seL4_NoError, "Failed to bump ping thread priority");
-                error = seL4_TCB_SetPriority(pp_threads[core_idx].pong.tcb.cptr, simple_get_tcb(&env->simple), seL4_MaxPrio);
-                ZF_LOGF_IF(error != seL4_NoError, "Failed to bump pong thread priority");
-            }
-
             seL4_TCB_Resume(pp_threads[core_idx].ping.tcb.cptr);
             seL4_TCB_Resume(pp_threads[core_idx].pong.tcb.cptr);
 
-            if (nr_test == 0) {
-                /* yield twice so that all benchmark threads run till synchronisation */
-                for (int i = 0; i < 2; i++) {
-                    seL4_Yield();
-                }
-                /* reset the benchmark threads' priorities */
-                error = seL4_TCB_SetPriority(pp_threads[core_idx].ping.tcb.cptr, simple_get_tcb(&env->simple), seL4_MinPrio);
-                ZF_LOGF_IF(error != seL4_NoError, "Failed to reset ping thread priority");
-                error = seL4_TCB_SetPriority(pp_threads[core_idx].pong.tcb.cptr, simple_get_tcb(&env->simple), seL4_MinPrio);
-                ZF_LOGF_IF(error != seL4_NoError, "Failed to reset pong thread priority");
-
-            }
-
-            if (config_set(CONFIG_KERNEL_MCS)) {
-                /* convert pong to passive */
-                error = api_sc_unbind(pp_threads[core_idx].pong.sched_context.cptr);
-                ZF_LOGF_IF(error, "failed to unbind pong's sc");
-                /* give pong's sc to its synchronisation notification */
-                error = api_sc_bind(pp_threads[core_idx].pong.sched_context.cptr,
-                                    pp_threads[core_idx].pong_sync_ntfn.cptr);
-                ZF_LOGF_IF(error, "failed to bind pong's sc to its synchronisation notification");
-            }
-
-            sel4utils_checkpoint_thread(&pp_threads[core_idx].ping, &pp_threads[core_idx].ping_cp, false);
-            sel4utils_checkpoint_thread(&pp_threads[core_idx].pong, &pp_threads[core_idx].pong_cp, false);
-
-            /* Wake up the tasks. */
-            seL4_Signal(pp_threads[core_idx].ping_sync_ntfn.cptr);
-            seL4_Signal(pp_threads[core_idx].pong_sync_ntfn.cptr);
+            /* checkpoint ping+pong threads at their sync points, and release them into
+             * benchmark loop */
+            sync_and_checkpoint(&pp_threads[core_idx].ping, &pp_threads[core_idx].ping_cp,
+                                pp_threads[core_idx].ping_sync_ep.cptr, sync_reply,
+                                "ping", nr_test, core_idx);
+            sync_and_checkpoint(&pp_threads[core_idx].pong, &pp_threads[core_idx].pong_cp,
+                                pp_threads[core_idx].pong_sync_ep.cptr, sync_reply,
+                                "pong", nr_test, core_idx);
 
             /* Synchronise to start of timer period to measure the correct amount of time.
              * This delay also lets the threads run and acts as a warm-up period. */
@@ -256,12 +239,22 @@ int main(int argc, char *argv[])
 
     static size_t object_freq[seL4_ObjectTypeCount] = {
         [seL4_TCBObject] = 2 * CONFIG_MAX_NUM_NODES,
-        [seL4_EndpointObject] = CONFIG_MAX_NUM_NODES,
+        /* one benchmark endpoint and two checkpoint sync endpoints per core */
+        [seL4_EndpointObject] = 3 * CONFIG_MAX_NUM_NODES,
     };
     env = benchmark_get_env(argc, argv, sizeof(smp_results_t), object_freq);
     benchmark_init_timer(env);
     results = (smp_results_t *) env->results;
     nr_cores = simple_get_core_count(&env->simple);
+
+    /* reply object for receiving the checkpoint sync calls (MCS only) */
+    seL4_CPtr sync_reply = seL4_CapNull;
+#ifdef CONFIG_KERNEL_MCS
+    vka_object_t sync_reply_obj = {0};
+    error = vka_alloc_reply(&env->slab_vka, &sync_reply_obj);
+    ZF_LOGF_IF(error != seL4_NoError, "Failed to allocate reply object for sync checkpoint");
+    sync_reply = sync_reply_obj.cptr;
+#endif
 
     /* initialize random number generator for each core */
     for (int i = 0; i < nr_cores; i++) {
@@ -286,16 +279,16 @@ int main(int argc, char *argv[])
         error = vka_alloc_endpoint(&env->slab_vka, &pp_threads[i].ep);
         assert(error == seL4_NoError);
 
-        /* create a notification to sync checkpointing and mint to ping and pong */
-        error = vka_alloc_notification(&env->slab_vka, &pp_threads[i].ping_sync_ntfn);
-        ZF_LOGF_IF(error != seL4_NoError, "Failed to allocate notification to ping for synchronisation");
-        error = vka_alloc_notification(&env->slab_vka, &pp_threads[i].pong_sync_ntfn);
-        ZF_LOGF_IF(error != seL4_NoError, "Failed to allocate notification to pong for synchronisation");
+        /* create endpoints for the checkpoint sync with ping and pong */
+        error = vka_alloc_endpoint(&env->slab_vka, &pp_threads[i].ping_sync_ep);
+        ZF_LOGF_IF(error != seL4_NoError, "Failed to allocate sync endpoint for ping");
+        error = vka_alloc_endpoint(&env->slab_vka, &pp_threads[i].pong_sync_ep);
+        ZF_LOGF_IF(error != seL4_NoError, "Failed to allocate sync endpoint for pong");
 
         sel4utils_create_word_args(pp_threads[i].thread_args_strings,
                                    pp_threads[i].thread_argv, N_ARGS, pp_threads[i].ep.cptr, i,
-                                   pp_threads[i].ping.reply.cptr, pp_threads[i].ping_sync_ntfn.cptr,
-                                   pp_threads[i].pong_sync_ntfn.cptr);
+                                   pp_threads[i].ping.reply.cptr, pp_threads[i].ping_sync_ep.cptr,
+                                   pp_threads[i].pong_sync_ep.cptr);
 
         /* prepare ping and pong threads... */
         error = sel4utils_start_thread(&pp_threads[i].ping, (sel4utils_thread_entry_fn) ping_fn,
@@ -319,7 +312,7 @@ int main(int argc, char *argv[])
         assert(!error);
     }
 
-    benchmark_multicore_ipc_throughput(env, results);
+    benchmark_multicore_ipc_throughput(env, results, sync_reply);
     ZF_LOGF_IF(ltimer_reset(&env->ltimer) != 0, "Failed to stop timer\n");
 
     benchmark_finished(EXIT_SUCCESS);
