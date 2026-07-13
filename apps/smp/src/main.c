@@ -151,21 +151,6 @@ static inline void benchmark_multicore_reset_test(int nr_cores)
         seL4_TCB_Suspend(pp_threads[i].pong.tcb.cptr);
         pp_threads[i].pp_ipcs.calls_completed = 0;
 
-        /* rebind ping's and pong's scheduling contexts to reset them */
-        if (config_set(CONFIG_KERNEL_MCS)) {
-            error = api_sc_unbind(pp_threads[i].ping.sched_context.cptr);
-            ZF_LOGF_IF(error, "Failed to unbind pings sc");
-
-            error = api_sc_bind(pp_threads[i].ping.sched_context.cptr,
-                                pp_threads[i].ping.tcb.cptr);
-            ZF_LOGF_IF(error, "Failed to rebind pings sc");
-
-            error = api_sc_unbind(pp_threads[i].pong.sched_context.cptr);
-            ZF_LOGF_IF(error, "Failed to unbind pong's sc");
-            error = api_sc_bind(pp_threads[i].pong.sched_context.cptr,
-                                pp_threads[i].pong.tcb.cptr);
-            ZF_LOGF_IF(error, "Failed to rebind pong's sc");
-        }
         /* restore ping and pong to synchronisation point in the benchmark */
         sel4utils_checkpoint_restore(&pp_threads[i].pong_cp, true, false);
         sel4utils_checkpoint_restore(&pp_threads[i].ping_cp, true, false);
