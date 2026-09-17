@@ -60,6 +60,12 @@ if(NOT Sel4benchAllowSettingsOverride)
     set(KernelArmTLSReg tpidru CACHE STRING "" FORCE)
   endif()
 
+  if(KernelPlatformMP2)
+    # The STM32MP2 platform has a watchdog timer enabled at boot, which
+    # requires SMC calls to operate.
+    set(KernelAllowSMCCalls ON CACHE BOOL "" FORCE)
+  endif()
+
   # Setup flags for RELEASE (performance optimized builds)
   applycommonreleaseverificationsettings(${RELEASE} OFF)
   # This option is controlled by ApplyCommonReleaseVerificationSettings
