@@ -162,31 +162,8 @@
 } while (0)
 #endif /* CONFIG_KERNEL_MCS */
 
-#define READ_COUNTER_BEFORE(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-            "cpuid \n" \
-            "rdtsc \n" \
-            "movl %%edx, %0 \n" \
-            "movl %%eax, %1 \n" \
-            : "=r"(high), "=r"(low) \
-            : \
-            : "%rax", "%rbx", "%rcx", "%rdx"); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while (0)
-
-#define READ_COUNTER_AFTER(var) do { \
-    uint32_t low, high; \
-    asm volatile( \
-            "rdtscp \n" \
-            "movl %%edx, %0 \n" \
-            "movl %%eax, %1 \n" \
-            "cpuid \n" \
-            : "=r"(high), "=r"(low) \
-            : \
-            : "%rax", "rbx", "%rcx", "%rdx"); \
-    (var) = (((uint64_t)high) << 32ull) | ((uint64_t)low); \
-} while (0)
+#define READ_COUNTER_BEFORE SEL4BENCH_READ_CCNT
+#define READ_COUNTER_AFTER  SEL4BENCH_READ_CCNT
 
 #define DO_REAL_CALL(ep, tag) DO_CALL(ep, tag, "syscall")
 #define DO_NOP_CALL(ep, tag) DO_CALL(ep, tag, ".byte 0x66\n.byte 0x90")
