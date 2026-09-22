@@ -103,7 +103,7 @@ if(NOT Sel4benchAllowSettingsOverride)
 
   if(SMP)
     if(RELEASE)
-      if(KernelPlatformIMX93)
+      if(KernelPlatformIMX93 OR KernelPlatformMP2)
         set(KernelMaxNumNodes 2 CACHE STRING "" FORCE)
       else()
         set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
