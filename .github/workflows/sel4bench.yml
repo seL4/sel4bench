@@ -129,22 +129,33 @@ jobs:
         manifest_repo: sel4bench-manifest
       env:
         GH_SSH: ${{ secrets.CI_SSH }}
+
     - name: Check out results repo
       uses: actions/checkout@v6
       with:
         repository: seL4/sel4bench-results
         path: sel4bench-results
         token: ${{ secrets.PRIV_REPO_TOKEN }}
+
     - name: Get all result artifacts
       uses: actions/download-artifact@v8
       with:
         pattern: sel4bench-results-*
         path: results
         merge-multiple: true
+
+    - name: Override Azure Ubuntu mirror list
+      run: |
+        sudo sed -i -E \
+          's|https?://[^/]+/ubuntu/?|https://archive.ubuntu.com/ubuntu|g' \
+          /etc/apt/apt-mirrors.txt
+        sudo apt-get update
+
     - name: Extract and deploy results to sel4bench-results
       uses: seL4/ci-actions/sel4bench-metrics@master
       with:
         manifest_sha: ${{ steps.deploy.outputs.manifest_sha }}
+
     - name: Check out website repo
       uses: actions/checkout@v6
       with:
